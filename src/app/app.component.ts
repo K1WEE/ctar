@@ -6,11 +6,13 @@ import { HeaderComponent } from './components/header/header.component';
 import { StatCardComponent } from './components/stat-card/stat-card.component';
 import { ControlPanelComponent } from './components/control-panel/control-panel.component';
 import { ChartComponent } from './components/chart/chart.component';
+import { ZenBalloonComponent } from './components/zen-balloon/zen-balloon.component';
+import { ResearcherDashboardComponent } from './components/researcher-dashboard/researcher-dashboard.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, StatCardComponent, ControlPanelComponent, ChartComponent],
+  imports: [CommonModule, HeaderComponent, StatCardComponent, ControlPanelComponent, ChartComponent, ZenBalloonComponent, ResearcherDashboardComponent],
   template: `
     <div class="min-h-screen pb-10">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -58,15 +60,27 @@ import { ChartComponent } from './components/chart/chart.component';
             </app-stat-card>
           </div>
 
-          <div class="mt-2">
-            <app-chart [latestDataPoint]="ctar.latestDataPoint"></app-chart>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-2 items-stretch">
+            <app-chart class="flex-1" [latestDataPoint]="ctar.latestDataPoint"></app-chart>
+            
+            <app-zen-balloon 
+              class="flex-1 flex"
+              [currentForce]="ctar.currentForce" 
+              (repCompleted)="onGameRep()">
+            </app-zen-balloon>
           </div>
+        </main>
+
+        <main *ngIf="currentView === 'researcher'">
+          <app-researcher-dashboard></app-researcher-dashboard>
         </main>
       </div>
     </div>
   `
 })
 export class AppComponent {
+  public currentView: 'patient' | 'researcher' = 'patient';
+
   constructor(public bleService: BleService, public ctar: CtarLogicService) {}
 
   connect() {
@@ -79,5 +93,10 @@ export class AppComponent {
 
   exportData() {
     this.ctar.exportCsv();
+  }
+
+  onGameRep() {
+    // Allows the gamification layer to directly inform backend logic safely
+    this.ctar.repCount.update(count => count + 1);
   }
 }
