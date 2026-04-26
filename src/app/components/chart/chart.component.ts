@@ -8,9 +8,17 @@ import { DataPoint } from '../../services/ctar-logic.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white rounded-xl shadow p-5 w-full">
-      <h2 class="text-sm text-slate-500 font-medium mb-4">Real-time Force Curve</h2>
-      <div class="relative h-64 w-full">
+    <div class="bg-brand-card backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-6 w-full relative overflow-hidden group">
+      <!-- subtle background glow -->
+      <div class="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500 rounded-full blur-[50px] opacity-10 transition-all duration-700 group-hover:opacity-20"></div>
+      
+      <div class="flex items-center space-x-3 mb-6 relative z-10">
+         <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400">
+            <i class="fa-solid fa-chart-area"></i>
+         </div>
+         <h2 class="text-lg font-semibold text-white tracking-wide">Real-time Force Curve</h2>
+      </div>
+      <div class="relative h-64 w-full z-10">
         <canvas #chartCanvas></canvas>
       </div>
     </div>
@@ -42,6 +50,11 @@ export class ChartComponent implements AfterViewInit, OnDestroy {
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
     if (!ctx) return;
 
+    // Create a beautiful gradient for the chart
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)'); // brand-accent
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
     this.chart = new Chart(ctx, {
       type: 'line',
       data: {
@@ -49,10 +62,14 @@ export class ChartComponent implements AfterViewInit, OnDestroy {
         datasets: [{
           label: 'Force',
           data: [],
-          borderColor: '#10b981', // emerald 500
-          backgroundColor: 'rgba(16, 185, 129, 0.2)',
-          borderWidth: 2,
+          borderColor: '#3b82f6', // brand-accent
+          backgroundColor: gradient,
+          borderWidth: 3,
           pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#3b82f6',
+          pointHoverBorderWidth: 2,
           fill: true,
           tension: 0.4
         }]
@@ -62,14 +79,40 @@ export class ChartComponent implements AfterViewInit, OnDestroy {
         maintainAspectRatio: false,
         animation: false,
         plugins: {
-          legend: { display: false }
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+            titleColor: '#cbd5e1',
+            bodyColor: '#fff',
+            borderColor: 'rgba(255,255,255,0.1)',
+            borderWidth: 1,
+            padding: 10,
+            displayColors: false,
+            callbacks: {
+              label: (context: any) => `${context.parsed.y} N`
+            }
+          }
         },
         scales: {
-          x: { display: true },
+          x: { 
+            display: true,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+            },
+            ticks: {
+              color: '#64748b'
+            }
+          },
           y: { 
             display: true,
             beginAtZero: true,
-            suggestedMax: 100 
+            suggestedMax: 100,
+            grid: {
+              color: 'rgba(255, 255, 255, 0.05)',
+            },
+            ticks: {
+              color: '#64748b'
+            }
           }
         }
       }

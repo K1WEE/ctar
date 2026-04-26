@@ -6,30 +6,30 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white rounded-xl shadow p-5 flex flex-wrap gap-4 items-center justify-center">
+    <div class="bg-brand-card backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-6 flex flex-wrap gap-5 items-center justify-center">
       <button 
         *ngIf="!isConnected"
         (click)="onConnect.emit()"
-        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
-        <i class="fa-brands fa-bluetooth"></i>
-        Connect Device
+        class="group bg-blue-600/20 border border-blue-500/50 hover:bg-blue-500 text-blue-400 hover:text-white font-semibold py-3 px-8 rounded-xl shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all duration-300 flex items-center gap-3">
+        <i class="fa-brands fa-bluetooth group-hover:animate-bounce"></i>
+        <span>Connect Device</span>
       </button>
 
       <button 
         *ngIf="isConnected"
         (click)="onDisconnect.emit()"
-        class="bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
+        class="bg-rose-500/20 border border-rose-500/50 hover:bg-rose-500 text-rose-400 hover:text-white font-semibold py-3 px-8 rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.3)] hover:shadow-[0_0_25px_rgba(244,63,94,0.5)] transition-all duration-300 flex items-center gap-3">
         <i class="fa-solid fa-link-slash"></i>
-        Disconnect
+        <span>Disconnect</span>
       </button>
 
-      <div class="w-px h-10 bg-slate-200 hidden sm:block"></div>
+      <div class="w-px h-12 bg-white/10 hidden sm:block"></div>
 
       <button 
         (click)="onExport.emit()"
-        class="bg-slate-700 hover:bg-slate-800 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition-colors flex items-center gap-2">
-        <i class="fa-solid fa-file-csv"></i>
-        Export CSV
+        class="bg-slate-700/50 border border-slate-600 hover:bg-slate-600 text-slate-300 hover:text-white font-semibold py-3 px-8 rounded-xl transition-all duration-300 flex items-center gap-3">
+        <i class="fa-solid fa-file-csv text-emerald-400"></i>
+        <span>Export CSV</span>
       </button>
     </div>
   `

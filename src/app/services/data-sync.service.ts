@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseService } from './supabase.service';
 
 // The interface modeling our 20Hz continuous array blocks
 export interface RawDataPoint {
@@ -8,18 +8,14 @@ export interface RawDataPoint {
   force: number;
 }
 
-// NOTE: Manage securely via environment variables (e.g. environment.ts) in production
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-
 @Injectable({
   providedIn: 'root'
 })
 export class DataSyncService {
-  private supabase: SupabaseClient;
+  constructor(private supabaseService: SupabaseService) {}
 
-  constructor() {
-    this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  private get supabase() {
+    return this.supabaseService.client;
   }
 
   /**

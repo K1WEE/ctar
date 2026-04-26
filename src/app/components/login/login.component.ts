@@ -1,0 +1,104 @@
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { SupabaseService } from '../../services/supabase.service';
+
+@Component({
+  selector: 'app-login',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
+  template: `
+    <div class="min-h-screen flex items-center justify-center p-4 relative z-10 text-slate-200">
+      <div class="bg-brand-card backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
+        <!-- Glow -->
+        <div class="absolute -top-20 -right-20 w-40 h-40 bg-brand-accent rounded-full blur-[80px] opacity-20"></div>
+        <div class="absolute -bottom-20 -left-20 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div>
+        
+        <div class="text-center mb-8 relative z-10">
+          <div class="w-16 h-16 bg-brand-dark rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10 shadow-lg">
+            <i class="fa-solid fa-staff-snake text-3xl text-brand-accent"></i>
+          </div>
+          <h1 class="text-3xl font-bold text-white tracking-tight mb-2">Welcome Back</h1>
+          <p class="text-slate-400">Sign in to your CTAR account</p>
+        </div>
+
+        <form (ngSubmit)="onSubmit()" class="space-y-5 relative z-10">
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-regular fa-envelope text-slate-500"></i>
+              </div>
+              <input 
+                type="email" 
+                [(ngModel)]="email" 
+                name="email"
+                required
+                class="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-brand-accent focus:border-brand-accent transition-all text-white placeholder-slate-500 outline-none"
+                placeholder="name@example.com">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa-solid fa-lock text-slate-500"></i>
+              </div>
+              <input 
+                type="password" 
+                [(ngModel)]="password" 
+                name="password"
+                required
+                class="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-white/10 rounded-xl focus:ring-2 focus:ring-brand-accent focus:border-brand-accent transition-all text-white placeholder-slate-500 outline-none"
+                placeholder="••••••••">
+            </div>
+          </div>
+
+          <div *ngIf="error" class="text-rose-400 text-sm bg-rose-500/10 p-3 rounded-lg border border-rose-500/20 flex items-center">
+            <i class="fa-solid fa-circle-exclamation mr-2"></i> {{ error }}
+          </div>
+
+          <button 
+            type="submit" 
+            [disabled]="loading"
+            class="w-full bg-brand-accent hover:bg-brand-accent/90 text-white font-medium py-3 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+            <i *ngIf="loading" class="fa-solid fa-spinner fa-spin mr-2"></i>
+            {{ loading ? 'Signing in...' : 'Sign In' }}
+          </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm text-slate-400 relative z-10">
+          Don't have an account? 
+          <a routerLink="/register" class="text-brand-accent hover:text-white font-medium transition-colors">Create one</a>
+        </div>
+      </div>
+    </div>
+  `
+})
+export class LoginComponent {
+  email = '';
+  password = '';
+  loading = false;
+  error = '';
+
+  constructor(private supabase: SupabaseService, private router: Router) {}
+
+  async onSubmit() {
+    if (!this.email || !this.password) return;
+    
+    this.loading = true;
+    this.error = '';
+
+    try {
+      const { error } = await this.supabase.signIn(this.email, this.password);
+      if (error) throw error;
+      this.router.navigate(['/dashboard']);
+    } catch (e: any) {
+      this.error = e.message;
+    } finally {
+      this.loading = false;
+    }
+  }
+}
