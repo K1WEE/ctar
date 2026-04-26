@@ -117,12 +117,29 @@ export class RegisterComponent {
     this.error = '';
 
     try {
-      const { error } = await this.supabase.signUp(this.email, this.password, {
+      const { data, error } = await this.supabase.signUp(this.email, this.password, {
         first_name: this.firstName,
         last_name: this.lastName
       });
       
       if (error) throw error;
+      
+      // If sign up is successful, manually insert the user into the public.patients table
+      // so that foreign key constraints in the sessions table will pass.
+      if (data.user) {
+         const { error: dbError } = await this.supabase.client
+           .from('patients')
+           .insert([{
+             id: data.user.id,
+             first_name: this.firstName,
+             last_name: this.lastName
+           }]);
+           
+         if (dbError) {
+            console.error("Failed to insert into public.patients:", dbError);
+            // We don't throw here because auth was successful, but we could handle it better.
+         }
+      }
       
       // Auto redirect to dashboard
       this.router.navigate(['/dashboard']);
