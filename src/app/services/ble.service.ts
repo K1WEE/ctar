@@ -41,9 +41,11 @@ export class BleService {
     this.connectionState.set('Scanning');
 
     try {
-      // 1. Request pairing using explicit Service UUID
+      // 1. Request pairing using acceptAllDevices for easier debugging
+      // and specify our service as an optionalService so we can still connect to it.
       this.device = await (navigator as any).bluetooth.requestDevice({
-        filters: [{ services: [this.SERVICE_UUID] }]
+        acceptAllDevices: true,
+        optionalServices: [this.SERVICE_UUID]
       });
 
       // 2. Add an event listener to handle out-of-range disconnects natively
