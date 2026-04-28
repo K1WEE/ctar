@@ -22,8 +22,8 @@ import { CommonModule } from '@angular/common';
         
         <!-- Target Zone Overlay -->
         <div class="absolute w-full bg-emerald-100/50 dark:bg-emerald-500/20 border-y border-emerald-300 dark:border-emerald-400/50 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)] dark:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-             [style.bottom.%]="targetMin" 
-             [style.height.%]="targetMax - targetMin">
+             [style.bottom.%]="targetMinPercent" 
+             [style.height.%]="targetMaxPercent - targetMinPercent">
         </div>
 
         <!-- The Floating Balloon -->
@@ -73,11 +73,15 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   // Emitted safely upwards to the logic service so we avoid mutating service internals here
   @Output() repCompleted = new EventEmitter<void>();
 
-  // Configurable Target Zone (% or Newtons depending on scale)
+  // Configurable Target Zone in Newtons
   public targetMin = 20; 
   public targetMax = 35; 
   
+  // Visual positions in percentages
+  public targetMinPercent = 0;
+  public targetMaxPercent = 0;
   public balloonPosition = 0;
+
   public inTargetZone = false;
   
   public holdProgress = 0; // 0 to 100 scale for progress bar
@@ -87,18 +91,24 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   public feedbackMessage = "Breathe and tuck to lift...";
   private gameloop: any;
 
+  // Set the visual maximum scale of the tube to 70 Newtons
+  private maxScale = 70;
+
   constructor(private ngZone: NgZone) {
     // Angular 17 Effect strictly subscribes to the hardware force stream natively
     effect(() => {
       const force = this.currentForce();
       
       // Calculate balloon height bounds avoiding top clipping
-      const maxScale = 80;
-      let pos = (force / maxScale) * 100;
+      let pos = (force / this.maxScale) * 100;
       if (pos > 85) pos = 85; 
       if (pos < 0) pos = 0;
       
       this.balloonPosition = pos;
+
+      // Update Target Zone visual percentages
+      this.targetMinPercent = (this.targetMin / this.maxScale) * 100;
+      this.targetMaxPercent = (this.targetMax / this.maxScale) * 100;
 
       // Logic check
       this.inTargetZone = force >= this.targetMin && force <= this.targetMax;
@@ -106,6 +116,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Initialize visuals
+    this.targetMinPercent = (this.targetMin / this.maxScale) * 100;
+    this.targetMaxPercent = (this.targetMax / this.maxScale) * 100;
     this.startGameLoop();
   }
 
@@ -152,12 +165,16 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     // Randomize target zone between 15N and 40N limit
     // Target zone width is 15N
     // So targetMin is between 15 and 25. targetMax will be 30 to 40.
-    const minRange = 10;
+    const minRange = 15;
     const maxRange = 25;
     const newMin = Math.floor(Math.random() * (maxRange - minRange + 1)) + minRange;
     
     this.targetMin = newMin;
     this.targetMax = newMin + 15; // fixed 15N width gap
+    
+    // Update visuals
+    this.targetMinPercent = (this.targetMin / this.maxScale) * 100;
+    this.targetMaxPercent = (this.targetMax / this.maxScale) * 100;
   }
 
   private updateFeedback() {
@@ -165,7 +182,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       this.feedbackMessage = "Hold it right there...!";
     } else if (this.inTargetZone) {
       this.feedbackMessage = "Perfect! Keep steady.";
-    } else if (this.balloonPosition < this.targetMin) {
+    } else if (this.currentForce() < this.targetMin) {
       this.feedbackMessage = "Tuck harder to lift bubble...";
     } else {
       this.feedbackMessage = "Too hard! Relax slightly...";
