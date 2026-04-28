@@ -104,11 +104,10 @@ export class BleService {
     
     // We expect at minimum 4 bytes for 32-bit data
     if (value.byteLength >= 4) {
-      // Critical decoding: 32-bit Little Endian (param 2 = true)
-      const forceValue = value.getUint32(0, true);
+      // Critical decoding: 32-bit Float Little Endian
+      const forceValue = value.getFloat32(0, true);
       
-      // Optionally divide by a scale factor here if HX711 transmits pure ADC ints
-      // Example: const scaledForce = forceValue / 1000.0;
+      // We don't need to divide here if ESP32 sends calibrated Float directly
       
       this.ngZone.run(() => {
         if (this.onDataReceived) {

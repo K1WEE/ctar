@@ -17,34 +17,35 @@ import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher
   standalone: true,
   imports: [CommonModule, HeaderComponent, StatCardComponent, ControlPanelComponent, ChartComponent, ZenBalloonComponent, ResearcherDashboardComponent],
   template: `
-    <div class="min-h-screen pb-10 relative z-10 text-slate-200">
+    <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div class="flex justify-between items-center mb-6">
-           <app-header [connectionState]="bleService.connectionState"></app-header>
-           <button (click)="logout()" class="px-4 py-2 bg-slate-800/50 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-white/10 hover:border-rose-500/50 rounded-xl transition-all shadow-sm text-sm font-medium flex items-center">
-              <i class="fa-solid fa-right-from-bracket mr-2"></i> Logout
-           </button>
+        <div class="mb-6 block w-full">
+           <app-header [connectionState]="bleService.connectionState" (onLogout)="logout()"></app-header>
         </div>
         
         <!-- View Toggle & Save Button -->
-        <div class="flex flex-col sm:flex-row justify-between items-center my-8 bg-brand-card backdrop-blur-xl p-4 rounded-2xl border border-white/10 shadow-lg">
-          <div class="bg-slate-800/50 p-1.5 rounded-2xl flex space-x-1 border border-white/5 shadow-inner mb-4 sm:mb-0">
+        <div class="flex flex-col sm:flex-row justify-between items-center my-8 bg-white/70 dark:bg-brand-card backdrop-blur-xl p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg transition-colors duration-300">
+          <div class="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl flex space-x-1 border border-slate-200 dark:border-white/5 shadow-inner mb-4 sm:mb-0 transition-colors duration-300">
             <button 
               (click)="currentView = 'patient'"
               [class.bg-brand-accent]="currentView === 'patient'"
               [class.text-white]="currentView === 'patient'"
-              [class.text-slate-400]="currentView !== 'patient'"
-              [class.hover:text-white]="currentView !== 'patient'"
+              [class.text-slate-500]="currentView !== 'patient'"
+              [class.dark:text-slate-400]="currentView !== 'patient'"
+              [class.hover:text-slate-800]="currentView !== 'patient'"
+              [class.dark:hover:text-white]="currentView !== 'patient'"
               class="px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center space-x-2">
               <i class="fa-solid fa-user"></i>
               <span>Patient View</span>
             </button>
             <button 
               (click)="currentView = 'researcher'"
-              [class.bg-indigo-600]="currentView === 'researcher'"
+              [class.bg-indigo-500]="currentView === 'researcher'"
               [class.text-white]="currentView === 'researcher'"
-              [class.text-slate-400]="currentView !== 'researcher'"
-              [class.hover:text-white]="currentView !== 'researcher'"
+              [class.text-slate-500]="currentView !== 'researcher'"
+              [class.dark:text-slate-400]="currentView !== 'researcher'"
+              [class.hover:text-slate-800]="currentView !== 'researcher'"
+              [class.dark:hover:text-white]="currentView !== 'researcher'"
               class="px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 flex items-center space-x-2">
               <i class="fa-solid fa-microscope"></i>
               <span>Researcher View</span>
@@ -53,14 +54,14 @@ import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher
           
           <div class="flex items-center space-x-4" *ngIf="currentView === 'patient'">
              <div class="text-sm font-medium">
-               <span *ngIf="isSaving" class="text-blue-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...</span>
-               <span *ngIf="saveSuccess" class="text-emerald-400"><i class="fa-solid fa-check mr-1"></i> Saved!</span>
-               <span *ngIf="saveError" class="text-rose-400"><i class="fa-solid fa-xmark mr-1"></i> {{ saveError }}</span>
+               <span *ngIf="isSaving" class="text-blue-500 dark:text-blue-400 animate-pulse transition-colors duration-300"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...</span>
+               <span *ngIf="saveSuccess" class="text-emerald-600 dark:text-emerald-400 transition-colors duration-300"><i class="fa-solid fa-check mr-1"></i> Saved!</span>
+               <span *ngIf="saveError" class="text-rose-600 dark:text-rose-400 transition-colors duration-300"><i class="fa-solid fa-xmark mr-1"></i> {{ saveError }}</span>
              </div>
              <button 
                (click)="saveSessionToCloud()" 
                [disabled]="ctar.repCount() === 0 || isSaving"
-               class="px-6 py-2.5 bg-emerald-500/20 border border-emerald-500/50 hover:bg-emerald-500 text-emerald-400 hover:text-white font-medium rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center space-x-2">
+               class="px-6 py-2.5 bg-emerald-50 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/50 hover:bg-emerald-500 text-emerald-600 dark:text-emerald-400 hover:text-white font-medium rounded-xl transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center space-x-2">
                <i class="fa-solid fa-cloud-arrow-up"></i>
                <span>Save Session</span>
              </button>

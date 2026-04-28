@@ -6,19 +6,21 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-brand-card backdrop-blur-xl rounded-2xl shadow-xl p-6 flex items-center justify-between border-t border-l border-white/10 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl group">
-      <!-- Background subtle glow -->
-      <div class="absolute -right-10 -bottom-10 w-32 h-32 rounded-full blur-[40px] opacity-20 transition-all duration-500 group-hover:scale-150 group-hover:opacity-40" [ngClass]="colorClass"></div>
+    <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-6 relative overflow-hidden group transition-colors duration-300">
+      <div class="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-[40px] opacity-20 dark:opacity-30 transition-all duration-500 group-hover:opacity-40" [ngClass]="colorClass"></div>
       
-      <div class="relative z-10">
-        <p class="text-sm text-slate-400 font-medium mb-1 tracking-wide uppercase">{{ title }}</p>
-        <div class="flex items-baseline gap-1">
-          <span class="text-4xl font-extrabold text-white tracking-tight">{{ value }}</span>
-          <span class="text-sm font-semibold text-brand-accent ml-1">{{ unit }}</span>
+      <div class="flex justify-between items-start relative z-10">
+        <div>
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1 tracking-wide uppercase transition-colors duration-300">{{ title }}</p>
+          <div class="flex items-baseline space-x-2">
+            <h2 class="text-4xl font-bold text-slate-900 dark:text-white transition-colors duration-300">{{ value | number:'1.1-1' }}</h2>
+            <span class="text-slate-400 dark:text-slate-500 font-semibold transition-colors duration-300">{{ unit }}</span>
+          </div>
         </div>
-      </div>
-      <div class="relative z-10 text-4xl p-4 rounded-2xl backdrop-blur-md border border-white/5 shadow-inner transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6" [ngClass]="[colorClass, iconColorClass]">
-        <i class="fa-solid drop-shadow-[0_0_10px_currentColor]" [ngClass]="iconClass"></i>
+        <div class="w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner transition-colors duration-300"
+             [ngClass]="colorClass">
+          <i class="fa-solid text-xl" [ngClass]="[iconClass, iconColorClass]"></i>
+        </div>
       </div>
     </div>
   `

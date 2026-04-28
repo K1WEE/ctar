@@ -18,8 +18,8 @@ export class CtarLogicService {
   // Need to provide the stream to the chart component. A signal of the latest datapoint is the easiest approach for Chart.js updates!
   public latestDataPoint = signal<DataPoint | null>(null);
 
-  private readonly REP_THRESHOLD = 50;
-  private readonly REP_DROP_THRESHOLD = 25;
+  private readonly REP_THRESHOLD = 40;
+  private readonly REP_DROP_THRESHOLD = 20;
   private isInRep = false;
   
   private dataHistory: DataPoint[] = [];

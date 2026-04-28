@@ -6,22 +6,22 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-brand-card backdrop-blur-xl rounded-2xl shadow-xl p-6 w-full flex flex-col items-center border border-white/10 h-full relative overflow-hidden">
+    <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl rounded-2xl shadow-xl p-6 w-full flex flex-col items-center border border-slate-200 dark:border-white/10 h-full relative overflow-hidden transition-colors duration-300">
       <!-- Glow effect -->
       <div class="absolute top-0 right-0 w-64 h-64 bg-indigo-500 rounded-full blur-[80px] opacity-10 pointer-events-none"></div>
 
       <div class="flex items-center space-x-3 mb-2 relative z-10">
-         <div class="w-8 h-8 rounded-lg bg-rose-500/20 flex items-center justify-center text-rose-400">
+         <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/20 flex items-center justify-center text-rose-500 dark:text-rose-400 border border-rose-100 dark:border-transparent transition-colors duration-300">
             <i class="fa-solid fa-parachute-box"></i>
          </div>
-         <h2 class="text-xl font-bold text-white tracking-wide">The Zen Balloon</h2>
+         <h2 class="text-xl font-bold text-slate-900 dark:text-white tracking-wide transition-colors duration-300">The Zen Balloon</h2>
       </div>
-      <p class="text-sm text-slate-400 mb-8 text-center relative z-10">Maintain your chin-tuck force exactly inside the green zone.</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mb-8 text-center relative z-10 transition-colors duration-300">Maintain your chin-tuck force exactly inside the green zone.</p>
 
-      <div class="relative w-28 h-64 bg-slate-800/50 backdrop-blur-md rounded-full border border-white/10 overflow-hidden shadow-inner flex flex-col justify-end z-10">
+      <div class="relative w-28 h-64 bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md rounded-full border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner flex flex-col justify-end z-10 transition-colors duration-300">
         
         <!-- Target Zone Overlay -->
-        <div class="absolute w-full bg-emerald-500/20 border-y border-emerald-400/50 transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+        <div class="absolute w-full bg-emerald-100/50 dark:bg-emerald-500/20 border-y border-emerald-300 dark:border-emerald-400/50 transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)] dark:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
              [style.bottom.%]="targetMin" 
              [style.height.%]="targetMax - targetMin">
         </div>
@@ -39,19 +39,19 @@ import { CommonModule } from '@angular/common';
              <i class="fa-solid fa-wind text-white text-2xl opacity-80" *ngIf="!inTargetZone"></i>
           </div>
           <!-- String -->
-          <div class="absolute top-20 w-px h-[400px] bg-gradient-to-b from-white/50 to-transparent"></div>
+          <div class="absolute top-20 w-px h-[400px] bg-gradient-to-b from-slate-300 dark:from-white/50 to-transparent"></div>
         </div>
 
       </div>
 
       <!-- Hold Progress Indicator -->
       <div class="mt-8 w-full max-w-sm relative z-10">
-        <div class="flex justify-between text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+        <div class="flex justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider transition-colors duration-300">
           <span>Hold Focus Timer</span>
           <span class="text-brand-accent">{{ holdProgress | number:'1.0-0' }}%</span>
         </div>
-        <div class="h-3 bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-white/5">
-          <div class="h-full bg-gradient-to-r from-amber-500 to-amber-300 transition-all duration-100 relative"
+        <div class="h-3 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-slate-200 dark:border-white/5 transition-colors duration-300">
+          <div class="h-full bg-gradient-to-r from-amber-400 to-amber-300 dark:from-amber-500 dark:to-amber-300 transition-all duration-100 relative"
                [style.width.%]="holdProgress">
                <div class="absolute top-0 right-0 bottom-0 left-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCA4TDggMFpNMCAwTDggOFoiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIj48L3BhdGg+Cjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
           </div>
@@ -60,7 +60,7 @@ import { CommonModule } from '@angular/common';
       
       <!-- Feedback Text -->
       <div class="mt-4 text-center font-bold text-lg h-6 transition-colors duration-300 relative z-10"
-           [ngClass]="inTargetZone ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'text-slate-400'">
+           [ngClass]="inTargetZone ? 'text-emerald-500 dark:text-emerald-400 drop-shadow-[0_0_4px_rgba(16,185,129,0.3)] dark:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'text-slate-400'">
         {{ feedbackMessage }}
       </div>
     </div>
@@ -74,8 +74,8 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   @Output() repCompleted = new EventEmitter<void>();
 
   // Configurable Target Zone (% or Newtons depending on scale)
-  public targetMin = 40; 
-  public targetMax = 60; 
+  public targetMin = 32; 
+  public targetMax = 48; 
   
   public balloonPosition = 0;
   public inTargetZone = false;
@@ -93,7 +93,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       const force = this.currentForce();
       
       // Calculate balloon height bounds avoiding top clipping
-      const maxScale = 100;
+      const maxScale = 80;
       let pos = (force / maxScale) * 100;
       if (pos > 85) pos = 85; 
       if (pos < 0) pos = 0;
