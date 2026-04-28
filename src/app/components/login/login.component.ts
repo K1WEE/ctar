@@ -98,7 +98,8 @@ export class LoginComponent {
     } catch (e: any) {
       this.error = e.message;
     } finally {
-      this.loading = false;
+      this.loading = false; 
     }
   }
 }
+// fofoff
