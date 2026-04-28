@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BleService } from '../../services/ble.service';
@@ -141,8 +141,9 @@ import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher
     </div>
   `
 })
-export class DashboardComponent {
+export class DashboardComponent implements OnInit {
   public currentView: 'patient' | 'researcher' = 'patient';
+  public userRole = 'patient'; // Default until fetched
   
   public isSaving = false;
   public saveSuccess = false;
@@ -155,14 +156,18 @@ export class DashboardComponent {
     private supabase: SupabaseService,
     private router: Router
   ) {
-    // If user is a patient, strictly enforce patient view
-    if (!this.isDoctor()) {
-      this.currentView = 'patient';
+    this.currentView = 'patient';
+  }
+
+  async ngOnInit() {
+    const user = this.supabase.currentUser();
+    if (user) {
+      this.userRole = await this.supabase.getUserRole(user.id);
     }
   }
 
   isDoctor(): boolean {
-    return this.supabase.currentUser()?.user_metadata?.['role'] === 'doctor';
+    return this.userRole === 'doctor';
   }
 
   connect() {

@@ -36,4 +36,22 @@ export class SupabaseService {
       }
     });
   }
+
+  async getUserRole(userId: string): Promise<string> {
+    try {
+      const { data, error } = await this.client
+        .from('patients')
+        .select('role')
+        .eq('id', userId)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching user role:", error);
+        return 'patient';
+      }
+      return data?.role || 'patient';
+    } catch (e) {
+      return 'patient';
+    }
+  }
 }
