@@ -68,42 +68,42 @@ import { CommonModule } from '@angular/common';
 })
 export class ZenBalloonComponent implements OnInit, OnDestroy {
   // Driven strictly by the hardware BLE signal internally
-  @Input({required: true}) currentForce!: Signal<number>;
-  
+  @Input({ required: true }) currentForce!: Signal<number>;
+
   // Emitted safely upwards to the logic service so we avoid mutating service internals here
   @Output() repCompleted = new EventEmitter<void>();
 
   // Configurable Target Zone in Newtons
-  public targetMin = 20; 
-  public targetMax = 35; 
-  
+  public targetMin = 20;
+  public targetMax = 35;
+
   // Visual positions in percentages
   public targetMinPercent = 0;
   public targetMaxPercent = 0;
   public balloonPosition = 0;
 
   public inTargetZone = false;
-  
+
   public holdProgress = 0; // 0 to 100 scale for progress bar
-  private requiredHoldTimeMs = 3000; // 3 full seconds in zone equals 1 Rep
+  private requiredHoldTimeMs = 1500; // 3 full seconds in zone equals 1 Rep
   private currentHoldMs = 0;
-  
+
   public feedbackMessage = "Breathe and tuck to lift...";
   private gameloop: any;
 
-  // Set the visual maximum scale of the tube to 70 Newtons
-  private maxScale = 70;
+  // Set the visual maximum scale of the tube to 65 Newtons
+  private maxScale = 55;
 
   constructor(private ngZone: NgZone) {
     // Angular 17 Effect strictly subscribes to the hardware force stream natively
     effect(() => {
       const force = this.currentForce();
-      
+
       // Calculate balloon height bounds avoiding top clipping
       let pos = (force / this.maxScale) * 100;
-      if (pos > 85) pos = 85; 
+      if (pos > 85) pos = 85;
       if (pos < 0) pos = 0;
-      
+
       this.balloonPosition = pos;
 
       // Update Target Zone visual percentages
@@ -129,10 +129,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private startGameLoop() {
     this.ngZone.runOutsideAngular(() => {
       this.gameloop = setInterval(() => {
-        
+
         if (this.inTargetZone) {
-          this.currentHoldMs += 50; 
-          
+          this.currentHoldMs += 50;
+
           if (this.currentHoldMs >= this.requiredHoldTimeMs) {
             this.ngZone.run(() => {
               this.repCompleted.emit();
@@ -143,13 +143,13 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
           }
         } else {
           // Normal penalty depletion if balloon exits target zone (less punishing than before)
-          this.currentHoldMs -= 50; 
+          this.currentHoldMs -= 50;
           if (this.currentHoldMs < 0) this.currentHoldMs = 0;
         }
 
         // Calculate view progress
         const newProgress = (this.currentHoldMs / this.requiredHoldTimeMs) * 100;
-        
+
         // Sync graphics only if distinct changes occurred
         if (Math.abs(this.holdProgress - newProgress) > 1 || newProgress === 0) {
           this.ngZone.run(() => {
@@ -165,13 +165,13 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     // Randomize target zone between 15N and 40N limit
     // Target zone width is 15N
     // So targetMin is between 15 and 25. targetMax will be 30 to 40.
-    const minRange = 15;
-    const maxRange = 25;
+    const minRange = 5;
+    const maxRange = 45;
     const newMin = Math.floor(Math.random() * (maxRange - minRange + 1)) + minRange;
-    
+
     this.targetMin = newMin;
     this.targetMax = newMin + 15; // fixed 15N width gap
-    
+
     // Update visuals
     this.targetMinPercent = (this.targetMin / this.maxScale) * 100;
     this.targetMaxPercent = (this.targetMax / this.maxScale) * 100;

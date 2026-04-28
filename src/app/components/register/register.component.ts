@@ -105,6 +105,7 @@ export class RegisterComponent {
   lastName = '';
   email = '';
   password = '';
+  role: 'patient' | 'doctor' = 'patient';
   loading = false;
   error = '';
 
@@ -119,7 +120,8 @@ export class RegisterComponent {
     try {
       const { data, error } = await this.supabase.signUp(this.email, this.password, {
         first_name: this.firstName,
-        last_name: this.lastName
+        last_name: this.lastName,
+        role: this.role
       });
       
       if (error) throw error;
@@ -132,7 +134,8 @@ export class RegisterComponent {
            .insert([{
              id: data.user.id,
              first_name: this.firstName,
-             last_name: this.lastName
+             last_name: this.lastName,
+             role: this.role
            }]);
            
          if (dbError) {

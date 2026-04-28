@@ -25,7 +25,9 @@ import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher
         
         <!-- View Toggle & Save Button -->
         <div class="flex flex-col sm:flex-row justify-between items-center my-8 bg-white/70 dark:bg-brand-card backdrop-blur-xl p-4 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg transition-colors duration-300">
-          <div class="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl flex space-x-1 border border-slate-200 dark:border-white/5 shadow-inner mb-4 sm:mb-0 transition-colors duration-300">
+          
+          <!-- Doctor Role: View Toggle -->
+          <div *ngIf="isDoctor()" class="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl flex space-x-1 border border-slate-200 dark:border-white/5 shadow-inner mb-4 sm:mb-0 transition-colors duration-300">
             <button 
               (click)="currentView = 'patient'"
               [class.bg-brand-accent]="currentView === 'patient'"
@@ -50,6 +52,17 @@ import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher
               <i class="fa-solid fa-microscope"></i>
               <span>Researcher View</span>
             </button>
+          </div>
+
+          <!-- Patient Role: Simple Title -->
+          <div *ngIf="!isDoctor()" class="flex items-center space-x-3 mb-4 sm:mb-0 px-2">
+             <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center border border-emerald-200 dark:border-emerald-500/30">
+               <i class="fa-solid fa-bed-pulse text-lg"></i>
+             </div>
+             <div>
+               <h3 class="font-bold text-slate-800 dark:text-white">Active Session</h3>
+               <p class="text-xs text-slate-500 dark:text-slate-400">Patient Mode</p>
+             </div>
           </div>
           
           <div class="flex items-center space-x-4" *ngIf="currentView === 'patient'">
@@ -141,7 +154,16 @@ export class DashboardComponent {
     private dataSync: DataSyncService,
     private supabase: SupabaseService,
     private router: Router
-  ) {}
+  ) {
+    // If user is a patient, strictly enforce patient view
+    if (!this.isDoctor()) {
+      this.currentView = 'patient';
+    }
+  }
+
+  isDoctor(): boolean {
+    return this.supabase.currentUser()?.user_metadata?.['role'] === 'doctor';
+  }
 
   connect() {
     this.bleService.connect();
