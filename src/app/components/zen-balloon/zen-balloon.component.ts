@@ -74,8 +74,8 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   @Output() repCompleted = new EventEmitter<void>();
 
   // Configurable Target Zone (% or Newtons depending on scale)
-  public targetMin = 32; 
-  public targetMax = 48; 
+  public targetMin = 20; 
+  public targetMax = 35; 
   
   public balloonPosition = 0;
   public inTargetZone = false;
@@ -124,12 +124,13 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
             this.ngZone.run(() => {
               this.repCompleted.emit();
               this.triggerSuccessAnimation();
+              this.randomizeTargetZone();
             });
             this.currentHoldMs = 0; // Drop rep progress after win
           }
         } else {
-          // Heavy penalty depletion if balloon exits target zone
-          this.currentHoldMs -= 150; 
+          // Normal penalty depletion if balloon exits target zone (less punishing than before)
+          this.currentHoldMs -= 50; 
           if (this.currentHoldMs < 0) this.currentHoldMs = 0;
         }
 
@@ -145,6 +146,18 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
         }
       }, 50); // 20 frames per second check aligns gracefully with 20Hz hardware rate
     });
+  }
+
+  private randomizeTargetZone() {
+    // Randomize target zone between 15N and 40N limit
+    // Target zone width is 15N
+    // So targetMin is between 15 and 25. targetMax will be 30 to 40.
+    const minRange = 10;
+    const maxRange = 25;
+    const newMin = Math.floor(Math.random() * (maxRange - minRange + 1)) + minRange;
+    
+    this.targetMin = newMin;
+    this.targetMax = newMin + 15; // fixed 15N width gap
   }
 
   private updateFeedback() {
