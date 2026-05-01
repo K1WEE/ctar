@@ -15,18 +15,6 @@ export class CtarLogicService {
   public currentForce = signal<number>(0);
   public peakForce = signal<number>(0);
   public repCount = signal<number>(0);
-
-  public debugMockData() {
-  this.resetSession();
-
-  // จำลอง force 10 ค่า
-  for (let i = 0; i < 10; i++) {
-    const fakeForce = Math.random() * 60;
-    this.processForce(fakeForce);
-  }
-
-  console.log(this.dataHistory); // ดูใน console
-}
   
   // Need to provide the stream to the chart component. A signal of the latest datapoint is the easiest approach for Chart.js updates!
   public latestDataPoint = signal<DataPoint | null>(null);
