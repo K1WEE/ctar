@@ -179,6 +179,7 @@ export class DashboardComponent implements OnInit {
   }
 
   exportData() {
+    this.ctar.debugMockData();
     this.ctar.exportCsv();
   }
 

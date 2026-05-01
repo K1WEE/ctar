@@ -4,6 +4,7 @@ import { BleService, ConnectionState } from './ble.service';
 export interface DataPoint {
   timestamp: number;
   timeLabel: string;
+  thaiTime: string; 
   force: number;
 }
 
@@ -14,6 +15,18 @@ export class CtarLogicService {
   public currentForce = signal<number>(0);
   public peakForce = signal<number>(0);
   public repCount = signal<number>(0);
+
+  public debugMockData() {
+  this.resetSession();
+
+  // จำลอง force 10 ค่า
+  for (let i = 0; i < 10; i++) {
+    const fakeForce = Math.random() * 60;
+    this.processForce(fakeForce);
+  }
+
+  console.log(this.dataHistory); // ดูใน console
+}
   
   // Need to provide the stream to the chart component. A signal of the latest datapoint is the easiest approach for Chart.js updates!
   public latestDataPoint = signal<DataPoint | null>(null);
@@ -67,10 +80,16 @@ export class CtarLogicService {
     // Timestamp for plotting and export
     const now = Date.now();
     const elapsedTimeText = ((now - this.sessionStartTime) / 1000).toFixed(1) + 's';
+
+
+    const thaiTime = new Date(now)
+      .toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' })
+      .replace(',', '');
     
     const dp: DataPoint = {
       timestamp: now,
-      timeLabel: elapsedTimeText,
+      timeLabel: elapsedTimeText, 
+      thaiTime: thaiTime,         
       force: force
     };
 
@@ -81,9 +100,9 @@ export class CtarLogicService {
   public exportCsv() {
     if (this.dataHistory.length === 0) return;
 
-    let csvContent = 'Timestamp,Time(s),Force\n';
+    let csvContent = 'Timestamp,DateTime(TH),Time(s),Force\n';
     this.dataHistory.forEach(dp => {
-      csvContent += `${dp.timestamp},${dp.timeLabel},${dp.force}\n`;
+      csvContent +=  `${dp.timestamp},${dp.thaiTime},${dp.timeLabel},${dp.force}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
