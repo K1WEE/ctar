@@ -44,7 +44,9 @@ export class BleService {
       // 1. Request pairing using acceptAllDevices for easier debugging
       // and specify our service as an optionalService so we can still connect to it.
       this.device = await (navigator as any).bluetooth.requestDevice({
-        acceptAllDevices: true,
+        filters : [
+          {namePrefix: 'CTAR'}
+        ],
         optionalServices: [this.SERVICE_UUID]
       });
 
