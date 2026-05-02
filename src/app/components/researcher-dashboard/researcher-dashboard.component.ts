@@ -276,9 +276,10 @@ export class ResearcherDashboardComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    let csvContent = 'Timestamp,Time(s),Force\n';
+    let csvContent = 'Timestamp (Readable),Time(s),Force\n';
     rawSeries.forEach(dp => {
-      csvContent += `${dp.timestamp},${dp.timeLabel},${dp.force}\n`;
+      const readableDate = new Date(dp.timestamp).toLocaleString();
+      csvContent += `"${readableDate}",${dp.timeLabel},${dp.force}\n`;
     });
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

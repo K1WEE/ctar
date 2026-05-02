@@ -25,7 +25,36 @@ export class BleService {
    */
   public onDataReceived: ((force: number) => void) | null = null;
 
+  private simInterval: any = null;
+
   constructor(private ngZone: NgZone) {}
+
+  /**
+   * Mock device for development without hardware
+   */
+  simulateDevice() {
+    this.ngZone.run(() => {
+      this.connectionState.set('Connected');
+      this.deviceName.set('Mock CTAR Device');
+      this.error.set(null);
+    });
+
+    let force = 0;
+    let t = 0;
+    
+    // Simulate 20Hz data stream
+    this.simInterval = setInterval(() => {
+      t += 0.05; // Advance time
+      // Simulate a sine wave force pattern (pulling and relaxing) with noise
+      force = Math.max(0, 30 * Math.abs(Math.sin(t)) + (Math.random() * 5));
+      
+      this.ngZone.run(() => {
+        if (this.onDataReceived) {
+          this.onDataReceived(force);
+        }
+      });
+    }, 50);
+  }
 
   /**
    * Invokes the Browser Web Bluetooth prompt looking specifically for our UUIDs.
@@ -79,6 +108,13 @@ export class BleService {
    * Disconnects the GATT server forcefully returning application to base state.
    */
   async disconnect(): Promise<void> {
+    if (this.simInterval) {
+      clearInterval(this.simInterval);
+      this.simInterval = null;
+      this.onDisconnected();
+      return;
+    }
+
     if (!this.device || !this.device.gatt.connected) {
       return;
     }

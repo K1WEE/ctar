@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "prestart": "node set-env.js",
     "start": "ng serve",
     "prebuild": "node set-env.js",
     "build": "ng build",
@@ -21,6 +22,7 @@
     "@angular/router": "^17.3.0",
     "@supabase/supabase-js": "^2.104.1",
     "chart.js": "^4.5.1",
+    "dotenv": "^17.4.2",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.3"

@@ -111,6 +111,26 @@ export class DataSyncService {
   }
 
   /**
+   * Fetches the most recent session for a specific patient
+   */
+  async fetchUserPreviousSession(patientId: string): Promise<any> {
+    try {
+      const { data, error } = await this.supabase
+        .from('sessions')
+        .select('*')
+        .eq('patient_id', patientId)
+        .order('session_date', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return data && data.length > 0 ? data[0] : null;
+    } catch (err) {
+      console.error('Failed fetching previous session:', err);
+      return null;
+    }
+  }
+
+  /**
    * Securely grabs the massive Array raw Blob back and parses it locally for 
    * charting without locking the backend.
    */

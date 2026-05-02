@@ -3,6 +3,10 @@ import { inject } from '@angular/core';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
+import { ConnectComponent } from './components/connect/connect.component';
+import { CalibrateComponent } from './components/calibrate/calibrate.component';
+import { GameComponent } from './components/game/game.component';
+import { SummaryComponent } from './components/summary/summary.component';
 import { SupabaseService } from './services/supabase.service';
 
 const authGuard: CanActivateFn = () => {
@@ -20,6 +24,10 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'connect', component: ConnectComponent, canActivate: [authGuard] },
+  { path: 'calibrate', component: CalibrateComponent, canActivate: [authGuard] },
+  { path: 'game', component: GameComponent, canActivate: [authGuard] },
+  { path: 'summary', component: SummaryComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: '/dashboard' }
 ];
