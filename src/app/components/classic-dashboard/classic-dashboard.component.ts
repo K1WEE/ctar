@@ -5,11 +5,13 @@ import { CtarLogicService } from '../../services/ctar-logic.service';
 import { StatCardComponent } from '../stat-card/stat-card.component';
 import { ControlPanelComponent } from '../control-panel/control-panel.component';
 import { ChartComponent } from '../chart/chart.component';
+import { ProgressChartComponent } from '../progress-chart/progress-chart.component';
+import { SupabaseService } from '../../services/supabase.service';
 
 @Component({
   selector: 'app-classic-dashboard',
   standalone: true,
-  imports: [CommonModule, StatCardComponent, ControlPanelComponent, ChartComponent],
+  imports: [CommonModule, StatCardComponent, ControlPanelComponent, ChartComponent,ProgressChartComponent],
   template: `
     <div class="flex flex-col gap-6 animate-fade-in">
       <app-control-panel 
@@ -46,16 +48,19 @@ import { ChartComponent } from '../chart/chart.component';
       </div>
 
       <div class="w-full">
-        <app-chart class="block w-full h-[600px]" [latestDataPoint]="ctar.latestDataPoint"></app-chart>
+        <app-chart class="block w-full h-[400px]" [latestDataPoint]="ctar.latestDataPoint"></app-chart>
       </div>
+      <app-progress-chart></app-progress-chart>
+
     </div>
   `
 })
 export class ClassicDashboardComponent {
   constructor(
-    public bleService: BleService,
-    public ctar: CtarLogicService
-  ) {}
+  public bleService: BleService,
+  public ctar: CtarLogicService,
+  private supabase: SupabaseService
+) {}
 
   connect() {
     this.bleService.connect();
