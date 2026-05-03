@@ -53,3 +53,25 @@ CREATE POLICY "Allow authenticated select to clinical data"
     ON storage.objects FOR SELECT 
     TO authenticated 
     USING (bucket_id = 'raw_clinical_data');
+
+INSERT INTO sessions (patient_id, session_date, max_force, reps, duration_seconds, file_url)
+VALUES
+-- Day 1
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '5 day', 10, 8, 60, 'mock'),
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '5 day', 12, 10, 70, 'mock'),
+
+-- Day 2
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '4 day', 13, 9, 65, 'mock'),
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '4 day', 15, 11, 80, 'mock'),
+
+-- Day 3
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '3 day', 16, 10, 75, 'mock'),
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '3 day', 18, 12, 85, 'mock'),
+
+-- Day 4
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '2 day', 17, 11, 80, 'mock'),
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '2 day', 19, 13, 90, 'mock'),
+
+-- Day 5
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '1 day', 20, 12, 85, 'mock'),
+('d77e1ceb-5c12-4679-8eb2-4672d9cbfa3c', NOW() - INTERVAL '1 day', 22, 14, 95, 'mock');

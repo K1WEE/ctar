@@ -1,0 +1,13 @@
+<div class="bg-white/70 dark:bg-brand-card p-4 rounded-2xl mt-6 border border-slate-200 dark:border-white/10">
+
+  <h2 class="text-lg font-bold mb-3 text-slate-800 dark:text-slate-200">
+    Progress
+  </h2>
+
+  <canvas id="progressChart" class="w-full h-48"></canvas>
+
+  <div class="mt-3 text-sm text-emerald-500 dark:text-emerald-400 font-semibold" *ngIf="getBestDay() as best">
+    Best day: {{ best.day }} ({{ best.avg_force | number:'1.0-1' }} N)
+  </div>
+
+</div>
