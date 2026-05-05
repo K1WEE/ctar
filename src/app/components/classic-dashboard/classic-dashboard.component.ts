@@ -75,13 +75,6 @@ export class ClassicDashboardComponent {
   }
 
   exportData() {
-    // Basic export for now
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify([]));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href",     dataStr);
-    downloadAnchorNode.setAttribute("download", "session.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+  this.ctar.exportCsv();
   }
 }

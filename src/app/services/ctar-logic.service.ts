@@ -1,10 +1,10 @@
 import { Injectable, signal, effect, NgZone } from '@angular/core';
-import { BleService, ConnectionState } from './ble.service';
+import { BleService } from './ble.service';
 
 export interface DataPoint {
   timestamp: number;
   timeLabel: string;
-  thaiTime: string; 
+  thaiTime: string;
   force: number;
 }
 
@@ -12,24 +12,27 @@ export interface DataPoint {
   providedIn: 'root'
 })
 export class CtarLogicService {
+
   public currentForce = signal<number>(0);
   public peakForce = signal<number>(0);
   public repCount = signal<number>(0);
-
-  public debugMockData() {
-  this.resetSession();
-
-  // จำลอง force 10 ค่า
-  for (let i = 0; i < 10; i++) {
-    const fakeForce = Math.random() * 60;
-    this.processForce(fakeForce);
-  }
-
-  console.log(this.dataHistory); // ดูใน console
-}
-
-  // Need to provide the stream to the chart component. A signal of the latest datapoint is the easiest approach for Chart.js updates!
   public latestDataPoint = signal<DataPoint | null>(null);
+  public calibrationMaxForce = signal<number>(0);
+
+public setCalibration(maxForce: number) {
+  this.calibrationMaxForce.set(maxForce);
+}
+public getDataHistory() {
+  return [...this.dataHistory];
+}
+public getSessionDurationSeconds() {
+  if (this.dataHistory.length === 0) return 0;
+
+  const start = this.dataHistory[0].timestamp;
+  const end = this.dataHistory[this.dataHistory.length - 1].timestamp;
+
+  return Math.round((end - start) / 1000);
+}
 
   private readonly REP_THRESHOLD = 40;
   private readonly REP_DROP_THRESHOLD = 20;
@@ -39,7 +42,8 @@ export class CtarLogicService {
   private sessionStartTime: number = 0;
 
   constructor(private bleService: BleService, private ngZone: NgZone) {
-    // Reset state upon successful connection
+
+    // reset เมื่อ connect
     effect(() => {
       const state = this.bleService.connectionState();
       if (state === 'Connected') {
@@ -47,6 +51,7 @@ export class CtarLogicService {
       }
     });
 
+    // รับค่า force จาก BLE
     this.bleService.onDataReceived = (force: number) => {
       this.ngZone.run(() => this.processForce(force));
     };
@@ -62,25 +67,31 @@ export class CtarLogicService {
   }
 
   private processForce(force: number) {
+
+    // กัน sessionStartTime = 0
+    if (this.sessionStartTime === 0) {
+      this.sessionStartTime = Date.now();
+    }
+
     this.currentForce.set(force);
 
-    // Peak calculation
+    // peak
     if (force > this.peakForce()) {
       this.peakForce.set(force);
     }
 
-    // Repetition logic
+    // rep logic
     if (force > this.REP_THRESHOLD && !this.isInRep) {
       this.isInRep = true;
     } else if (force < this.REP_DROP_THRESHOLD && this.isInRep) {
       this.isInRep = false;
-      this.repCount.update(count => count + 1);
+      this.repCount.update(c => c + 1);
     }
 
-    // Timestamp for plotting and export
     const now = Date.now();
-    const elapsedTimeText = ((now - this.sessionStartTime) / 1000).toFixed(1) + 's';
 
+    const elapsedTimeText =
+      ((now - this.sessionStartTime) / 1000).toFixed(1) + 's';
 
     const thaiTime = new Date(now)
       .toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' })
@@ -89,31 +100,57 @@ export class CtarLogicService {
     const dp: DataPoint = {
       timestamp: now,
       timeLabel: elapsedTimeText,
-      thaiTime: thaiTime,         
-      force: force
+      thaiTime: thaiTime,
+      force: Number(force.toFixed(2))
     };
 
     this.dataHistory.push(dp);
+
+    // กัน data โตเกิน
+    if (this.dataHistory.length > 10000) {
+      this.dataHistory.shift();
+    }
+
     this.latestDataPoint.set(dp);
   }
 
   public exportCsv() {
-    if (this.dataHistory.length === 0) return;
+    if (this.dataHistory.length === 0) {
+      console.warn('No data to export');
+      return;
+    }
+
+    // ✅ สำคัญ: กัน Excel อ่านเพี้ยน
+    const BOM = '\uFEFF';
 
     let csvContent = 'Timestamp,DateTime(TH),Time(s),Force\n';
+
     this.dataHistory.forEach(dp => {
-      csvContent +=  `${dp.timestamp},${dp.thaiTime},${dp.timeLabel},${dp.force}\n`;
+      csvContent += `${dp.timestamp},"${dp.thaiTime}",${dp.timeLabel},${dp.force}\n`;
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // DEBUG (ถ้ายังสงสัย)
+    console.log(csvContent);
+
+    const blob = new Blob([BOM + csvContent], {
+      type: 'text/csv;charset=utf-8;'
+    });
+
     const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ctar_session_${new Date().toISOString()}.csv`;
-    link.style.visibility = 'hidden';
+
+    // ชื่อไฟล์อ่านง่าย
+    link.download = `ctar_session_${new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace(/:/g, '-')}.csv`;
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+
     URL.revokeObjectURL(url);
   }
 }
