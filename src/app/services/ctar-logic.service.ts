@@ -15,36 +15,28 @@ export class CtarLogicService {
   public currentForce = signal<number>(0);
   public peakForce = signal<number>(0);
   public repCount = signal<number>(0);
-  
+
+  public debugMockData() {
+  this.resetSession();
+
+  // จำลอง force 10 ค่า
+  for (let i = 0; i < 10; i++) {
+    const fakeForce = Math.random() * 60;
+    this.processForce(fakeForce);
+  }
+
+  console.log(this.dataHistory); // ดูใน console
+}
+
   // Need to provide the stream to the chart component. A signal of the latest datapoint is the easiest approach for Chart.js updates!
   public latestDataPoint = signal<DataPoint | null>(null);
 
-  // Calibration
-  public calibrationMaxForce = signal<number>(0);
-
-  private repThreshold = 40;
-  private repDropThreshold = 20;
+  private readonly REP_THRESHOLD = 40;
+  private readonly REP_DROP_THRESHOLD = 20;
   private isInRep = false;
-  
+
   private dataHistory: DataPoint[] = [];
   private sessionStartTime: number = 0;
-
-  public setCalibration(maxForce: number) {
-    this.calibrationMaxForce.set(maxForce);
-    this.repThreshold = Math.max(15, maxForce * 0.6);
-    this.repDropThreshold = Math.max(5, maxForce * 0.3);
-  }
-
-  public getDataHistory() {
-    return [...this.dataHistory];
-  }
-
-  public getSessionDurationSeconds() {
-    if (this.dataHistory.length === 0) return 0;
-    const start = this.dataHistory[0].timestamp;
-    const end = this.dataHistory[this.dataHistory.length - 1].timestamp;
-    return Math.round((end - start) / 1000);
-  }
 
   constructor(private bleService: BleService, private ngZone: NgZone) {
     // Reset state upon successful connection
@@ -70,10 +62,6 @@ export class CtarLogicService {
   }
 
   private processForce(force: number) {
-    if (this.sessionStartTime === 0) {
-      this.sessionStartTime = Date.now();
-    }
-
     this.currentForce.set(force);
 
     // Peak calculation
@@ -82,9 +70,9 @@ export class CtarLogicService {
     }
 
     // Repetition logic
-    if (force > this.repThreshold && !this.isInRep) {
+    if (force > this.REP_THRESHOLD && !this.isInRep) {
       this.isInRep = true;
-    } else if (force < this.repDropThreshold && this.isInRep) {
+    } else if (force < this.REP_DROP_THRESHOLD && this.isInRep) {
       this.isInRep = false;
       this.repCount.update(count => count + 1);
     }
@@ -97,10 +85,10 @@ export class CtarLogicService {
     const thaiTime = new Date(now)
       .toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' })
       .replace(',', '');
-    
+
     const dp: DataPoint = {
       timestamp: now,
-      timeLabel: elapsedTimeText, 
+      timeLabel: elapsedTimeText,
       thaiTime: thaiTime,         
       force: force
     };
