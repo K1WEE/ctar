@@ -26,11 +26,15 @@ async loadProgress() {
   console.log(this.supabase.currentUser()?.id);
 
   if (!user) return;
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   const { data, error } = await this.supabase.client
     .from('sessions')
     .select('session_date, max_force')
-    .eq('patient_id', user.id);       
+    .eq('patient_id', user.id)
+    .gte('session_date', thirtyDaysAgo.toISOString())
+    .order('session_date', { ascending: true });          
 
   if (error) {
     console.error(error);
@@ -64,10 +68,12 @@ async loadProgress() {
       map.get(day)!.push(Number(d.max_force));
     });
 
-    return Array.from(map.entries()).map(([day, values]) => ({
-      day,
-      avg_force: values.reduce((a, b) => a + b, 0) / values.length
-    }));
+    return Array.from(map.entries())
+  .sort((a, b) => a[0].localeCompare(b[0])) 
+  .map(([day, values]) => ({
+    day,
+    avg_force: values.reduce((a, b) => a + b, 0) / values.length
+  }));
   }
 
   // best day
