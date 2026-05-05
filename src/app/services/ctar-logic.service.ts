@@ -123,10 +123,10 @@ public getSessionDurationSeconds() {
     // ✅ สำคัญ: กัน Excel อ่านเพี้ยน
     const BOM = '\uFEFF';
 
-    let csvContent = 'Timestamp,DateTime(TH),Time(s),Force\n';
+    let csvContent = 'DateTime(TH),Time(s),Force\n';
 
     this.dataHistory.forEach(dp => {
-      csvContent += `${dp.timestamp},"${dp.thaiTime}",${dp.timeLabel},${dp.force}\n`;
+      csvContent += `"${dp.thaiTime}",${dp.timeLabel},${dp.force}\n`;
     });
 
     // DEBUG (ถ้ายังสงสัย)
