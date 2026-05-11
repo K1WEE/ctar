@@ -23,7 +23,7 @@ import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboar
           <div class="flex flex-col sm:flex-row justify-center items-center mb-8 bg-white/70 dark:bg-brand-card backdrop-blur-xl p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg">
             <div class="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-xl flex space-x-1 w-full sm:w-auto">
               
-              <button *ngIf="isDoctor()"
+              <button *ngIf="isDoctorOrAdmin()"
                 (click)="activeTab = 'records'"
                 [class.bg-white]="activeTab === 'records'"
                 [class.dark:bg-slate-600]="activeTab === 'records'"
@@ -59,7 +59,7 @@ import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboar
           </div>
 
           <!-- Tab Contents -->
-          <div *ngIf="activeTab === 'records' && isDoctor()">
+          <div *ngIf="activeTab === 'records' && isDoctorOrAdmin()">
              <app-researcher-dashboard></app-researcher-dashboard>
           </div>
           
@@ -86,7 +86,7 @@ export class DashboardComponent implements OnInit {
     const user = this.supabase.currentUser();
     if (user) {
       this.userRole = await this.supabase.getUserRole(user.id);
-      if (this.userRole === 'doctor') {
+      if (this.userRole === 'doctor' || this.userRole === 'admin') {
         this.activeTab = 'records';
       } else {
         this.activeTab = 'classic';
@@ -102,8 +102,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  isDoctor(): boolean {
-    return this.userRole === 'doctor';
+  isDoctorOrAdmin(): boolean {
+    return this.userRole === 'doctor' || this.userRole === 'admin';
   }
 
   async logout() {
