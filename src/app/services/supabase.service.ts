@@ -47,11 +47,11 @@ export class SupabaseService {
         
       if (error) {
         console.error("Error fetching user role:", error);
-        return 'patient';
+        return 'user';
       }
-      return data?.role || 'patient';
+      return data?.role || 'user';
     } catch (e) {
-      return 'patient';
+      return 'user';
     }
   }
 }

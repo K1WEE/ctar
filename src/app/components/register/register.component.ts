@@ -105,7 +105,7 @@ export class RegisterComponent {
   lastName = '';
   email = '';
   password = '';
-  role: 'patient' | 'doctor' = 'patient';
+  role: 'user' | 'doctor' = 'user';
   loading = false;
   error = '';
 
