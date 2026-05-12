@@ -22,7 +22,7 @@ import { CommonModule } from '@angular/common';
         <button *ngIf="!isConnected" (click)="onConnect.emit()" class="flex-1 md:flex-none px-6 py-2.5 bg-brand-accent hover:bg-brand-accent/90 text-white font-medium rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.3)] hover:shadow-[0_0_20px_rgba(59,130,246,0.5)]">
           <i class="fa-solid fa-link mr-2"></i> Connect
         </button>
-        <button *ngIf="!isConnected" (click)="onSimulate.emit()" class="flex-1 md:flex-none px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl transition-all duration-300 border border-slate-200">
+        <button *ngIf="!isConnected && isAdmin" (click)="onSimulate.emit()" class="flex-1 md:flex-none px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl transition-all duration-300 border border-slate-200">
           <i class="fa-solid fa-flask mr-2"></i> Simulate
         </button>
         <button *ngIf="isConnected" (click)="onDisconnect.emit()" class="flex-1 md:flex-none px-6 py-2.5 bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 hover:bg-rose-500 hover:text-white text-rose-600 dark:text-rose-400 font-medium rounded-xl transition-all duration-300 shadow-sm transition-colors">
@@ -37,6 +37,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ControlPanelComponent {
   @Input() isConnected: boolean = false;
+  @Input() isAdmin: boolean = false;
   @Input() showExport: boolean = true;
   @Output() onConnect = new EventEmitter<void>();
   @Output() onSimulate = new EventEmitter<void>();
