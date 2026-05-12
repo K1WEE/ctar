@@ -3,7 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
+import { z } from 'zod';
 
+export const UserSchema = z.object({
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().min(1, 'Email is required'),
+  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['user', 'doctor']),
+});
+export type User = z.infer<typeof UserSchema>;
 @Component({
   selector: 'app-register',
   standalone: true,
@@ -112,7 +121,19 @@ export class RegisterComponent {
   constructor(private supabase: SupabaseService, private router: Router) {}
 
   async onSubmit() {
-    if (!this.email || !this.password || !this.firstName || !this.lastName) return;
+    const validationResult = UserSchema.safeParse({
+      firstName: this.firstName,
+      lastName: this.lastName,
+      email: this.email,
+      password: this.password,
+      role: this.role
+    });
+
+    if (!validationResult.success) {
+      // Get the first error message
+      this.error = validationResult.error.issues[0].message;
+      return;
+    }
     
     this.loading = true;
     this.error = '';
