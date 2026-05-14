@@ -2,6 +2,7 @@ import { Component, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BleService } from '../../services/ble.service';
+import { SupabaseService } from '../../services/supabase.service';
 
 @Component({
   selector: 'app-connect',
@@ -28,10 +29,10 @@ import { BleService } from '../../services/ble.service';
             class="px-8 py-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-lg">
             <i class="fa-solid fa-link mr-3"></i> Connect via Bluetooth
           </button>
-          <button
+          <button *ngIf="supabase.userRole() === 'admin'"
             (click)="simulate()"
             class="px-8 py-3 w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 flex items-center justify-center text-sm border border-slate-200 dark:border-slate-700 mt-3">
-            <i class="fa-solid fa-flask mr-2"></i> Simulate Device (Dev Mode)
+            <i class="fa-solid fa-flask mr-2"></i> Simulate Device (Admin Only)
           </button>
         </div>
 
@@ -49,7 +50,7 @@ import { BleService } from '../../services/ble.service';
   `
 })
 export class ConnectComponent {
-  constructor(public bleService: BleService, private router: Router) {
+  constructor(public bleService: BleService, public supabase: SupabaseService, private router: Router) {
     effect(() => {
       if (this.bleService.connectionState() === 'Connected') {
         setTimeout(() => this.router.navigate(['/calibrate']), 1000);

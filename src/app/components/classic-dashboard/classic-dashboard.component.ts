@@ -16,6 +16,7 @@ import { SupabaseService } from '../../services/supabase.service';
     <div class="flex flex-col gap-6 animate-fade-in">
       <app-control-panel 
         [isConnected]="bleService.connectionState() === 'Connected'"
+        [isAdmin]="supabase.userRole() === 'admin'"
         (onConnect)="connect()"
         (onSimulate)="simulate()"
         (onDisconnect)="disconnect()"
@@ -59,7 +60,7 @@ export class ClassicDashboardComponent {
   constructor(
   public bleService: BleService,
   public ctar: CtarLogicService,
-  private supabase: SupabaseService
+  public supabase: SupabaseService
 ) {}
 
   connect() {

@@ -6,11 +6,12 @@ import { SupabaseService } from '../../services/supabase.service';
 import { HeaderComponent } from '../header/header.component';
 import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher-dashboard.component';
 import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboard.component';
+import { AdminDashboardComponent } from '../admin-dashboard/admin-dashboard.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, ResearcherDashboardComponent, ClassicDashboardComponent],
+  imports: [CommonModule, HeaderComponent, ResearcherDashboardComponent, ClassicDashboardComponent, AdminDashboardComponent],
   template: `
     <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -23,7 +24,20 @@ import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboar
           <div class="flex flex-col sm:flex-row justify-center items-center mb-8 bg-white/70 dark:bg-brand-card backdrop-blur-xl p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg">
             <div class="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-xl flex space-x-1 w-full sm:w-auto">
               
-              <button *ngIf="isDoctor()"
+              <button *ngIf="supabase.userRole() === 'admin'"
+                (click)="activeTab = 'users'"
+                [class.bg-white]="activeTab === 'users'"
+                [class.dark:bg-slate-600]="activeTab === 'users'"
+                [class.text-amber-600]="activeTab === 'users'"
+                [class.dark:text-white]="activeTab === 'users'"
+                [class.shadow-sm]="activeTab === 'users'"
+                [class.text-slate-500]="activeTab !== 'users'"
+                class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-users-gear"></i>
+                <span>User Management</span>
+              </button>
+
+              <button *ngIf="isDoctorOrAdmin()"
                 (click)="activeTab = 'records'"
                 [class.bg-white]="activeTab === 'records'"
                 [class.dark:bg-slate-600]="activeTab === 'records'"
@@ -59,7 +73,11 @@ import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboar
           </div>
 
           <!-- Tab Contents -->
-          <div *ngIf="activeTab === 'records' && isDoctor()">
+          <div *ngIf="activeTab === 'users' && supabase.userRole() === 'admin'">
+             <app-admin-dashboard></app-admin-dashboard>
+          </div>
+
+          <div *ngIf="activeTab === 'records' && isDoctorOrAdmin()">
              <app-researcher-dashboard></app-researcher-dashboard>
           </div>
           
@@ -74,11 +92,11 @@ import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboar
 })
 export class DashboardComponent implements OnInit {
   public userRole = ''; // Default until fetched
-  public activeTab: 'classic' | 'game' | 'records' = 'classic';
+  public activeTab: 'classic' | 'game' | 'records' | 'users' = 'classic';
 
   constructor(
     public bleService: BleService,
-    private supabase: SupabaseService,
+    public supabase: SupabaseService,
     private router: Router
   ) {}
 
@@ -86,7 +104,7 @@ export class DashboardComponent implements OnInit {
     const user = this.supabase.currentUser();
     if (user) {
       this.userRole = await this.supabase.getUserRole(user.id);
-      if (this.userRole === 'doctor') {
+      if (this.userRole === 'doctor' || this.userRole === 'admin') {
         this.activeTab = 'records';
       } else {
         this.activeTab = 'classic';
@@ -102,8 +120,8 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  isDoctor(): boolean {
-    return this.userRole === 'doctor';
+  isDoctorOrAdmin(): boolean {
+    return this.userRole === 'doctor' || this.userRole === 'admin';
   }
 
   async logout() {

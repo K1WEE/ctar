@@ -8,19 +8,35 @@ import { environment } from '../../environments/environment';
 export class SupabaseService {
   public client: SupabaseClient;
   public currentUser = signal<User | null>(null);
+  public userRole = signal<string>('user');
 
   constructor() {
     this.client = createClient(environment.supabase.url, environment.supabase.key);
     
     // Check initial session
     this.client.auth.getSession().then(({ data }) => {
-      this.currentUser.set(data.session?.user || null);
+      const user = data.session?.user || null;
+      this.currentUser.set(user);
+      if (user) {
+        this.fetchAndSetRole(user.id);
+      }
     });
 
     // Listen to auth changes
     this.client.auth.onAuthStateChange((_event, session) => {
-      this.currentUser.set(session?.user || null);
+      const user = session?.user || null;
+      this.currentUser.set(user);
+      if (user) {
+        this.fetchAndSetRole(user.id);
+      } else {
+        this.userRole.set('user');
+      }
     });
+  }
+
+  private async fetchAndSetRole(userId: string) {
+    const role = await this.getUserRole(userId);
+    this.userRole.set(role);
   }
 
   async signIn(email: string, password: string) {
@@ -47,11 +63,11 @@ export class SupabaseService {
         
       if (error) {
         console.error("Error fetching user role:", error);
-        return 'patient';
+        return 'user';
       }
-      return data?.role || 'patient';
+      return data?.role || 'user';
     } catch (e) {
-      return 'patient';
+      return 'user';
     }
   }
 }
