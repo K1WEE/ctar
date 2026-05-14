@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { BleService } from '../../services/ble.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { HeaderComponent } from '../header/header.component';
 import { ResearcherDashboardComponent } from '../researcher-dashboard/researcher-dashboard.component';
@@ -110,11 +109,10 @@ export class DashboardComponent implements OnInit {
         this.activeTab = 'classic';
       }
     }
-  }
 
-  goToGameFlow() {
-    if (this.bleService.connectionState() === 'Connected') {
-      this.router.navigate(['/calibrate']);
+    const role = await this.supabase.getUserRole(user.id);
+    if (role === 'doctor') {
+      this.router.navigate(['/clinic/records']);
     } else {
       this.router.navigate(['/connect']);
     }

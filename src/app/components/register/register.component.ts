@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { SupabaseService } from '../../services/supabase.service';
 import { z } from 'zod';
+import { I18nService } from '../../services/i18n.service';
 
 export const UserSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -23,41 +24,48 @@ export type User = z.infer<typeof UserSchema>;
         <!-- Glow -->
         <div class="absolute -top-20 -left-20 w-40 h-40 bg-emerald-500 rounded-full blur-[80px] opacity-20"></div>
         <div class="absolute -bottom-20 -right-20 w-40 h-40 bg-indigo-500 rounded-full blur-[80px] opacity-20"></div>
+
+        <!-- Language toggle -->
+        <div class="flex justify-end mb-2 relative z-10">
+          <button (click)="i18n.toggleLang()" class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-brand-accent transition-colors border border-slate-200 dark:border-white/10">
+            {{ i18n.currentLang() === 'th' ? 'EN' : 'TH' }}
+          </button>
+        </div>
         
         <div class="text-center mb-8 relative z-10">
           <div class="w-16 h-16 bg-slate-100 dark:bg-brand-dark rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-200 dark:border-white/10 shadow-lg transition-colors duration-300">
             <i class="fa-solid fa-user-plus text-3xl text-emerald-500 dark:text-emerald-400"></i>
           </div>
-          <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2 transition-colors duration-300">Create Account</h1>
-          <p class="text-slate-500 dark:text-slate-400">Join CTAR platform</p>
+          <h1 class="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2 transition-colors duration-300">{{ i18n.t('register.title') }}</h1>
+          <p class="text-slate-500 dark:text-slate-400 text-base">{{ i18n.t('register.subtitle') }}</p>
         </div>
 
         <form (ngSubmit)="onSubmit()" class="space-y-4 relative z-10">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">First Name</label>
+              <label class="block text-base font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">{{ i18n.t('register.firstName') }}</label>
               <input 
                 type="text" 
                 [(ngModel)]="firstName" 
                 name="firstName"
                 required
-                class="w-full px-4 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
-                placeholder="John">
+                class="w-full px-4 py-3 text-base bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
+                placeholder="สมชาย">
             </div>
             <div>
-              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">Last Name</label>
+              <label class="block text-base font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">{{ i18n.t('register.lastName') }}</label>
               <input 
                 type="text" 
                 [(ngModel)]="lastName" 
                 name="lastName"
                 required
-                class="w-full px-4 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
-                placeholder="Doe">
+                class="w-full px-4 py-3 text-base bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
+                placeholder="ใจดี">
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">Email Address</label>
+            <label class="block text-base font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">{{ i18n.t('login.email') }}</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fa-regular fa-envelope text-slate-400 dark:text-slate-500"></i>
@@ -67,13 +75,13 @@ export type User = z.infer<typeof UserSchema>;
                 [(ngModel)]="email" 
                 name="email"
                 required
-                class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
+                class="w-full pl-10 pr-4 py-4 text-base bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
                 placeholder="name@example.com">
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">Password</label>
+            <label class="block text-base font-medium text-slate-700 dark:text-slate-300 mb-1.5 transition-colors duration-300">{{ i18n.t('login.password') }}</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fa-solid fa-lock text-slate-400 dark:text-slate-500"></i>
@@ -83,7 +91,7 @@ export type User = z.infer<typeof UserSchema>;
                 [(ngModel)]="password" 
                 name="password"
                 required
-                class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
+                class="w-full pl-10 pr-4 py-4 text-base bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none shadow-sm dark:shadow-none"
                 placeholder="••••••••">
             </div>
           </div>
@@ -95,15 +103,15 @@ export type User = z.infer<typeof UserSchema>;
           <button 
             type="submit" 
             [disabled]="loading"
-            class="w-full bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white font-medium py-3 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-2">
+            class="w-full min-h-[56px] bg-emerald-500 hover:bg-emerald-600 dark:hover:bg-emerald-400 text-white font-medium text-lg rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center mt-2">
             <i *ngIf="loading" class="fa-solid fa-spinner fa-spin mr-2"></i>
-            {{ loading ? 'Creating Account...' : 'Sign Up' }}
+            {{ loading ? i18n.t('register.loading') : i18n.t('register.submit') }}
           </button>
         </form>
 
-        <div class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400 relative z-10 transition-colors duration-300">
-          Already have an account? 
-          <a routerLink="/login" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-white font-medium transition-colors">Sign In</a>
+        <div class="mt-6 text-center text-base text-slate-500 dark:text-slate-400 relative z-10 transition-colors duration-300">
+          {{ i18n.t('register.hasAccount') }} 
+          <a routerLink="/login" class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-white font-medium transition-colors">{{ i18n.t('register.signIn') }}</a>
         </div>
       </div>
     </div>
@@ -117,6 +125,7 @@ export class RegisterComponent {
   role: 'user' | 'doctor' = 'user';
   loading = false;
   error = '';
+  public i18n = inject(I18nService);
 
   constructor(private supabase: SupabaseService, private router: Router) {}
 
@@ -147,8 +156,6 @@ export class RegisterComponent {
       
       if (error) throw error;
       
-      // If sign up is successful, manually insert the user into the public.patients table
-      // so that foreign key constraints in the sessions table will pass.
       if (data.user) {
          const { error: dbError } = await this.supabase.client
            .from('patients')
@@ -161,11 +168,9 @@ export class RegisterComponent {
            
          if (dbError) {
             console.error("Failed to insert into public.patients:", dbError);
-            // We don't throw here because auth was successful, but we could handle it better.
          }
       }
       
-      // Auto redirect to dashboard
       this.router.navigate(['/dashboard']);
     } catch (e: any) {
       this.error = e.message;

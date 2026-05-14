@@ -1,11 +1,20 @@
 import { Injectable } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 
-// The interface modeling our 20Hz continuous array blocks
 export interface RawDataPoint {
   timestamp: number;
   timeLabel: string;
   force: number;
+}
+
+export interface PatientSummary {
+  id: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  session_count: number;
+  last_session_date: string | null;
+  last_max_force: number | null;
 }
 
 @Injectable({
@@ -20,16 +29,6 @@ export class DataSyncService {
 
   /**
    * Hybrid Architecture Uploader
-   * 
-   * Bundles 1,000+ continuous data points (e.g. a 50sec session at 20Hz = 1,000 arrays)
-   * into an efficient structural JSON Blob, streams it directly into our generic 
-   * S3-style Supabase bucket, and instantly pairs the generated `file_url` into PostgreSQL.
-   * 
-   * @param patientId ID of the actively exercising patient
-   * @param rawData Array object sequence collected from `CtarLogicService`
-   * @param maxForce Highest peak captured
-   * @param reps Repetitions completed according to the Zen Balloon logic constraints
-   * @param durationSeconds Length of the test sequence
    */
   async uploadSessionData(
     patientId: string, 
@@ -39,14 +38,10 @@ export class DataSyncService {
     durationSeconds: number
   ): Promise<boolean> {
     try {
-      // 1. Serialize memory array directly into a file Blob
       const blob = new Blob([JSON.stringify(rawData)], { type: 'application/json' });
-      
-      // Filename securely structured under patient directory to avoid collisions
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const fileName = `${patientId}/session_${timestamp}.json`;
 
-      // 2. Transmit to Supabase 'raw_clinical_data' storage bucket
       const { data: uploadData, error: uploadError } = await this.supabase
         .storage
         .from('raw_clinical_data')
@@ -60,10 +55,8 @@ export class DataSyncService {
         throw uploadError;
       }
 
-      // The distinct bucket path (e.g., patientId/session_xxx.json)
       const storagePath = uploadData.path;
 
-      // 3. Document the hybrid logic by creating relational row in 'sessions'
       const { error: dbError } = await this.supabase
         .from('sessions')
         .insert([{
@@ -71,7 +64,7 @@ export class DataSyncService {
           max_force: maxForce,
           reps: reps,
           duration_seconds: durationSeconds,
-          file_url: storagePath // The hybrid link pointing securely to the raw JSON Blob
+          file_url: storagePath
         }]);
 
       if (dbError) {
@@ -89,7 +82,7 @@ export class DataSyncService {
   }
 
   /**
-   * Retrieves all historical sessions joining patient identity details implicitly.
+   * Retrieves all historical sessions joining patient identity details.
    */
   async fetchAllSessions(): Promise<any[]> {
     try {
@@ -131,8 +124,7 @@ export class DataSyncService {
   }
 
   /**
-   * Securely grabs the massive Array raw Blob back and parses it locally for 
-   * charting without locking the backend.
+   * Fetches raw blob data from storage and parses it.
    */
   async fetchRawSessionData(fileUrl: string): Promise<RawDataPoint[]> {
     try {
@@ -148,6 +140,90 @@ export class DataSyncService {
     } catch (err) {
       console.error('Failed retrieving raw blob:', err);
       return [];
+    }
+  }
+
+  /**
+   * Fetches patient list with aggregated session data for clinic dashboard.
+   */
+  async fetchPatientList(): Promise<PatientSummary[]> {
+    try {
+      // Get all patients
+      const { data: patients, error: pError } = await this.supabase
+        .from('patients')
+        .select('id, first_name, last_name, role')
+        .eq('role', 'patient');
+
+      if (pError) throw pError;
+      if (!patients || patients.length === 0) return [];
+
+      // Get session counts and last sessions per patient
+      const summaries: PatientSummary[] = [];
+
+      for (const patient of patients) {
+        const { data: sessions, error: sError } = await this.supabase
+          .from('sessions')
+          .select('session_date, max_force')
+          .eq('patient_id', patient.id)
+          .order('session_date', { ascending: false });
+
+        if (sError) {
+          console.error('Error fetching sessions for', patient.id, sError);
+        }
+
+        summaries.push({
+          id: patient.id,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          role: patient.role,
+          session_count: sessions?.length || 0,
+          last_session_date: sessions && sessions.length > 0 ? sessions[0].session_date : null,
+          last_max_force: sessions && sessions.length > 0 ? sessions[0].max_force : null
+        });
+      }
+
+      return summaries;
+    } catch (err) {
+      console.error('Failed fetching patient list:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Fetches all sessions for a specific patient.
+   */
+  async fetchPatientSessions(patientId: string): Promise<any[]> {
+    try {
+      const { data, error } = await this.supabase
+        .from('sessions')
+        .select('id, session_date, max_force, reps, duration_seconds, file_url')
+        .eq('patient_id', patientId)
+        .order('session_date', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (err) {
+      console.error('Failed fetching patient sessions:', err);
+      return [];
+    }
+  }
+
+  /**
+   * Fetches patient profile information.
+   */
+  async fetchPatientProfile(patientId: string): Promise<any> {
+    try {
+      const { data, error } = await this.supabase
+        .from('patients')
+        .select('*')
+        .eq('id', patientId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error('Failed fetching patient profile:', err);
+      return null;
     }
   }
 }
