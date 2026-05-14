@@ -28,7 +28,7 @@ const doctorGuard: CanActivateFn = async () => {
   if (!user) return router.parseUrl('/login');
 
   const role = await supabase.getUserRole(user.id);
-  if (role === 'doctor') return true;
+  if (role === 'doctor' || role === 'admin') return true;
 
   return router.parseUrl('/connect');
 };
@@ -41,6 +41,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
 
   // Patient flow
+  { path: 'patient-portal', loadComponent: () => import('./components/patient-portal/patient-portal.component').then(m => m.PatientPortalComponent), canActivate: [authGuard] },
   { path: 'connect', component: ConnectComponent, canActivate: [authGuard] },
   { path: 'calibrate', component: CalibrateComponent, canActivate: [authGuard] },
   { path: 'game', component: GameComponent, canActivate: [authGuard] },

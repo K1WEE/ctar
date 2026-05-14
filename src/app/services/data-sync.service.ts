@@ -152,7 +152,7 @@ export class DataSyncService {
       const { data: patients, error: pError } = await this.supabase
         .from('patients')
         .select('id, first_name, last_name, role')
-        .eq('role', 'patient');
+        .eq('role', 'user');
 
       if (pError) throw pError;
       if (!patients || patients.length === 0) return [];
