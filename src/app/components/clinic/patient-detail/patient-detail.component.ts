@@ -54,9 +54,37 @@ import { Chart } from 'chart.js/auto';
 
           <!-- Trend Chart -->
           <div *ngIf="sessions().length > 1" class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-lg">
-            <h3 class="font-bold text-lg text-slate-900 dark:text-white mb-4 flex items-center">
-              <i class="fa-solid fa-chart-line text-brand-accent mr-2"></i> {{ i18n.t('detail.progressTrend') }}
-            </h3>
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-3">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center">
+                  <i class="fa-solid fa-chart-line text-brand-accent mr-2"></i> {{ i18n.t('detail.progressTrend') }}
+                </h3>
+                
+                <span *ngIf="progressStats() as stats" class="w-fit text-sm px-2 py-0.5 rounded-md font-bold flex items-center"
+                      [ngClass]="stats.percentage >= 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'">
+                  <i class="fa-solid mr-1" [ngClass]="stats.percentage >= 0 ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'"></i>
+                  {{ stats.percentage > 0 ? '+' : '' }}{{ stats.percentage | number:'1.0-1' }}%
+                  <span class="ml-1 text-xs opacity-75 font-medium whitespace-nowrap">{{ i18n.t(stats.label) }}</span>
+                </span>
+              </div>
+              <div class="flex space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg self-start max-w-full overflow-x-auto">
+                <button (click)="setTrendMode('day')"
+                  [class.bg-white]="trendViewMode() === 'day'" [class.dark:bg-slate-600]="trendViewMode() === 'day'" [class.shadow]="trendViewMode() === 'day'"
+                  class="px-3 py-1 text-xs font-bold rounded-md transition-all text-slate-600 dark:text-slate-300">
+                  {{ i18n.t('detail.day') }}
+                </button>
+                <button (click)="setTrendMode('week')"
+                  [class.bg-white]="trendViewMode() === 'week'" [class.dark:bg-slate-600]="trendViewMode() === 'week'" [class.shadow]="trendViewMode() === 'week'"
+                  class="px-3 py-1 text-xs font-bold rounded-md transition-all text-slate-600 dark:text-slate-300">
+                  {{ i18n.t('detail.week') }}
+                </button>
+                <button (click)="setTrendMode('month')"
+                  [class.bg-white]="trendViewMode() === 'month'" [class.dark:bg-slate-600]="trendViewMode() === 'month'" [class.shadow]="trendViewMode() === 'month'"
+                  class="px-3 py-1 text-xs font-bold rounded-md transition-all text-slate-600 dark:text-slate-300">
+                  {{ i18n.t('detail.month') }}
+                </button>
+              </div>
+            </div>
             <div class="h-64 relative">
               <canvas #trendCanvas></canvas>
             </div>
@@ -81,6 +109,7 @@ import { Chart } from 'chart.js/auto';
                   <tr>
                     <th class="px-5 py-3 font-semibold">{{ i18n.t('detail.date') }}</th>
                     <th class="px-5 py-3 font-semibold">{{ i18n.t('detail.maxForce') }}</th>
+                    <th class="px-5 py-3 font-semibold">{{ i18n.t('detail.avgForce') }}</th>
                     <th class="px-5 py-3 font-semibold">{{ i18n.t('detail.reps') }}</th>
                     <th class="px-5 py-3 font-semibold">{{ i18n.t('detail.duration') }}</th>
                     <th class="px-5 py-3 font-semibold text-right">{{ i18n.t('detail.actions') }}</th>
@@ -90,6 +119,7 @@ import { Chart } from 'chart.js/auto';
                   <tr *ngFor="let s of sessions()" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                     <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">{{ s.session_date | date:'MMM d, y, h:mm a' }}</td>
                     <td class="px-5 py-3.5 text-emerald-600 dark:text-emerald-400 font-bold">{{ s.max_force | number:'1.0-1' }} N</td>
+                    <td class="px-5 py-3.5 text-sky-600 dark:text-sky-400 font-bold">{{ (s.avg_force || 0) | number:'1.0-1' }} N</td>
                     <td class="px-5 py-3.5 text-amber-600 dark:text-amber-400 font-bold">{{ s.reps }}</td>
                     <td class="px-5 py-3.5 text-slate-500"><i class="fa-regular fa-clock mr-1 opacity-50"></i>{{ s.duration_seconds }}s</td>
                     <td class="px-5 py-3.5 flex gap-2 justify-end">
@@ -108,12 +138,12 @@ import { Chart } from 'chart.js/auto';
 
           <!-- Session Chart Inspector -->
           <div *ngIf="inspectedSession() !== null" class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl p-6 shadow-lg animate-fade-in">
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4">
               <h3 class="font-bold text-lg text-slate-900 dark:text-white flex items-center">
                 <i class="fa-solid fa-magnifying-glass-chart text-brand-accent mr-2"></i>
-                Force Curve — {{ inspectedSession()?.session_date | date:'MMM d, y' }}
+                {{ i18n.t('detail.forceCurve') }} — {{ inspectedSession()?.session_date | date:'MMM d, y' }}
               </h3>
-              <button (click)="closeInspector()" class="text-slate-500 hover:text-rose-500 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 p-2 rounded-lg transition-colors border border-slate-200 dark:border-white/5">
+              <button (click)="closeInspector()" class="self-end sm:self-auto text-slate-500 hover:text-rose-500 bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 p-2 rounded-lg transition-colors border border-slate-200 dark:border-white/5">
                 <i class="fa-solid fa-xmark text-lg"></i>
               </button>
             </div>
@@ -139,6 +169,8 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
   public isLoading = signal(true);
   public inspectedSession = signal<any | null>(null);
   public isBlobLoading = signal(false);
+  public trendViewMode = signal<'day' | 'week' | 'month'>('day');
+  public progressStats = signal<{ percentage: number, label: string } | null>(null);
   public i18n = inject(I18nService);
   public themeService = inject(ThemeService);
 
@@ -192,7 +224,28 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
 
     if (this.trendChart) this.trendChart.destroy();
 
-    const sorted = [...this.sessions()].reverse(); // oldest first
+    const groupedData = this.groupSessions(this.sessions(), this.trendViewMode());
+    
+    // Calculate percentage change
+    if (groupedData.length >= 2) {
+      const latest = groupedData[groupedData.length - 1].max_force;
+      const previous = groupedData[groupedData.length - 2].max_force;
+      
+      if (previous > 0) {
+        const percentChange = ((latest - previous) / previous) * 100;
+        let label = '';
+        if (this.trendViewMode() === 'day') label = 'detail.compareDay';
+        else if (this.trendViewMode() === 'week') label = 'detail.compareWeek';
+        else if (this.trendViewMode() === 'month') label = 'detail.compareMonth';
+
+        this.progressStats.set({ percentage: percentChange, label });
+      } else {
+        this.progressStats.set(null);
+      }
+    } else {
+      this.progressStats.set(null);
+    }
+
     const isDark = this.themeService.isDarkMode();
 
     const gradient = ctx.createLinearGradient(0, 0, 0, 260);
@@ -202,11 +255,11 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
     this.trendChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels: sorted.map((s: any) => new Date(s.session_date).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })),
+        labels: groupedData.map(d => d.label),
         datasets: [
           {
-            label: 'Max Force (N)',
-            data: sorted.map((s: any) => s.max_force),
+            label: this.i18n.t('detail.maxForce') + ' (N)',
+            data: groupedData.map(d => d.max_force),
             borderColor: '#3b82f6',
             backgroundColor: gradient,
             borderWidth: 2.5,
@@ -218,8 +271,20 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
             tension: 0.3
           },
           {
-            label: 'Reps',
-            data: sorted.map((s: any) => s.reps),
+            label: this.i18n.t('detail.avgForce') + ' (N)',
+            data: groupedData.map(d => d.avg_force),
+            borderColor: '#0ea5e9',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointRadius: 3,
+            pointBackgroundColor: '#0ea5e9',
+            borderDash: [5, 5],
+            fill: false,
+            tension: 0.3
+          },
+          {
+            label: this.i18n.t('detail.reps'),
+            data: groupedData.map(d => d.reps),
             borderColor: '#f59e0b',
             backgroundColor: 'transparent',
             borderWidth: 2,
@@ -237,7 +302,8 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
         plugins: {
           legend: {
             position: 'top',
-            labels: { color: isDark ? '#94a3b8' : '#64748b', padding: 16 }
+            align: 'start',
+            labels: { color: isDark ? '#94a3b8' : '#64748b', padding: 16, usePointStyle: true, boxWidth: 8 }
           }
         },
         scales: {
@@ -255,6 +321,48 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
     });
   }
 
+  setTrendMode(mode: 'day' | 'week' | 'month') {
+    this.trendViewMode.set(mode);
+    this.renderTrendChart();
+  }
+
+  private groupSessions(sessions: any[], mode: 'day' | 'week' | 'month') {
+    const map = new Map<string, { sumMaxForce: number, sumAvgForce: number, sumReps: number, count: number, timestamp: number }>();
+    
+    sessions.forEach(s => {
+      const date = new Date(s.session_date);
+      let key = '';
+      if (mode === 'day') {
+        key = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+      } else if (mode === 'week') {
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - date.getDay());
+        key = `สัปดาห์ ${startOfWeek.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}`;
+      } else if (mode === 'month') {
+        key = date.toLocaleDateString('th-TH', { month: 'short', year: 'numeric' });
+      }
+
+      if (!map.has(key)) {
+        map.set(key, { sumMaxForce: 0, sumAvgForce: 0, sumReps: 0, count: 0, timestamp: date.getTime() });
+      }
+      const entry = map.get(key)!;
+      entry.sumMaxForce += Number(s.max_force);
+      entry.sumAvgForce += Number(s.avg_force || 0);
+      entry.sumReps += Number(s.reps);
+      entry.count += 1;
+      if (date.getTime() < entry.timestamp) entry.timestamp = date.getTime();
+    });
+
+    return Array.from(map.entries())
+      .sort((a, b) => a[1].timestamp - b[1].timestamp)
+      .map(([label, val]) => ({
+        label,
+        max_force: val.sumMaxForce / val.count,
+        avg_force: val.sumAvgForce / val.count,
+        reps: Math.round(val.sumReps / val.count)
+      }));
+  }
+
   async viewChart(session: any) {
     this.inspectedSession.set(session);
     this.isBlobLoading.set(true);
@@ -268,7 +376,7 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
     this.isBlobLoading.set(false);
 
     if (!rawSeries || rawSeries.length === 0) {
-      alert('No raw data found for this session.');
+      alert(this.i18n.t('detail.noRawData'));
       return;
     }
 

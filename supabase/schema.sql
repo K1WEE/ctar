@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     patient_id UUID REFERENCES public.patients(id) ON DELETE CASCADE NOT NULL,
     session_date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     max_force NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
+    avg_force NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
     reps INTEGER NOT NULL DEFAULT 0,
     duration_seconds NUMERIC(10, 2) NOT NULL DEFAULT 0.0,
     file_url TEXT NOT NULL, -- Hybrid Storage: Pointer to raw JSON/CSV in bucket

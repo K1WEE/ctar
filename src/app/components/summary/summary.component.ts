@@ -125,10 +125,12 @@ export class SummaryComponent implements OnInit {
 
     const rawData = this.ctar.getDataHistory();
     if (rawData.length > 0) {
+      const avgForce = rawData.reduce((acc, curr) => acc + curr.force, 0) / rawData.length;
       const success = await this.dataSync.uploadSessionData(
         user.id, 
         rawData, 
         this.currentStats.maxForce, 
+        avgForce,
         this.currentStats.reps, 
         this.currentStats.duration
       );

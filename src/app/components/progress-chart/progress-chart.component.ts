@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart } from 'chart.js/auto';
 import { SupabaseService } from '../../services/supabase.service';
+import { I18nService } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-progress-chart',
@@ -11,38 +12,51 @@ import { SupabaseService } from '../../services/supabase.service';
 })
 export class ProgressChartComponent implements OnInit {
 
-    constructor(private supabase: SupabaseService) {}
+  constructor(private supabase: SupabaseService) {}
 
+  public i18n = inject(I18nService);
   progressData: any[] = [];
   chart: any;
+  viewMode: 'day' | 'week' | 'month' = 'day';
 
   async ngOnInit() {
-  await this.loadProgress();
-  this.renderChart();
-}
-
-async loadProgress() {
-  const user = this.supabase.currentUser(); 
-  console.log(this.supabase.currentUser()?.id);
-
-  if (!user) return;
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  const { data, error } = await this.supabase.client
-    .from('sessions')
-    .select('session_date, max_force')
-    .eq('patient_id', user.id)
-    .gte('session_date', thirtyDaysAgo.toISOString())
-    .order('session_date', { ascending: true });          
-
-  if (error) {
-    console.error(error);
-    return;
+    await this.loadProgress();
+    this.renderChart();
   }
 
-  this.progressData = this.groupByDay(data || []);
-}
+  async setViewMode(mode: 'day' | 'week' | 'month') {
+    this.viewMode = mode;
+    await this.loadProgress();
+    this.updateChart();
+  }
+
+  async loadProgress() {
+    const user = this.supabase.currentUser(); 
+    if (!user) return;
+
+    const pastDate = new Date();
+    if (this.viewMode === 'day') {
+      pastDate.setDate(pastDate.getDate() - 30);
+    } else if (this.viewMode === 'week') {
+      pastDate.setDate(pastDate.getDate() - 84); // 12 weeks
+    } else if (this.viewMode === 'month') {
+      pastDate.setFullYear(pastDate.getFullYear() - 1); // 1 year
+    }
+
+    const { data, error } = await this.supabase.client
+      .from('sessions')
+      .select('session_date, max_force')
+      .eq('patient_id', user.id)
+      .gte('session_date', pastDate.toISOString())
+      .order('session_date', { ascending: true });          
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    this.progressData = this.groupData(data || []);
+  }
 
   // mock ก่อน
   loadMockData() {
@@ -54,26 +68,43 @@ async loadProgress() {
       { session_date: '2026-05-03', max_force: 20 }
     ];
 
-    this.progressData = this.groupByDay(data);
+    this.progressData = this.groupData(data);
   }
 
-  // avg ต่อวัน
-  groupByDay(data: any[]) {
-    const map = new Map<string, number[]>();
+  groupData(data: any[]) {
+    const map = new Map<string, { sum: number, count: number, timestamp: number }>();
 
     data.forEach(d => {
-      const day = new Date(d.session_date).toISOString().slice(5, 10);
+      const date = new Date(d.session_date);
+      let key = '';
 
-      if (!map.has(day)) map.set(day, []);
-      map.get(day)!.push(Number(d.max_force));
+      if (this.viewMode === 'day') {
+        key = date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+      } else if (this.viewMode === 'week') {
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - date.getDay());
+        key = `W. ${startOfWeek.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}`;
+      } else if (this.viewMode === 'month') {
+        key = date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+      }
+
+      if (!map.has(key)) {
+        map.set(key, { sum: 0, count: 0, timestamp: date.getTime() });
+      }
+      const entry = map.get(key)!;
+      entry.sum += Number(d.max_force);
+      entry.count += 1;
+      if (date.getTime() < entry.timestamp) {
+        entry.timestamp = date.getTime();
+      }
     });
 
     return Array.from(map.entries())
-  .sort((a, b) => a[0].localeCompare(b[0])) 
-  .map(([day, values]) => ({
-    day,
-    avg_force: values.reduce((a, b) => a + b, 0) / values.length
-  }));
+      .sort((a, b) => a[1].timestamp - b[1].timestamp)
+      .map(([label, val]) => ({
+        day: label,
+        avg_force: val.sum / val.count
+      }));
   }
 
   // best day
@@ -86,6 +117,16 @@ async loadProgress() {
   }
 
   // render chart
+  updateChart() {
+    if (this.chart) {
+      this.chart.data.labels = this.progressData.map(d => d.day);
+      this.chart.data.datasets[0].data = this.progressData.map(d => d.avg_force);
+      this.chart.update();
+    } else {
+      this.renderChart();
+    }
+  }
+
   renderChart() {
     const isDark = document.documentElement.classList.contains('dark');
 
@@ -106,7 +147,11 @@ async loadProgress() {
       options: {
         responsive: true,
         plugins: {
-          legend: { display: false }
+          legend: {
+            position: 'top',
+            align: 'start',
+            labels: { color: isDark ? '#94a3b8' : '#64748b', usePointStyle: true, boxWidth: 8 }
+          }
         },
         scales: {
           x: {

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,11 +6,13 @@ import { DataSyncService, PatientSummary } from '../../services/data-sync.servic
 import { SupabaseService } from '../../services/supabase.service';
 import { I18nService } from '../../services/i18n.service';
 import { ThemeService } from '../../services/theme.service';
+import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboard.component';
+import { AdminDashboardComponent } from '../admin-dashboard/admin-dashboard.component';
 
 @Component({
   selector: 'app-clinic-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ClassicDashboardComponent, AdminDashboardComponent],
   template: `
     <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -50,8 +52,54 @@ import { ThemeService } from '../../services/theme.service';
           </div>
         </header>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <!-- Tabs Navigation -->
+        <div class="flex flex-col sm:flex-row justify-center items-center mb-8 bg-white/70 dark:bg-brand-card backdrop-blur-xl p-2 rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg">
+          <div class="bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-xl flex space-x-1 w-full sm:w-auto">
+            
+            <button *ngIf="supabase.userRole() === 'admin'"
+              (click)="activeTab.set('users')"
+              [class.bg-white]="activeTab() === 'users'"
+              [class.dark:bg-slate-600]="activeTab() === 'users'"
+              [class.text-amber-600]="activeTab() === 'users'"
+              [class.dark:text-white]="activeTab() === 'users'"
+              [class.shadow-sm]="activeTab() === 'users'"
+              [class.text-slate-500]="activeTab() !== 'users'"
+              class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-users-gear"></i>
+              <span>User Management</span>
+            </button>
+
+            <button
+              (click)="activeTab.set('records')"
+              [class.bg-white]="activeTab() === 'records'"
+              [class.dark:bg-slate-600]="activeTab() === 'records'"
+              [class.text-indigo-600]="activeTab() === 'records'"
+              [class.dark:text-white]="activeTab() === 'records'"
+              [class.shadow-sm]="activeTab() === 'records'"
+              [class.text-slate-500]="activeTab() !== 'records'"
+              class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-file-medical"></i>
+              <span>Clinical Records</span>
+            </button>
+
+            <button (click)="activeTab.set('classic')"
+              [class.bg-white]="activeTab() === 'classic'"
+              [class.dark:bg-slate-600]="activeTab() === 'classic'"
+              [class.text-brand-accent]="activeTab() === 'classic'"
+              [class.dark:text-white]="activeTab() === 'classic'"
+              [class.shadow-sm]="activeTab() === 'classic'"
+              [class.text-slate-500]="activeTab() !== 'classic'"
+              class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-300 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-chart-line"></i>
+              <span>Classic Dashboard</span>
+            </button>
+            
+          </div>
+        </div>
+
+        <div *ngIf="activeTab() === 'records'">
+          <!-- Stats Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl p-5 shadow-lg">
             <div class="flex items-center space-x-3">
               <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-500/20 rounded-xl flex items-center justify-center">
@@ -140,6 +188,17 @@ import { ThemeService } from '../../services/theme.service';
             </button>
           </div>
         </div>
+        </div>
+
+        <!-- Classic Dashboard Tab -->
+        <div *ngIf="activeTab() === 'classic'">
+           <app-classic-dashboard></app-classic-dashboard>
+        </div>
+
+        <!-- User Management Tab -->
+        <div *ngIf="activeTab() === 'users' && supabase.userRole() === 'admin'">
+           <app-admin-dashboard></app-admin-dashboard>
+        </div>
 
       </div>
     </div>
@@ -149,14 +208,26 @@ export class ClinicDashboardComponent implements OnInit {
   public patients = signal<PatientSummary[]>([]);
   public isLoading = signal(false);
   public searchQuery = '';
+  public activeTab = signal<'records' | 'classic' | 'users'>('records');
   public i18n = inject(I18nService);
   public themeService = inject(ThemeService);
 
+  private hasAutoSwitched = false;
+
   constructor(
     private dataSync: DataSyncService,
-    private supabase: SupabaseService,
+    public supabase: SupabaseService,
     private router: Router
-  ) {}
+  ) {
+    effect(() => {
+      // Automatically switch to 'users' tab if the role becomes admin
+      // We only do this once to avoid preventing them from clicking other tabs
+      if (this.supabase.userRole() === 'admin' && !this.hasAutoSwitched) {
+        this.hasAutoSwitched = true;
+        this.activeTab.set('users');
+      }
+    }, { allowSignalWrites: true });
+  }
 
   ngOnInit() {
     this.loadPatients();

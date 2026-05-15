@@ -101,6 +101,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'detail.progressTrend': { th: 'พัฒนาการ', en: 'Progress Trend' },
   'detail.date': { th: 'วันที่', en: 'Date' },
   'detail.maxForce': { th: 'แรงกดสูงสุด', en: 'Max Force' },
+  'detail.avgForce': { th: 'แรงกดเฉลี่ย', en: 'Avg Force' },
   'detail.reps': { th: 'จำนวนครั้ง', en: 'Reps' },
   'detail.duration': { th: 'ระยะเวลา', en: 'Duration' },
   'detail.actions': { th: 'การดำเนินการ', en: 'Actions' },
@@ -108,6 +109,23 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'detail.downloadCSV': { th: 'ดาวน์โหลด', en: 'CSV' },
   'detail.noSessions': { th: 'ยังไม่มีประวัติการฝึก', en: 'No session history found' },
   'detail.registered': { th: 'ลงทะเบียนเมื่อ', en: 'Registered' },
+  'detail.day': { th: 'วัน', en: 'Day' },
+  'detail.week': { th: 'สัปดาห์', en: 'Week' },
+  'detail.month': { th: 'เดือน', en: 'Month' },
+  'detail.compareDay': { th: 'เทียบครั้งก่อน', en: 'vs Prev Day' },
+  'detail.compareWeek': { th: 'เทียบสัปดาห์ก่อน', en: 'vs Prev Week' },
+  'detail.compareMonth': { th: 'เทียบเดือนก่อน', en: 'vs Prev Month' },
+  'detail.forceCurve': { th: 'กราฟแรงบีบ', en: 'Force Curve' },
+  'detail.noRawData': { th: 'ไม่พบข้อมูลกราฟดิบสำหรับการฝึกนี้', en: 'No raw data found for this session.' },
+  
+  // ─── Patient Portal ───
+  'portal.welcome': { th: 'สวัสดี', en: 'Hello' },
+  'portal.ready': { th: 'พร้อมที่จะเริ่มฝึกกล้ามเนื้อการกลืนของคุณหรือยัง?', en: 'Ready to start your swallowing muscle training?' },
+  'portal.startSession': { th: 'เริ่มการฝึก CTAR', en: 'Start CTAR Session' },
+  'portal.startDesc': { th: 'เชื่อมต่ออุปกรณ์และทำภารกิจของคุณวันนี้', en: 'Connect device and complete your daily task' },
+  'portal.startBtn': { th: 'เริ่มเลย', en: 'Start Now' },
+  'portal.statsTitle': { th: 'สถิติล่าสุดของคุณ', en: 'Your Latest Stats' },
+  'portal.noStats': { th: 'ยังไม่มีข้อมูลการฝึก', en: 'No session data yet' },
 };
 
 @Injectable({

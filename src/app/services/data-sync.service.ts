@@ -34,6 +34,7 @@ export class DataSyncService {
     patientId: string, 
     rawData: RawDataPoint[], 
     maxForce: number, 
+    avgForce: number,
     reps: number, 
     durationSeconds: number
   ): Promise<boolean> {
@@ -62,6 +63,7 @@ export class DataSyncService {
         .insert([{
           patient_id: patientId,
           max_force: maxForce,
+          avg_force: avgForce,
           reps: reps,
           duration_seconds: durationSeconds,
           file_url: storagePath
@@ -196,7 +198,7 @@ export class DataSyncService {
     try {
       const { data, error } = await this.supabase
         .from('sessions')
-        .select('id, session_date, max_force, reps, duration_seconds, file_url')
+        .select('id, session_date, max_force, avg_force, reps, duration_seconds, file_url')
         .eq('patient_id', patientId)
         .order('session_date', { ascending: false });
 
