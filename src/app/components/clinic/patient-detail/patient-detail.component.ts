@@ -119,7 +119,7 @@ import { Chart } from 'chart.js/auto';
                   <tr *ngFor="let s of sessions()" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                     <td class="px-5 py-3.5 text-slate-700 dark:text-slate-300">{{ s.session_date | date:'MMM d, y, h:mm a' }}</td>
                     <td class="px-5 py-3.5 text-emerald-600 dark:text-emerald-400 font-bold">{{ s.max_force | number:'1.0-1' }} N</td>
-                    <td class="px-5 py-3.5 text-sky-600 dark:text-sky-400 font-bold">{{ (s.avg_force || 0) | number:'1.0-1' }} N</td>
+                    <td class="px-5 py-3.5 text-purple-600 dark:text-purple-400 font-bold">{{ (s.avg_force || 0) | number:'1.0-1' }} N</td>
                     <td class="px-5 py-3.5 text-amber-600 dark:text-amber-400 font-bold">{{ s.reps }}</td>
                     <td class="px-5 py-3.5 text-slate-500"><i class="fa-regular fa-clock mr-1 opacity-50"></i>{{ s.duration_seconds }}s</td>
                     <td class="px-5 py-3.5 flex gap-2 justify-end">
@@ -273,11 +273,11 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
           {
             label: this.i18n.t('detail.avgForce') + ' (N)',
             data: groupedData.map(d => d.avg_force),
-            borderColor: '#0ea5e9',
+            borderColor: '#a855f7',
             backgroundColor: 'transparent',
             borderWidth: 2,
             pointRadius: 3,
-            pointBackgroundColor: '#0ea5e9',
+            pointBackgroundColor: '#a855f7',
             borderDash: [5, 5],
             fill: false,
             tension: 0.3
