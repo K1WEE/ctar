@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { BiofeedbackService } from '../../services/biofeedback.service';
 
 @Component({
   selector: 'app-zen-balloon',
@@ -140,7 +141,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     return Math.max(50, this.maxForceLimit * 1.3); // give 30% headroom above max force
   }
 
-  constructor(private ngZone: NgZone) {
+  constructor(private ngZone: NgZone, private biofeedback: BiofeedbackService) {
     // Angular 17 Effect strictly subscribes to the hardware force stream natively
     effect(() => {
       const force = this.currentForce();
@@ -156,8 +157,25 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       this.targetMinPercent = (this.targetMin / this.maxScale) * 100;
       this.targetMaxPercent = (this.targetMax / this.maxScale) * 100;
 
-      // Logic check
-      this.inTargetZone = force >= this.targetMin && force <= this.targetMax;
+      // Logic check and transition biofeedback
+      const wasInTarget = this.inTargetZone;
+      const isCurrentlyInTarget = force >= this.targetMin && force <= this.targetMax;
+
+      if (isCurrentlyInTarget !== wasInTarget) {
+        this.inTargetZone = isCurrentlyInTarget;
+        this.ngZone.run(() => {
+          if (isCurrentlyInTarget) {
+            this.biofeedback.playEnterZone();
+            this.biofeedback.startVibrationLoop();
+          } else {
+            if (this.currentHoldMs > 50) {
+              this.biofeedback.playExitZone();
+            } else {
+              this.biofeedback.stopVibrationLoop();
+            }
+          }
+        });
+      }
     });
   }
 
@@ -182,6 +200,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
             this.ngZone.run(() => {
               this.repCompleted.emit();
               this.triggerSuccessAnimation();
+              this.biofeedback.playSuccess();
               // The updateDifficulty() will be called when currentRep input changes
             });
             this.currentHoldMs = 0; // Drop rep progress after win
@@ -211,23 +230,25 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     const maxHoldTimeMs = 5000;
     this.requiredHoldTimeMs = Math.min(1500 + (this.currentRepVal * 500), maxHoldTimeMs);
 
-    // 2. Progressive Target Zone Height
-    // Width stays 30% of max limit
-    const zoneWidth = Math.max(10, this.maxForceLimit * 0.3);
-    
-    // Starts low (10% of maxForceLimit) and climbs up to (70% of maxForceLimit)
-    const baseMin = this.maxForceLimit * 0.1;
-    // Every rep it climbs by 5% of maxForceLimit
-    const climb = this.maxForceLimit * 0.05 * this.currentRepVal;
-    
-    // Max ceiling for the bottom of the zone is 70% of max limit
-    const calculatedMin = Math.min(baseMin + climb, this.maxForceLimit * 0.7);
-    
-    // Add a tiny bit of randomness (+/- 5%) to make it less strictly linear
-    const randomJitter = (Math.random() * 0.1 - 0.05) * this.maxForceLimit;
-    
-    this.targetMin = Math.max(5, calculatedMin + randomJitter); // Ensure it doesn't go below 5
-    this.targetMax = this.targetMin + zoneWidth;
+    // 2. Alternating Wave Pattern (High Intensity on odd reps, Low Intensity on even reps)
+    const repNum = this.currentRepVal + 1; // 1-indexed rep number
+    const isOdd = repNum % 2 !== 0;
+
+    if (isOdd) {
+      // High Intensity: 65% - 85% of calibration limit
+      this.targetMin = this.maxForceLimit * 0.65;
+      this.targetMax = this.maxForceLimit * 0.85;
+    } else {
+      // Low Intensity: 20% - 40% of calibration limit
+      this.targetMin = this.maxForceLimit * 0.20;
+      this.targetMax = this.maxForceLimit * 0.40;
+    }
+
+    // Ensure values don't go below minimum safe threshold (e.g. 5 Newtons)
+    if (this.targetMin < 5) {
+      this.targetMin = 5;
+      this.targetMax = Math.max(10, this.targetMax);
+    }
 
     // Update visuals
     this.targetMinPercent = (this.targetMin / this.maxScale) * 100;
@@ -255,5 +276,6 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     if (this.gameloop) {
       clearInterval(this.gameloop);
     }
+    this.biofeedback.stopVibrationLoop();
   }
 }

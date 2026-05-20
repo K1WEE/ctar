@@ -43,11 +43,13 @@ public getSessionDurationSeconds() {
 
   constructor(private bleService: BleService, private ngZone: NgZone) {
 
-    // reset เมื่อ connect
+    // reset เมื่อ connect / clear calibration เมื่อ disconnect
     effect(() => {
       const state = this.bleService.connectionState();
       if (state === 'Connected') {
         this.resetSession();
+      } else if (state === 'Disconnected') {
+        this.calibrationMaxForce.set(0);
       }
     });
 
@@ -57,7 +59,7 @@ public getSessionDurationSeconds() {
     };
   }
 
-  private resetSession() {
+  public resetSession() {
     this.currentForce.set(0);
     this.peakForce.set(0);
     this.repCount.set(0);

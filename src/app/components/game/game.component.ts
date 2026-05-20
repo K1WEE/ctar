@@ -63,6 +63,7 @@ export class GameComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.ctar.resetSession();
     if (this.ctar.calibrationMaxForce() === 0) {
       this.router.navigate(['/connect']);
     }
