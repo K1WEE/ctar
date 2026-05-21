@@ -193,7 +193,6 @@ import { CtarLogicService } from '../../services/ctar-logic.service';
                       </span>
                     </div>
                   </div>
-                  </div>
                 </div>
               </div>
             </div>

@@ -417,7 +417,16 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
             ticks: { color: isDark ? '#64748b' : '#94a3b8' }
           },
           y: {
-              setTrendMode(mode: 'day' | 'week' | 'month') {
+            beginAtZero: true,
+            grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' },
+            ticks: { color: isDark ? '#64748b' : '#94a3b8' }
+          }
+        }
+      }
+    });
+  }
+
+  setTrendMode(mode: 'day' | 'week' | 'month') {
     this.trendViewMode.set(mode);
     this.renderTrendChart();
   }
