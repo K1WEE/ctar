@@ -276,13 +276,41 @@ export class ResearcherDashboardComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    const sessionMax = Number(session.max_force) || 40;
+    // Set dynamic baseline thresholds to capture both high-intensity (odd) and low-intensity (even) reps
+    const repThreshold = Math.max(5.0, sessionMax * 0.18);
+    const dropThreshold = Math.max(3.0, sessionMax * 0.08);
+
     let csvContent = 'Timestamp (Readable),Time(s),Force\n';
+    let attemptCount = 0;
+    let isInRep = false;
+
     rawSeries.forEach(dp => {
+      const force = Number(dp.force);
+      let isRepEndThisStep = false;
+
+      if (force > repThreshold && !isInRep) {
+        isInRep = true;
+        attemptCount++;
+      } else if (force < dropThreshold && isInRep) {
+        isInRep = false;
+        isRepEndThisStep = true;
+      }
+
       const readableDate = new Date(dp.timestamp).toLocaleString();
       csvContent += `"${readableDate}",${dp.timeLabel},${dp.force}\n`;
+
+      if (isRepEndThisStep) {
+        csvContent += `"================ สิ้นสุดรอบที่ ${attemptCount} ================","--","--"\n`;
+      }
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // If the session ended while they were still squeezing the last rep, count and close it
+    if (isInRep) {
+      csvContent += `"================ สิ้นสุดรอบที่ ${attemptCount} ================","--","--"\n`;
+    }
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
