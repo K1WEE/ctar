@@ -170,7 +170,7 @@ import { Chart } from 'chart.js/auto';
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-white/5">
-                  <tr *ngFor="let s of sessions()" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
+                  <tr *ngFor="let s of paginatedSessions()" class="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group">
                     <td class="px-5 py-3.5 text-center">
                       <input type="checkbox"
                              [checked]="isSessionSelectedForCompare(s.id)"
@@ -193,6 +193,61 @@ import { Chart } from 'chart.js/auto';
                   </tr>
                 </tbody>
               </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div *ngIf="sessions().length > 0" class="px-6 py-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50/30 dark:bg-slate-800/20">
+              
+              <!-- Left side: Limit Selector -->
+              <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
+                <span>{{ i18n.t('pagination.show') }}</span>
+                <select [value]="limit()" (change)="setLimit(+$any($event.target).value)" 
+                        class="px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-accent/50 font-bold transition-all cursor-pointer">
+                  <option [value]="5">5</option>
+                  <option [value]="10">10</option>
+                  <option [value]="25">25</option>
+                  <option [value]="50">50</option>
+                </select>
+                <span>{{ i18n.t('pagination.entries') }}</span>
+              </div>
+
+              <!-- Center: Showing X to Y of Z entries -->
+              <div class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                {{ i18n.t('pagination.showing') }} 
+                <span class="font-bold text-slate-800 dark:text-white">{{ showingStart() }}</span> 
+                {{ i18n.t('pagination.to') }} 
+                <span class="font-bold text-slate-800 dark:text-white">{{ showingEnd() }}</span> 
+                {{ i18n.t('pagination.of') }} 
+                <span class="font-bold text-slate-800 dark:text-white">{{ sessions().length }}</span>
+              </div>
+
+              <!-- Right side: Page Numbers & Prev/Next Buttons -->
+              <div class="flex items-center space-x-1.5">
+                <!-- Previous Button -->
+                <button (click)="prevPage()" [disabled]="currentPage() === 1"
+                        class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-brand-accent hover:border-brand-accent/50 disabled:opacity-50 disabled:hover:text-slate-600 disabled:hover:border-slate-200 dark:disabled:hover:text-slate-300 dark:disabled:hover:border-white/10 transition-all flex items-center justify-center">
+                  <i class="fa-solid fa-chevron-left mr-1 text-[10px]"></i>
+                  {{ i18n.t('pagination.previous') }}
+                </button>
+
+                <!-- Page numbers -->
+                <button *ngFor="let page of pageRange()" (click)="goToPage(page)"
+                        [ngClass]="{
+                          'bg-indigo-600 text-white border-indigo-600': currentPage() === page,
+                          'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-brand-accent/50': currentPage() !== page
+                        }"
+                        class="w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-extrabold flex items-center justify-center transition-all">
+                  {{ page }}
+                </button>
+
+                <!-- Next Button -->
+                <button (click)="nextPage()" [disabled]="currentPage() === totalPages()"
+                        class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-brand-accent hover:border-brand-accent/50 disabled:opacity-50 disabled:hover:text-slate-600 disabled:hover:border-slate-200 dark:disabled:hover:text-slate-300 dark:disabled:hover:border-white/10 transition-all flex items-center justify-center">
+                  {{ i18n.t('pagination.next') }}
+                  <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
+                </button>
+              </div>
+
             </div>
           </div>
 
@@ -231,6 +286,45 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
   public patient = signal<any>(null);
   public sessions = signal<any[]>([]);
   public isLoading = signal(true);
+
+  public limit = signal<number>(10);
+  public offset = signal<number>(0);
+
+  public paginatedSessions = computed(() => {
+    const s = this.sessions();
+    const start = this.offset();
+    const end = start + this.limit();
+    return s.slice(start, end);
+  });
+
+  public totalPages = computed(() => {
+    return Math.ceil(this.sessions().length / this.limit());
+  });
+
+  public currentPage = computed(() => {
+    return Math.floor(this.offset() / this.limit()) + 1;
+  });
+
+  public showingStart = computed(() => {
+    return this.sessions().length === 0 ? 0 : this.offset() + 1;
+  });
+
+  public showingEnd = computed(() => {
+    return Math.min(this.offset() + this.limit(), this.sessions().length);
+  });
+
+  public pageRange = computed(() => {
+    const total = this.totalPages();
+    const current = this.currentPage();
+    const range: number[] = [];
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  });
+
   public inspectedSession = signal<any | null>(null);
   public isBlobLoading = signal(false);
   public trendViewMode = signal<'day' | 'week' | 'month'>('day');
@@ -308,6 +402,7 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
 
   async loadData() {
     this.isLoading.set(true);
+    this.offset.set(0);
     
     const [profile, sessionData] = await Promise.all([
       this.dataSync.fetchPatientProfile(this.patientId),
@@ -429,6 +524,28 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
   setTrendMode(mode: 'day' | 'week' | 'month') {
     this.trendViewMode.set(mode);
     this.renderTrendChart();
+  }
+
+  setLimit(newLimit: number) {
+    this.limit.set(newLimit);
+    this.offset.set(0);
+  }
+
+  goToPage(page: number) {
+    if (page < 1 || page > this.totalPages()) return;
+    this.offset.set((page - 1) * this.limit());
+  }
+
+  nextPage() {
+    if (this.currentPage() < this.totalPages()) {
+      this.offset.set(this.offset() + this.limit());
+    }
+  }
+
+  prevPage() {
+    if (this.currentPage() > 1) {
+      this.offset.set(Math.max(0, this.offset() - this.limit()));
+    }
   }
 
   private groupSessions(sessions: any[], mode: 'day' | 'week' | 'month') {

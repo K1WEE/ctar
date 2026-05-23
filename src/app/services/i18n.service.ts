@@ -117,6 +117,13 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'detail.compareMonth': { th: 'เทียบเดือนก่อน', en: 'vs Prev Month' },
   'detail.forceCurve': { th: 'กราฟแรงบีบ', en: 'Force Curve' },
   'detail.noRawData': { th: 'ไม่พบข้อมูลกราฟดิบสำหรับการฝึกนี้', en: 'No raw data found for this session.' },
+  'pagination.show': { th: 'แสดง', en: 'Show' },
+  'pagination.entries': { th: 'รายการ', en: 'entries' },
+  'pagination.showing': { th: 'แสดง', en: 'Showing' },
+  'pagination.to': { th: 'ถึง', en: 'to' },
+  'pagination.of': { th: 'จากทั้งหมด', en: 'of' },
+  'pagination.previous': { th: 'ก่อนหน้า', en: 'Previous' },
+  'pagination.next': { th: 'ถัดไป', en: 'Next' },
   
   // ─── Patient Portal ───
   'portal.welcome': { th: 'สวัสดี', en: 'Hello' },
