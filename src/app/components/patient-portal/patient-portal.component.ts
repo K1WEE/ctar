@@ -7,11 +7,12 @@ import { DataSyncService } from '../../services/data-sync.service';
 import { I18nService } from '../../services/i18n.service';
 import { BleService } from '../../services/ble.service';
 import { CtarLogicService } from '../../services/ctar-logic.service';
+import { RewardTasksComponent } from '../reward-task/reward-task.component';
 
 @Component({
   selector: 'app-patient-portal',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, RouterLink],
+  imports: [CommonModule, HeaderComponent, RouterLink, RewardTasksComponent],
   template: `
     <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <div class="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -198,7 +199,9 @@ import { CtarLogicService } from '../../services/ctar-logic.service';
             </div>
 
           </div>
-
+          <div class="mt-10">
+            <app-reward-tasks></app-reward-tasks>
+          </div>
         </main>
       </div>
     </div>
