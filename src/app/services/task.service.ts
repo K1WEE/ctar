@@ -3,7 +3,6 @@ import { SupabaseService } from './supabase.service';
 
 @Injectable({ providedIn: 'root' })
 export class TaskService {
-
   constructor(private supabase: SupabaseService) {}
 
   // =========================================
@@ -11,8 +10,7 @@ export class TaskService {
   // =========================================
 
   async createAdaptiveTasksIfNeeded(patientId: string) {
-
-    const weekStart     = this.getWeekStart();
+    const weekStart = this.getWeekStart();
     const lastWeekStart = this.getLastWeekStart();
 
     // เช็คว่าสัปดาห์นี้มี task แล้วหรือยัง
@@ -36,92 +34,106 @@ export class TaskService {
     // ดึง task targets สัปดาห์ที่แล้ว
     const { data: lastWeekTasks } = await this.supabase.client
       .from('patient_tasks')
-      .select(`
+      .select(
+        `
         progress,
         weekly_tasks ( title, target )
-      `)
+      `,
+      )
       .eq('patient_id', patientId)
       .eq('week_start', lastWeekStart);
 
     const lastTask = (title: string) =>
-      (lastWeekTasks as any[])?.find(
-        t => t.weekly_tasks.title === title
-      );
+      (lastWeekTasks as any[])?.find((t) => t.weekly_tasks.title === title);
+
+    const isFirstWeek = !lastWeekTasks?.length;
 
     // performance สัปดาห์ที่แล้ว
     const sessionCount = lastSessions?.length || 0;
-    const maxForce     = lastSessions?.length
-      ? Math.max(...lastSessions.map(s => s.max_force))
+    const maxForce = lastSessions?.length
+      ? Math.max(...lastSessions.map((s) => s.max_force))
       : 30;
     const totalMinutes = lastSessions?.length
       ? lastSessions.reduce((sum, s) => sum + s.duration_seconds, 0) / 60
       : 10;
 
     // คำนวณ target ใหม่
-    const newSessionTarget = this.calculateAdaptiveTarget(
-      lastTask('นักสู้ CTAR')?.weekly_tasks.target       ?? 3,
-      sessionCount, 1, 7
-    );
-    const newForceTarget = this.calculateAdaptiveTarget(
-      lastTask('พลังคอสุดแกร่ง')?.weekly_tasks.target   ?? 30,
-      maxForce, 10, 80
-    );
-    const newDurationTarget = this.calculateAdaptiveTarget(
-      lastTask('สายอึด')?.weekly_tasks.target            ?? 10,
-      totalMinutes, 5, 60
-    );
+    const newSessionTarget = isFirstWeek
+      ? 3
+      : this.calculateAdaptiveTarget(
+          lastTask('นักสู้ CTAR')?.weekly_tasks.target ?? 3,
+          sessionCount,
+          1,
+          7,
+        );
+
+    const newForceTarget = isFirstWeek
+      ? 30
+      : this.calculateAdaptiveTarget(
+          lastTask('พลังคอสุดแกร่ง')?.weekly_tasks.target ?? 30,
+          maxForce,
+          10,
+          80,
+        );
+
+    const newDurationTarget = isFirstWeek
+      ? 10
+      : this.calculateAdaptiveTarget(
+          lastTask('สายอึด')?.weekly_tasks.target ?? 10,
+          totalMinutes,
+          5,
+          60,
+        );
 
     // สร้าง weekly_tasks
     const { data: newTasks } = await this.supabase.client
       .from('weekly_tasks')
       .insert([
         {
-          week_start:  weekStart,
-          title:       'นักสู้ CTAR',
+          week_start: weekStart,
+          title: 'นักสู้ CTAR',
           description: `ฝึกให้ครบ ${newSessionTarget} sessions`,
-          icon:        'fa-medal',
-          target:      newSessionTarget,
-          reward:      4
+          icon: 'fa-medal',
+          target: newSessionTarget,
+          reward: 4,
         },
         {
-          week_start:  weekStart,
-          title:       'พลังคอสุดแกร่ง',
+          week_start: weekStart,
+          title: 'พลังคอสุดแกร่ง',
           description: `ทำแรงกดให้ถึง ${newForceTarget}N`,
-          icon:        'fa-dumbbell',
-          target:      newForceTarget,
-          reward:      3
+          icon: 'fa-dumbbell',
+          target: newForceTarget,
+          reward: 3,
         },
         {
-          week_start:  weekStart,
-          title:       'สายอึด',
+          week_start: weekStart,
+          title: 'สายอึด',
           description: `ฝึกครบ ${newDurationTarget} นาที`,
-          icon:        'fa-clock',
-          target:      newDurationTarget,
-          reward:      2
+          icon: 'fa-clock',
+          target: newDurationTarget,
+          reward: 2,
         },
         {
-          week_start:  weekStart,
-          title:       'นักฝึกต่อเนื่อง',
+          week_start: weekStart,
+          title: 'นักฝึกต่อเนื่อง',
           description: 'ฝึกติดต่อกัน 3 วัน',
-          icon:        'fa-fire',
-          target:      3,
-          reward:      5
-        }
+          icon: 'fa-fire',
+          target: 3,
+          reward: 5,
+        },
       ])
       .select('id');
 
     if (!newTasks?.length) return;
 
     // ผูก task กับ patient
-    await this.supabase.client
-      .from('patient_tasks')
-      .insert(
-        newTasks.map(t => ({
-          patient_id: patientId,
-          task_id:    t.id,
-          week_start: weekStart
-        }))
-      );
+    await this.supabase.client.from('patient_tasks').insert(
+      newTasks.map((t) => ({
+        patient_id: patientId,
+        task_id: t.id,
+        week_start: weekStart,
+      })),
+    );
   }
 
   // =========================================
@@ -134,22 +146,22 @@ export class TaskService {
       maxForce: number;
       durationMinutes: number;
       reps: number;
-    }
+    },
   ) {
-
     const weekStart = this.getWeekStart();
 
-    const { data: patientTasks, error } =
-      await this.supabase.client
-        .from('patient_tasks')
-        .select(`
+    const { data: patientTasks, error } = await this.supabase.client
+      .from('patient_tasks')
+      .select(
+        `
           id,
           progress,
           completed,
           weekly_tasks ( id, title, target, reward )
-        `)
-        .eq('patient_id', patientId)
-        .eq('week_start', weekStart);
+        `,
+      )
+      .eq('patient_id', patientId)
+      .eq('week_start', weekStart);
 
     if (error || !patientTasks) {
       console.error(error);
@@ -166,15 +178,14 @@ export class TaskService {
 
     const streak = this.calculateStreak(recentSessions || []);
 
-    const updates    = [];
+    const updates = [];
     const starRewards = [];
 
     for (const task of patientTasks as any[]) {
-
       if (task.completed) continue;
 
       const weeklyTask = task.weekly_tasks;
-      let newProgress  = task.progress;
+      let newProgress = task.progress;
 
       if (weeklyTask.title === 'นักฝึกต่อเนื่อง') {
         newProgress = streak;
@@ -209,12 +220,12 @@ export class TaskService {
 
     // Batch update
     await Promise.all(
-      updates.map(u =>
+      updates.map((u) =>
         this.supabase.client
           .from('patient_tasks')
           .update({ progress: u.progress, completed: u.completed })
-          .eq('id', u.id)
-      )
+          .eq('id', u.id),
+      ),
     );
 
     // Atomic stars
@@ -222,7 +233,7 @@ export class TaskService {
     if (totalNewStars > 0) {
       await this.supabase.client.rpc('add_stars', {
         patient_id: patientId,
-        amount:     totalNewStars
+        amount: totalNewStars,
       });
     }
   }
@@ -235,14 +246,14 @@ export class TaskService {
     lastTarget: number,
     lastActual: number,
     min: number,
-    max: number
+    max: number,
   ): number {
     const performance = lastActual / lastTarget;
     let newTarget: number;
 
-    if (performance >= 1.0)      newTarget = Math.round(lastTarget * 1.1);
+    if (performance >= 1.0) newTarget = Math.round(lastTarget * 1.1);
     else if (performance >= 0.8) newTarget = lastTarget;
-    else                         newTarget = Math.round(lastTarget * 0.9);
+    else newTarget = Math.round(lastTarget * 0.9);
 
     return Math.min(Math.max(newTarget, min), max);
   }
@@ -257,7 +268,7 @@ export class TaskService {
       a.setHours(0, 0, 0, 0);
       b.setHours(0, 0, 0, 0);
       const diffDays = Math.round(
-        (a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24)
+        (a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24),
       );
       if (diffDays === 1) streak++;
       else break;
@@ -276,8 +287,8 @@ export class TaskService {
   }
 
   private getMondayOf(date: Date): string {
-    const day    = date.getDay();
-    const diff   = day === 0 ? -6 : 1 - day;
+    const day = date.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
     const monday = new Date(date);
     monday.setDate(date.getDate() + diff);
     monday.setHours(0, 0, 0, 0);

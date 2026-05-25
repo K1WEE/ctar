@@ -107,3 +107,5 @@ CREATE OR REPLACE FUNCTION add_stars(patient_id UUID, amount INTEGER)
 RETURNS void AS $$
     UPDATE patients SET stars = stars + amount WHERE id = patient_id;
 $$ LANGUAGE sql SECURITY DEFINER;
+
+ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS stars INTEGER DEFAULT 0;
