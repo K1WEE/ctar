@@ -935,20 +935,47 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
         return;
       }
 
-      let csvContent = 'DateTime,Time(s),Force\n';
+      let csvContent = '';
+
+      // If Daily mode, add a beautiful global Day Header at the very top of the file
+      if (mode === 'daily') {
+        const targetDay = getYYYYMMDD(targetRefStr);
+        const localDateLabel = new Date(targetRefStr).toLocaleDateString('th-TH', { day: '2-digit', month: 'long', year: 'numeric' });
+        csvContent += `"=========================================================================","",""\n`;
+        csvContent += `"📅 วันที่ฝึก: ${localDateLabel} (Date: ${targetDay})","",""\n`;
+        csvContent += `"=========================================================================","",""\n\n`;
+      }
+
+      let lastDayStr = '';
 
       for (let index = 0; index < matchedSessions.length; index++) {
         const s = matchedSessions[index];
         const rawSeries = await this.getRawDataCached(s);
         if (!rawSeries || rawSeries.length === 0) continue;
 
+        // If Monthly mode, add a Day Transition Header when the day changes
+        if (mode === 'monthly') {
+          const dayStr = getYYYYMMDD(s.session_date);
+          if (dayStr !== lastDayStr) {
+            lastDayStr = dayStr;
+            const localDateLabel = new Date(s.session_date).toLocaleDateString('th-TH', { day: '2-digit', month: 'long', year: 'numeric' });
+            csvContent += `\n`;
+            csvContent += `"=========================================================================","",""\n`;
+            csvContent += `"📅 วันที่ฝึก: ${localDateLabel} (Date: ${dayStr})","",""\n`;
+            csvContent += `"=========================================================================","",""\n\n`;
+          }
+        }
+
         const timeString = new Date(s.session_date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
         const dateString = new Date(s.session_date).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-        csvContent += `"================ เริ่มการฝึกครั้งที่ ${index + 1} ของวัน (${dateString} เวลา ${timeString}) ================","--","--"\n`;
-
         const sessionMax = Number(s.max_force) || 40;
-        
+
+        csvContent += `"-------------------------------------------------------------------------","",""\n`;
+        csvContent += `"🏋️ การฝึกครั้งที่ ${index + 1} ของวัน (${dateString} เวลา ${timeString})","",""\n`;
+        csvContent += `"⏱️ แรงบีบเป้าหมายสูงสุด (Calibrated Max): ${sessionMax} N","",""\n`;
+        csvContent += `"-------------------------------------------------------------------------","",""\n`;
+        csvContent += `"เวลา (Timestamp)","เวลาสะสม (Seconds)","แรงบีบ (Applied Force in Newtons)"\n`;
+
         let currentRepVal = 0;
         let requiredHoldTimeMs = 1500;
         let currentHoldMs = 0;
@@ -999,11 +1026,13 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
           csvContent += `"${readableDate}",${dp.timeLabel},${dp.force}\n`;
 
           if (isRepEndThisStep) {
-            csvContent += `"================ สิ้นสุดรอบที่ ${currentRepVal} ================","--","--"\n`;
+            csvContent += `"-------------------------------------------------------------------------","",""\n`;
+            csvContent += `"✅ สำเร็จรอบที่ ${currentRepVal} (SUCCESSFUL ROUND ${currentRepVal})","ค้างในพื้นที่สีเขียวสำเร็จแล้ว",""\n`;
+            csvContent += `"-------------------------------------------------------------------------","",""\n`;
           }
         });
 
-        csvContent += `\n`; // Spacer row
+        csvContent += `\n\n\n`; // Multiple spacer rows to make Excel look clean and separate tables
       }
 
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -1031,11 +1060,17 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
     }
 
     const sessionMax = Number(session.max_force) || 40;
-    // Set dynamic baseline thresholds to capture both high-intensity (odd) and low-intensity (even) reps
-    const repThreshold = Math.max(5.0, sessionMax * 0.18);
-    const dropThreshold = Math.max(3.0, sessionMax * 0.08);
+    const timeString = new Date(session.session_date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    const dateString = new Date(session.session_date).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-    let csvContent = 'DateTime,Time(s),Force\n';
+    let csvContent = '';
+    csvContent += `"=========================================================================","",""\n`;
+    csvContent += `"🏋️ ไฟล์ข้อมูลการฝึก (Single Session Data Sheet)","",""\n`;
+    csvContent += `"📅 วันที่ฝึก: ${dateString} | ⏱️ เวลา: ${timeString}","",""\n`;
+    csvContent += `"💪 แรงบีบเป้าหมายสูงสุด (Calibrated Max): ${sessionMax} N","",""\n`;
+    csvContent += `"=========================================================================","",""\n\n`;
+    csvContent += `"เวลา (Timestamp)","เวลาสะสม (Seconds)","แรงบีบ (Applied Force in Newtons)"\n`;
+
     let currentRepVal = 0;
     let requiredHoldTimeMs = 1500;
     let currentHoldMs = 0;
@@ -1086,7 +1121,9 @@ export class PatientDetailComponent implements OnInit, AfterViewInit {
       csvContent += `"${readableDate}",${dp.timeLabel},${dp.force}\n`;
 
       if (isRepEndThisStep) {
-        csvContent += `"================ สิ้นสุดรอบที่ ${currentRepVal} ================","--","--"\n`;
+        csvContent += `"-------------------------------------------------------------------------","",""\n`;
+        csvContent += `"✅ สำเร็จรอบที่ ${currentRepVal} (SUCCESSFUL ROUND ${currentRepVal})","ค้างในพื้นที่สีเขียวสำเร็จแล้ว",""\n`;
+        csvContent += `"-------------------------------------------------------------------------","",""\n`;
       }
     });
 
