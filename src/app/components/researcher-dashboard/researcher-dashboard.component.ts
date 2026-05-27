@@ -448,48 +448,23 @@ export class ResearcherDashboardComponent implements OnInit, AfterViewInit {
         csvContent += `"เวลา (Timestamp)","เวลาสะสม (Seconds)","แรงบีบ (Applied Force in Newtons)"\n`;
 
         let currentRepVal = 0;
-        let requiredHoldTimeMs = 1500;
-        let currentHoldMs = 0;
+        let hasSqueezed = false;
+        const highThreshold = Math.max(6.0, sessionMax * 0.45);
+        const lowThreshold = Math.max(4.0, sessionMax * 0.12);
 
         rawSeries.forEach(dp => {
           const force = Number(dp.force);
           let isRepEndThisStep = false;
 
-          // 1. Calculate Target Zone limits for the current rep
-          const repNum = currentRepVal + 1;
-          const isOdd = repNum % 2 !== 0;
-          let targetMin = 0;
-          let targetMax = 0;
-
-          if (isOdd) {
-            targetMin = sessionMax * 0.65;
-            targetMax = sessionMax * 0.85;
-          } else {
-            targetMin = sessionMax * 0.20;
-            targetMax = sessionMax * 0.40;
-          }
-
-          if (targetMin < 5) {
-            targetMin = 5;
-            targetMax = Math.max(10, targetMax);
-          }
-
-          // 2. Check target zone state
-          const inTargetZone = force >= targetMin && force <= targetMax;
-
-          // 3. Accumulate hold progress (50ms per telemetry sample at 20Hz)
-          if (inTargetZone) {
-            currentHoldMs += 50;
-            if (currentHoldMs >= requiredHoldTimeMs) {
-              currentRepVal++;
-              isRepEndThisStep = true;
-              currentHoldMs = 0;
-              requiredHoldTimeMs = Math.min(1500 + (currentRepVal * 500), 5000);
+          if (!hasSqueezed) {
+            if (force >= highThreshold) {
+              hasSqueezed = true;
             }
           } else {
-            currentHoldMs -= 50;
-            if (currentHoldMs < 0) {
-              currentHoldMs = 0;
+            if (force <= lowThreshold) {
+              currentRepVal++;
+              isRepEndThisStep = true;
+              hasSqueezed = false;
             }
           }
 
@@ -498,7 +473,7 @@ export class ResearcherDashboardComponent implements OnInit, AfterViewInit {
 
           if (isRepEndThisStep) {
             csvContent += `"-------------------------------------------------------------------------","",""\n`;
-            csvContent += `"✅ สำเร็จรอบที่ ${currentRepVal} (SUCCESSFUL ROUND ${currentRepVal})","ค้างในพื้นที่สีเขียวสำเร็จแล้ว",""\n`;
+            csvContent += `"✅ สำเร็จรอบที่ ${currentRepVal} (SUCCESSFUL ROUND ${currentRepVal})","ปล่อยแรงตกต่ำกว่า 4.0N เพื่อพักครบกำหนดแล้ว",""\n`;
             csvContent += `"-------------------------------------------------------------------------","",""\n`;
           }
         });
@@ -547,48 +522,23 @@ export class ResearcherDashboardComponent implements OnInit, AfterViewInit {
     csvContent += `"เวลา (Timestamp)","เวลาสะสม (Seconds)","แรงบีบ (Applied Force in Newtons)"\n`;
 
     let currentRepVal = 0;
-    let requiredHoldTimeMs = 1500;
-    let currentHoldMs = 0;
+    let hasSqueezed = false;
+    const highThreshold = Math.max(6.0, sessionMax * 0.45);
+    const lowThreshold = Math.max(4.0, sessionMax * 0.12);
 
     rawSeries.forEach(dp => {
       const force = Number(dp.force);
       let isRepEndThisStep = false;
 
-      // 1. Calculate Target Zone limits for the current rep
-      const repNum = currentRepVal + 1;
-      const isOdd = repNum % 2 !== 0;
-      let targetMin = 0;
-      let targetMax = 0;
-
-      if (isOdd) {
-        targetMin = sessionMax * 0.65;
-        targetMax = sessionMax * 0.85;
-      } else {
-        targetMin = sessionMax * 0.20;
-        targetMax = sessionMax * 0.40;
-      }
-
-      if (targetMin < 5) {
-        targetMin = 5;
-        targetMax = Math.max(10, targetMax);
-      }
-
-      // 2. Check target zone state
-      const inTargetZone = force >= targetMin && force <= targetMax;
-
-      // 3. Accumulate hold progress (50ms per telemetry sample at 20Hz)
-      if (inTargetZone) {
-        currentHoldMs += 50;
-        if (currentHoldMs >= requiredHoldTimeMs) {
-          currentRepVal++;
-          isRepEndThisStep = true;
-          currentHoldMs = 0;
-          requiredHoldTimeMs = Math.min(1500 + (currentRepVal * 500), 5000);
+      if (!hasSqueezed) {
+        if (force >= highThreshold) {
+          hasSqueezed = true;
         }
       } else {
-        currentHoldMs -= 50;
-        if (currentHoldMs < 0) {
-          currentHoldMs = 0;
+        if (force <= lowThreshold) {
+          currentRepVal++;
+          isRepEndThisStep = true;
+          hasSqueezed = false;
         }
       }
 
@@ -597,7 +547,7 @@ export class ResearcherDashboardComponent implements OnInit, AfterViewInit {
 
       if (isRepEndThisStep) {
         csvContent += `"-------------------------------------------------------------------------","",""\n`;
-        csvContent += `"✅ สำเร็จรอบที่ ${currentRepVal} (SUCCESSFUL ROUND ${currentRepVal})","ค้างในพื้นที่สีเขียวสำเร็จแล้ว",""\n`;
+        csvContent += `"✅ สำเร็จรอบที่ ${currentRepVal} (SUCCESSFUL ROUND ${currentRepVal})","ปล่อยแรงตกต่ำกว่า 4.0N เพื่อพักครบกำหนดแล้ว",""\n`;
         csvContent += `"-------------------------------------------------------------------------","",""\n`;
       }
     });
