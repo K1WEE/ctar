@@ -87,42 +87,45 @@ export class TaskService {
 
     // สร้าง weekly_tasks
     const { data: newTasks } = await this.supabase.client
-      .from('weekly_tasks')
-      .insert([
-        {
-          week_start: weekStart,
-          title: 'นักสู้ CTAR',
-          description: `ฝึกให้ครบ ${newSessionTarget} sessions`,
-          icon: 'fa-medal',
-          target: newSessionTarget,
-          reward: 4,
-        },
-        {
-          week_start: weekStart,
-          title: 'พลังคอสุดแกร่ง',
-          description: `ทำแรงกดให้ถึง ${newForceTarget}N`,
-          icon: 'fa-dumbbell',
-          target: newForceTarget,
-          reward: 3,
-        },
-        {
-          week_start: weekStart,
-          title: 'สายอึด',
-          description: `ฝึกครบ ${newDurationTarget} นาที`,
-          icon: 'fa-clock',
-          target: newDurationTarget,
-          reward: 2,
-        },
-        {
-          week_start: weekStart,
-          title: 'นักฝึกต่อเนื่อง',
-          description: 'ฝึกติดต่อกัน 3 วัน',
-          icon: 'fa-fire',
-          target: 3,
-          reward: 5,
-        },
-      ])
-      .select('id');
+  .from('weekly_tasks')
+  .upsert(
+    [
+      {
+        week_start: weekStart,
+        title: 'นักสู้ CTAR',
+        description: `ฝึกให้ครบ ${newSessionTarget} sessions`,
+        icon: 'fa-medal',
+        target: newSessionTarget,
+        reward: 4,
+      },
+      {
+        week_start: weekStart,
+        title: 'พลังคอสุดแกร่ง',
+        description: `ทำแรงกดให้ถึง ${newForceTarget}N`,
+        icon: 'fa-dumbbell',
+        target: newForceTarget,
+        reward: 3,
+      },
+      {
+        week_start: weekStart,
+        title: 'สายอึด',
+        description: `ฝึกครบ ${newDurationTarget} นาที`,
+        icon: 'fa-clock',
+        target: newDurationTarget,
+        reward: 2,
+      },
+      {
+        week_start: weekStart,
+        title: 'นักฝึกต่อเนื่อง',
+        description: 'ฝึกติดต่อกัน 3 วัน',
+        icon: 'fa-fire',
+        target: 3,
+        reward: 5,
+      },
+    ],
+    { onConflict: 'week_start,title', ignoreDuplicates: true }
+  )
+  .select('id');
 
     if (!newTasks?.length) return;
 
@@ -151,17 +154,17 @@ export class TaskService {
     const weekStart = this.getWeekStart();
 
     const { data: patientTasks, error } = await this.supabase.client
-      .from('patient_tasks')
-      .select(
-        `
-          id,
-          progress,
-          completed,
-          weekly_tasks ( id, title, target, reward )
-        `,
-      )
-      .eq('patient_id', patientId)
-      .eq('week_start', weekStart);
+  .from('patient_tasks')
+  .select(
+    `
+      id,
+      progress,
+      completed,
+      weekly_tasks!inner ( id, title, target, reward )
+    `,
+  )
+  .eq('patient_id', patientId)
+  .eq('week_start', weekStart);
 
     if (error || !patientTasks) {
       console.error(error);
