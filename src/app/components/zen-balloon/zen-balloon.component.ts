@@ -1,30 +1,65 @@
-import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BiofeedbackService } from '../../services/biofeedback.service';
 import { I18nService } from '../../services/i18n.service';
+import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.component';
 
 @Component({
   selector: 'app-zen-balloon',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ChinTuckDemoComponent],
   template: `
     <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl rounded-3xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center border border-slate-200 dark:border-white/10 min-h-[450px] h-full relative overflow-hidden transition-colors duration-300">
+      
+      <!-- Ready State Overlay (Transparent backdrop, showing game behind it) -->
+      <div *ngIf="gameFlowState() === 'ready'" class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
+        <!-- Center translucent instruction card -->
+        <div class="bg-white/95 dark:bg-slate-900/95 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-4 animate-scale-up">
+          <app-chin-tuck-demo size="sm" [showLabel]="false" class="mb-2"></app-chin-tuck-demo>
+          
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
+            {{ i18n.currentLang() === 'th' ? 'เตรียมฝึกซ้อม' : 'Get Ready' }}
+          </h2>
+          
+          <div class="text-slate-700 dark:text-slate-300 text-sm sm:text-base font-bold leading-relaxed space-y-2">
+            <p>1. {{ i18n.currentLang() === 'th' ? 'วางเครื่องมือไว้บนอก' : 'Place device on chest' }}</p>
+            <p>2. {{ i18n.currentLang() === 'th' ? 'วางคางบนแผ่นรอง' : 'Rest chin on pad' }}</p>
+            <p class="text-amber-600 dark:text-amber-400 font-extrabold animate-pulse">
+              👉 {{ i18n.currentLang() === 'th' ? 'ก้มกดเบาๆ เพื่อเริ่มเกม' : 'Press gently to start' }}
+            </p>
+          </div>
+          
+          <!-- Back button in modal to let them exit -->
+          <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-850 dark:hover:text-white text-xs font-bold rounded-lg transition-colors w-full mt-1">
+            {{ i18n.currentLang() === 'th' ? 'ย้อนกลับ' : 'Go Back' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Countdown State Overlay -->
+      <div *ngIf="gameFlowState() === 'countdown'" class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in text-center">
+        <span class="text-white font-bold uppercase tracking-widest text-sm xs:text-base sm:text-lg mb-4 drop-shadow-md">
+          {{ i18n.currentLang() === 'th' ? 'เตรียมตัวฝึกซ้อม...' : 'Prepare yourself...' }}
+        </span>
+        <!-- Massive pulsing number -->
+        <div class="text-8xl xs:text-9xl font-black text-amber-400 tabular-nums animate-[ping_1s_infinite] select-none drop-shadow-lg">
+          {{ countdownValue() }}
+        </div>
+      </div>
+
       <!-- Glow effect -->
       <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-[80px] opacity-10 pointer-events-none"></div>
 
       <!-- Integrated Top Header Bar -->
       <div class="w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-white/10 relative z-10">
-        <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-3 min-w-0">
           <button (click)="goBack()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors shrink-0">
             <i class="fa-solid fa-arrow-left text-lg"></i>
           </button>
-          <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-100 dark:border-transparent shrink-0">
-            <i class="fa-solid fa-gamepad text-lg"></i>
-          </div>
-          <div class="text-left">
-            <h3 class="font-black text-base xs:text-lg sm:text-xl text-slate-800 dark:text-white leading-tight">{{ i18n.t('game.activeSession') }}</h3>
-            <p class="text-xs xs:text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-tight font-semibold">{{ i18n.t('game.targetReps') }} {{ targetReps }}</p>
+          <div class="text-left min-w-0">
+            <h3 class="font-black text-base xs:text-lg sm:text-xl text-slate-800 dark:text-white leading-tight whitespace-nowrap">{{ i18n.t('game.activeSession') }}</h3>
+            <p class="text-xs xs:text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-tight font-semibold whitespace-nowrap">{{ i18n.t('game.targetReps') }} {{ targetReps }}</p>
           </div>
         </div>
         <div class="flex items-center space-x-2 shrink-0">
@@ -49,23 +84,23 @@ import { I18nService } from '../../services/i18n.service';
          <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-amber-50 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 border border-amber-100 dark:border-transparent transition-colors duration-300">
             <i class="fa-solid fa-parachute-box text-lg xs:text-xl"></i>
          </div>
-         <h2 class="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-wide transition-colors duration-300">The Zen Balloon</h2>
+         <h2 class="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-wide transition-colors duration-300">{{ i18n.t('game.title') }}</h2>
       </div>
 
       <!-- Main Game Area with Side HUDs -->
       <div class="w-full flex-1 relative flex justify-between items-center z-20 min-h-0">
         
-        <!-- Left HUD: Forces -->
+        <!-- Left HUD: Forces (Percentage Display) -->
         <div class="flex flex-col gap-2 xs:gap-4 w-[30%] max-w-[130px] z-20">
           <div class="text-right bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-2 xs:p-2.5 rounded-xl border border-white/20 dark:border-white/5 w-full shadow-sm">
-             <div class="text-[10px] xs:text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5 sm:mb-1"><i class="fa-solid fa-bolt text-blue-400 mr-1"></i> Current</div>
-             <div class="text-2xl xs:text-3xl font-black text-blue-600 dark:text-blue-400 tabular-nums">{{ currentForce() | number:'1.0-1' }}<span class="text-xs text-slate-400 font-bold ml-0.5 sm:ml-1">N</span></div>
+             <div class="text-xs xs:text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider mb-0.5 sm:mb-1" aria-label="Current force"><i class="fa-solid fa-bolt text-blue-400 mr-1"></i> {{ i18n.t('game.hud.current') }}</div>
+             <div class="text-2xl xs:text-3xl font-black text-blue-600 dark:text-blue-400 tabular-nums" role="status" aria-live="polite">{{ forcePercent() }}<span class="text-xs text-slate-400 font-bold ml-0.5 sm:ml-1">%</span></div>
           </div>
           
           <div class="text-right bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-2 xs:p-2.5 rounded-xl border border-white/20 dark:border-white/5 w-full shadow-sm">
-             <div class="text-[10px] xs:text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5 sm:mb-1"><i class="fa-solid fa-arrow-trend-up text-amber-500 mr-1"></i> Peak</div>
-             <div class="text-xl xs:text-2xl font-black text-amber-600 dark:text-amber-400 tabular-nums">{{ peakForce() | number:'1.0-1' }}<span class="text-xs text-slate-400 font-bold ml-0.5 sm:ml-1">N</span></div>
-             <div class="text-[9px] xs:text-[10px] text-slate-400 font-bold mt-1 tabular-nums">Goal: {{ maxForceLimit | number:'1.0-0' }} N</div>
+             <div class="text-xs xs:text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider mb-0.5 sm:mb-1" aria-label="Peak force"><i class="fa-solid fa-arrow-trend-up text-amber-600 mr-1"></i> {{ i18n.t('game.hud.peak') }}</div>
+             <div class="text-xl xs:text-2xl font-black text-amber-700 dark:text-amber-300 tabular-nums">{{ peakPercent() }}<span class="text-xs text-slate-400 font-bold ml-0.5 sm:ml-1">%</span></div>
+             <div class="text-xs xs:text-sm text-slate-600 dark:text-slate-400 font-bold mt-1 tabular-nums">{{ i18n.t('game.hud.goal') }} 100%</div>
           </div>
         </div>
 
@@ -77,17 +112,18 @@ import { I18nService } from '../../services/i18n.service';
                class="absolute w-full bg-amber-500/30 dark:bg-amber-500/40 border-y-4 border-amber-600 dark:border-amber-400 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] dark:shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-between px-1 xs:px-2"
                [style.bottom.%]="targetMinPercent" 
                [style.height.%]="targetMaxPercent - targetMinPercent">
-             <i class="fa-solid fa-chevron-right text-amber-700 dark:text-amber-300 animate-pulse text-xs xs:text-sm"></i>
-             <span class="text-[10px] xs:text-xs font-black text-amber-950 dark:text-amber-100 uppercase tracking-widest pointer-events-none select-none">Target</span>
-             <i class="fa-solid fa-chevron-left text-amber-700 dark:text-amber-300 animate-pulse text-xs xs:text-sm"></i>
+             <i class="fa-solid fa-chevron-right text-amber-700 dark:text-amber-300 text-xs xs:text-sm"></i>
+             <span class="text-xs xs:text-sm font-black text-amber-950 dark:text-amber-100 uppercase tracking-widest pointer-events-none select-none">{{ i18n.t('game.zone.target') }}</span>
+             <i class="fa-solid fa-chevron-left text-amber-700 dark:text-amber-300 text-xs xs:text-sm"></i>
           </div>
 
           <!-- Release Green Zone Overlay (Visible only when releasing for relaxation below 4.0N) -->
           <div *ngIf="isReleasing"
-               class="absolute w-full bg-emerald-500/20 dark:bg-emerald-500/35 border-t-[3px] border-emerald-500/80 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] flex flex-col items-center justify-center px-1"
+               class="absolute w-full bg-emerald-500/20 dark:bg-emerald-500/35 border-t-4 border-emerald-500/80 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] flex flex-col items-center justify-center px-1"
                style="bottom: 0;"
-               [style.height.%]="releaseThresholdPercent">
-             <span class="text-[10px] xs:text-xs font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest pointer-events-none select-none animate-pulse">Rest Zone</span>
+               [style.height.%]="restZoneVisualPercent">
+             <i class="fa-solid fa-chevron-down text-emerald-600 dark:text-emerald-400 text-sm mb-0.5"></i>
+             <span class="text-sm xs:text-base font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest pointer-events-none select-none">{{ i18n.t('game.zone.rest') }}</span>
           </div>
 
           <!-- The Floating Balloon (Raised offset slightly to prevent bottom clipping) -->
@@ -110,9 +146,9 @@ import { I18nService } from '../../services/i18n.service';
         <!-- Right HUD: Reps -->
         <div class="flex flex-col gap-2 xs:gap-4 w-[30%] max-w-[130px] z-20">
           <div class="text-left bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-2 xs:p-2.5 rounded-xl border border-white/20 dark:border-white/5 w-full h-full shadow-sm">
-             <div class="text-[10px] xs:text-[11px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mb-0.5 sm:mb-1"><i class="fa-solid fa-dumbbell text-amber-400 mr-1"></i> Reps</div>
-             <div class="text-3xl xs:text-4xl font-black text-amber-500 dark:text-amber-400 tabular-nums">{{ currentRepVal }}</div>
-             <div class="text-xs xs:text-sm font-bold text-slate-400 mt-1 tabular-nums">/ {{ targetReps }}</div>
+             <div class="text-xs xs:text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider mb-0.5 sm:mb-1" aria-label="Repetition count"><i class="fa-solid fa-dumbbell text-amber-600 mr-1"></i> {{ i18n.t('game.hud.reps') }}</div>
+             <div class="text-3xl xs:text-4xl font-black text-amber-700 dark:text-amber-300 tabular-nums">{{ currentRepVal }}</div>
+             <div class="text-sm xs:text-base font-bold text-slate-500 mt-1 tabular-nums">/ {{ targetReps }}</div>
           </div>
         </div>
 
@@ -120,13 +156,13 @@ import { I18nService } from '../../services/i18n.service';
 
       <!-- Hold/Release Progress Indicator -->
       <div class="mt-8 w-full max-w-xs xs:max-w-sm relative z-10">
-        <div class="flex justify-between text-xs xs:text-sm font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wider transition-colors duration-300">
-          <span>{{ isReleasing ? (i18n.currentLang() === 'th' ? 'สถานะ: ปล่อยแรงกด' : 'Status: Release Force') : (i18n.currentLang() === 'th' ? 'เวลาในการค้างแรง' : 'Hold Focus Timer') }}</span>
+        <div class="flex justify-between text-sm xs:text-base font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wider transition-colors duration-300">
+          <span>{{ isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer') }}</span>
           <span class="text-brand-accent">{{ holdProgress | number:'1.0-0' }}%</span>
         </div>
-        <div class="h-3 xs:h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-slate-200 dark:border-white/5 transition-colors duration-300">
+        <div class="h-3 xs:h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-slate-200 dark:border-white/5 transition-colors duration-300" role="progressbar" [attr.aria-valuenow]="holdProgress" aria-valuemin="0" aria-valuemax="100">
           <div class="h-full bg-gradient-to-r transition-all duration-100 relative"
-               [ngClass]="isReleasing ? 'from-sky-400 to-blue-500 animate-pulse' : 'from-amber-400 to-amber-300 dark:from-amber-500 dark:to-amber-300'"
+               [ngClass]="isReleasing ? 'from-sky-400 to-blue-500' : 'from-amber-400 to-amber-300 dark:from-amber-500 dark:to-amber-300'"
                [style.width.%]="holdProgress">
                  <div class="absolute top-0 right-0 bottom-0 left-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSI+PC9yZWN0Pgo8cGF0aCBkPSJNMCA4TDggMFpNMCAwTDggOFoiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIj48L3BhdGg+Cjwvc3ZnPg==')] opacity-30 animate-[slide_1s_linear_infinite]"></div>
           </div>
@@ -134,15 +170,26 @@ import { I18nService } from '../../services/i18n.service';
       </div>
       
       <!-- Feedback Text -->
-      <div class="mt-4 text-center font-bold text-lg xs:text-xl h-6 xs:h-8 transition-colors duration-300 relative z-10"
-           [ngClass]="isReleasing ? 'text-sky-500 dark:text-sky-400 animate-pulse' : (inTargetZone ? 'text-amber-500 dark:text-amber-400 drop-shadow-[0_0_4px_rgba(245,158,11,0.3)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-slate-500 dark:text-slate-400')">
+      <div class="mt-4 text-center font-bold text-xl xs:text-2xl h-8 xs:h-10 transition-colors duration-300 relative z-10"
+           [ngClass]="isReleasing ? 'text-sky-600 dark:text-sky-400' : (inTargetZone ? 'text-amber-700 dark:text-amber-300 drop-shadow-[0_0_4px_rgba(245,158,11,0.3)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-slate-700 dark:text-slate-300')"
+           role="status" aria-live="polite">
         {{ feedbackMessage }}
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    @media (prefers-reduced-motion: reduce) {
+      :host ::ng-deep .animate-pulse { animation: none !important; }
+      :host ::ng-deep [class*="transition"] { transition-duration: 0.01ms !important; }
+      :host ::ng-deep .animate-\\[slide_1s_linear_infinite\\] { animation: none !important; }
+    }
+  `]
 })
 export class ZenBalloonComponent implements OnInit, OnDestroy {
   public i18n = inject(I18nService);
+  public gameFlowState = signal<'ready' | 'countdown' | 'playing'>('ready');
+  public countdownValue = signal<number>(3);
+  private countdownTimer: any;
   private router = inject(Router);
 
   public isMuted = false;
@@ -199,6 +246,26 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     return Math.max(50, this.maxForceLimit * 1.3); // give 30% headroom above max force
   }
 
+  // Percentage display for elderly users (instead of Newton)
+  public forcePercent(): number {
+    if (this.maxForceLimit <= 0) return 0;
+    return Math.min(999, Math.round((this.currentForce() / this.maxForceLimit) * 100));
+  }
+
+  public peakPercent(): number {
+    if (this.maxForceLimit <= 0) return 0;
+    return Math.min(999, Math.round((this.peakForce() / this.maxForceLimit) * 100));
+  }
+
+  getTriggerProgressPercent(): number {
+    return Math.min(100, Math.round((this.currentForce() / 5.0) * 100));
+  }
+
+  // Ensure rest zone has minimum visual height of 15% for readability
+  public get restZoneVisualPercent(): number {
+    return Math.max(15, this.releaseThresholdPercent);
+  }
+
   constructor(private ngZone: NgZone, private biofeedback: BiofeedbackService) {
     // Angular 17 Effect strictly subscribes to the hardware force stream natively
     effect(() => {
@@ -218,6 +285,17 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
 
       // Logic check and transition biofeedback
       const wasInTarget = this.inTargetZone;
+      
+      // Guard: Do not trigger feedback or target zone evaluation if not actively playing
+      if (this.gameFlowState() !== 'playing') {
+        this.inTargetZone = false;
+        if (this.gameFlowState() === 'ready' && force >= 5.0) {
+          this.ngZone.run(() => {
+            this.startCountdown();
+          });
+        }
+        return;
+      }
       
       // Red Balloon Overlap Logic:
       // Visual height of the balloon is roughly 22% of the track height.
@@ -243,7 +321,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
           }
         });
       }
-    });
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
@@ -251,19 +329,11 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     // Initialize visuals for rep 0
     this.isReleasing = false;
     this.updateDifficulty();
-    this.startGameLoop();
 
     // Play introductory welcome cue
     setTimeout(() => {
-      this.playVoice('zen_intro.mp3');
+      this.playVoice('intro.mp3');
     }, 600);
-
-    // Initial squeeze prompt if they haven't started
-    setTimeout(() => {
-      if (!this.isReleasing && !this.inTargetZone) {
-        this.playVoice('cue_squeeze.mp3');
-      }
-    }, 4800);
   }
 
   toggleMute() {
@@ -451,13 +521,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     if (this.isReleasing) {
       const restTimeSec = Math.max(0, Math.ceil((2000 - this.currentRestMs) / 1000));
       if (this.currentForce() >= this.releaseThreshold) {
-        this.feedbackMessage = this.i18n.currentLang() === 'th' 
-          ? 'ปล่อยแรงกดให้ต่ำกว่า 4N เพื่อเริ่มการพัก...' 
-          : 'Release force below 4N to rest...';
+        this.feedbackMessage = this.i18n.t('game.feedback.releaseBelow');
       } else {
-        this.feedbackMessage = this.i18n.currentLang() === 'th' 
-          ? `เยี่ยมยอด! ผ่อนคลายค้างไว้อีก ${restTimeSec} วินาที...` 
-          : `Great job! Keep relaxed for ${restTimeSec}s...`;
+        this.feedbackMessage = this.i18n.t('game.feedback.keepRelaxed').replace('{0}', String(restTimeSec));
       }
     } else if (this.inTargetZone && this.holdProgress > 50) {
       this.feedbackMessage = this.i18n.t('game.feedback.holdAlmost');
@@ -483,9 +549,49 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.router.navigate(['/summary']);
   }
 
+  startCountdown() {
+    this.gameFlowState.set('countdown');
+    this.countdownValue.set(3);
+    
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+    }
+    
+    this.countdownTimer = setInterval(() => {
+      this.ngZone.run(() => {
+        const currentVal = this.countdownValue();
+        if (currentVal <= 1) {
+          clearInterval(this.countdownTimer);
+          this.startGame();
+        } else {
+          this.countdownValue.set(currentVal - 1);
+        }
+      });
+    }, 1000);
+  }
+
+  startGame() {
+    this.gameFlowState.set('playing');
+    this.isReleasing = false;
+    this.holdProgress = 0;
+    this.currentHoldMs = 0;
+    
+    this.startGameLoop();
+    
+    // Play initial squeeze instruction cue after starting
+    setTimeout(() => {
+      if (this.gameFlowState() === 'playing' && !this.isReleasing && !this.inTargetZone) {
+        this.playVoice('cue_squeeze.mp3');
+      }
+    }, 1000);
+  }
+
   ngOnDestroy() {
     if (this.gameloop) {
       clearInterval(this.gameloop);
+    }
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
     }
     this.biofeedback.stopVibrationLoop();
     if (this.activeAudio) {

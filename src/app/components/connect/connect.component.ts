@@ -1,4 +1,4 @@
-import { Component, effect, inject } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BleService } from '../../services/ble.service';
@@ -37,9 +37,15 @@ import { I18nService } from '../../services/i18n.service';
           </button>
         </div>
 
-        <div *ngIf="bleService.connectionState() === 'Connected'" 
-          class="min-h-[56px] w-full bg-emerald-500 text-white font-bold rounded-2xl shadow-lg flex items-center justify-center text-lg animate-fade-in">
-          <i class="fa-solid fa-check mr-3"></i> {{ i18n.t('connect.connected') }}
+        <div *ngIf="bleService.connectionState() === 'Connected'" class="space-y-3 w-full animate-fade-in">
+          <div class="min-h-[56px] w-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl flex items-center justify-center text-lg">
+            <i class="fa-solid fa-check mr-3"></i> {{ i18n.t('connect.connected') }}
+          </div>
+          <button
+            (click)="continueToCalibrate()"
+            class="px-8 min-h-[56px] w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] text-lg">
+            {{ i18n.t('connect.continue') }}
+          </button>
         </div>
 
         <div *ngIf="bleService.error()" class="mt-6 bg-red-500/10 border-l-4 border-red-500 text-red-500 p-4 rounded-xl text-left text-base">
@@ -52,13 +58,18 @@ import { I18nService } from '../../services/i18n.service';
 })
 export class ConnectComponent {
   public i18n = inject(I18nService);
+  public showContinue = signal(false);
 
   constructor(public bleService: BleService, public supabase: SupabaseService, private router: Router) {
     effect(() => {
       if (this.bleService.connectionState() === 'Connected') {
-        setTimeout(() => this.router.navigate(['/calibrate']), 1000);
+        this.showContinue.set(true);
       }
-    });
+    }, { allowSignalWrites: true });
+  }
+
+  continueToCalibrate() {
+    this.router.navigate(['/calibrate']);
   }
 
   isDevMode(): boolean {

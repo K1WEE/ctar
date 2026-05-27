@@ -140,6 +140,39 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'portal.startBtn': { th: 'เริ่มเลย', en: 'Start Now' },
   'portal.statsTitle': { th: 'สถิติล่าสุดของคุณ', en: 'Your Latest Stats' },
   'portal.noStats': { th: 'ยังไม่มีข้อมูลการฝึก', en: 'No session data yet' },
+
+  // ─── Onboarding / Chin Tuck Demo ───
+  'onboarding.step1': { th: 'วางเครื่องมือไว้บนอก', en: 'Place the device on your chest' },
+  'onboarding.step2': { th: 'วางคางลงบนแผ่นรองด้านบน', en: 'Rest your chin on the top pad' },
+  'onboarding.step3': { th: 'ก้มคางกดลงให้แรงที่สุด แล้วปล่อย', en: 'Press your chin down as hard as you can, then release' },
+
+  // ─── Calibrate (Updated) ───
+  'calibrate.intro.updated': {
+    th: 'วางเครื่องมือไว้บนอก แล้ววางคางลงบนแผ่นรองด้านบน<br><br>เมื่อพร้อม ให้<strong>ก้มคางกดลงให้แรงที่สุด แล้วปล่อย</strong>',
+    en: 'Place the device on your chest and rest your chin on the top pad.<br><br>When ready, <strong>press your chin down as hard as you can, then release</strong>.'
+  },
+  'calibrate.waiting.desc': {
+    th: 'ก้มคางกดลงบนแผ่นรอง...<br><br>ออกแรงกดให้<strong>มากกว่า 20 N</strong> เพื่อเริ่มจับเวลา',
+    en: 'Press your chin down on the top pad...<br><br>Exceed <strong>20 N</strong> to start the timer.'
+  },
+  'calibrate.getReady': { th: 'เตรียมตัว...', en: 'Get ready...' },
+  'calibrate.goToGame': { th: 'เริ่มเล่นเกม →', en: 'Start Game →' },
+
+  // ─── Connect (Updated) ───
+  'connect.continue': { th: 'เชื่อมต่อสำเร็จ! กดเพื่อเริ่มต้น →', en: 'Connected! Tap to continue →' },
+
+  // ─── Game (Zen Balloon) ───
+  'game.title': { th: 'ลูกโป่งเซน', en: 'The Zen Balloon' },
+  'game.hud.current': { th: 'ปัจจุบัน', en: 'Current' },
+  'game.hud.peak': { th: 'สูงสุด', en: 'Peak' },
+  'game.hud.goal': { th: 'เป้า:', en: 'Goal:' },
+  'game.hud.reps': { th: 'ครั้ง', en: 'Reps' },
+  'game.zone.target': { th: 'เป้าหมาย', en: 'Target' },
+  'game.zone.rest': { th: 'พักผ่อน', en: 'Rest Zone' },
+  'game.hud.holdTimer': { th: 'เวลาค้างแรง', en: 'Hold Timer' },
+  'game.hud.releaseStatus': { th: 'ปล่อยแรงกด', en: 'Release Force' },
+  'game.feedback.releaseBelow': { th: 'ปล่อยแรงกดเพื่อพักผ่อน...', en: 'Release force to rest...' },
+  'game.feedback.keepRelaxed': { th: 'เยี่ยม! ผ่อนคลายอีก {0} วินาที...', en: 'Great! Relax for {0}s...' },
 };
 
 @Injectable({

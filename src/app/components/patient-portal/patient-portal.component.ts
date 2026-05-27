@@ -291,12 +291,9 @@ export class PatientPortalComponent implements OnInit {
   }
 
   getPlayButtonLink(): string {
-    const isConnected = this.bleService.connectionState() === 'Connected';
     const isCalibrated = this.ctar.calibrationMaxForce() > 0;
 
-    if (!isConnected) {
-      return '/connect';
-    } else if (!isCalibrated) {
+    if (!isCalibrated) {
       return '/calibrate';
     } else {
       return '/game';

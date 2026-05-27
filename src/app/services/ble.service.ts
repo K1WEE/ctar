@@ -241,6 +241,10 @@ export class BleService {
     });
   }
 
+  public setMockSqueezing(squeezing: boolean) {
+    this.isSqueezing = squeezing;
+  }
+
   /**
    * Extracts raw bytes from ESP32 characteristic buffer stream, parsing it strictly 
    * as a 32-bit Little Endian Unsigned Integer (Uint32), scaling it appropriately.
