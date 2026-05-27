@@ -5,6 +5,7 @@ import { CtarLogicService } from '../../services/ctar-logic.service';
 import { DataSyncService } from '../../services/data-sync.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { I18nService } from '../../services/i18n.service';
+import { TaskService } from '../../services/task.service';
 
 @Component({
   selector: 'app-summary',
@@ -96,7 +97,8 @@ export class SummaryComponent implements OnInit {
     private ctar: CtarLogicService,
     private dataSync: DataSyncService,
     private supabase: SupabaseService,
-    private router: Router
+    private router: Router,
+    private taskService: TaskService 
   ) {}
 
   async ngOnInit() {
@@ -136,8 +138,14 @@ export class SummaryComponent implements OnInit {
       );
 
       if (!success) {
-        this.saveError = this.i18n.t('error.saveFailed');
-      }
+  this.saveError = this.i18n.t('error.saveFailed');
+} else {
+  await this.taskService.updateTasksAfterSession(user.id, {
+    maxForce:        this.currentStats.maxForce,
+    durationMinutes: this.currentStats.duration / 60,
+    reps:            this.currentStats.reps,
+  });
+}
     } else {
       this.saveError = this.i18n.t('error.noData');
     }
