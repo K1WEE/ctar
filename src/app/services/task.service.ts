@@ -88,76 +88,70 @@ export class TaskService {
     // สร้าง weekly_tasks
     let tasksForWeek: any[] = [];
 
-// เช็ค weekly_tasks ของสัปดาห์นี้
-const { data: existingWeeklyTasks } = await this.supabase.client
-  .from('weekly_tasks')
-  .select('id, title')
-  .eq('week_start', weekStart);
+    // เช็ค weekly_tasks ของสัปดาห์นี้
+    const { data: existingWeeklyTasks } = await this.supabase.client
+      .from('weekly_tasks')
+      .select('id, title')
+      .eq('week_start', weekStart);
 
-// ถ้ายังไม่มี → สร้างใหม่
-if (!existingWeeklyTasks?.length) {
+    // ถ้ายังไม่มี → สร้างใหม่
+    if (!existingWeeklyTasks?.length) {
+      const { data: createdTasks } = await this.supabase.client
+        .from('weekly_tasks')
+        .insert([
+          {
+            week_start: weekStart,
+            title: 'นักสู้ CTAR',
+            description: `ฝึกให้ครบ ${newSessionTarget} sessions`,
+            icon: 'fa-medal',
+            target: newSessionTarget,
+            reward: 4,
+          },
+          {
+            week_start: weekStart,
+            title: 'พลังคอสุดแกร่ง',
+            description: `ทำแรงกดให้ถึง ${newForceTarget}N`,
+            icon: 'fa-dumbbell',
+            target: newForceTarget,
+            reward: 3,
+          },
+          {
+            week_start: weekStart,
+            title: 'สายอึด',
+            description: `ฝึกครบ ${newDurationTarget} นาที`,
+            icon: 'fa-clock',
+            target: newDurationTarget,
+            reward: 2,
+          },
+          {
+            week_start: weekStart,
+            title: 'นักฝึกต่อเนื่อง',
+            description: 'ฝึกติดต่อกัน 3 วัน',
+            icon: 'fa-fire',
+            target: 3,
+            reward: 5,
+          },
+        ])
+        .select('id');
 
-  const { data: createdTasks } = await this.supabase.client
-    .from('weekly_tasks')
-    .insert([
-      {
+      tasksForWeek = createdTasks || [];
+    } else {
+      // มีอยู่แล้ว → ใช้อันเดิม
+      tasksForWeek = existingWeeklyTasks;
+    }
+
+    // ไม่มี task จริง ๆ
+    if (!tasksForWeek.length) return;
+
+    // สร้าง patient_tasks ของ user นี้
+    await this.supabase.client.from('patient_tasks').insert(
+      tasksForWeek.map((t) => ({
+        patient_id: patientId,
+        task_id: t.id,
         week_start: weekStart,
-        title: 'นักสู้ CTAR',
-        description: `ฝึกให้ครบ ${newSessionTarget} sessions`,
-        icon: 'fa-medal',
-        target: newSessionTarget,
-        reward: 4,
-      },
-      {
-        week_start: weekStart,
-        title: 'พลังคอสุดแกร่ง',
-        description: `ทำแรงกดให้ถึง ${newForceTarget}N`,
-        icon: 'fa-dumbbell',
-        target: newForceTarget,
-        reward: 3,
-      },
-      {
-        week_start: weekStart,
-        title: 'สายอึด',
-        description: `ฝึกครบ ${newDurationTarget} นาที`,
-        icon: 'fa-clock',
-        target: newDurationTarget,
-        reward: 2,
-      },
-      {
-        week_start: weekStart,
-        title: 'นักฝึกต่อเนื่อง',
-        description: 'ฝึกติดต่อกัน 3 วัน',
-        icon: 'fa-fire',
-        target: 3,
-        reward: 5,
-      },
-    ])
-    .select('id');
-
-  tasksForWeek = createdTasks || [];
-
-} else {
-
-  // มีอยู่แล้ว → ใช้อันเดิม
-  tasksForWeek = existingWeeklyTasks;
-
-}
-
-// ไม่มี task จริง ๆ
-if (!tasksForWeek.length) return;
-
-// สร้าง patient_tasks ของ user นี้
-await this.supabase.client
-  .from('patient_tasks')
-  .insert(
-    tasksForWeek.map((t) => ({
-      patient_id: patientId,
-      task_id: t.id,
-      week_start: weekStart,
-    }))
-  );
-}
+      })),
+    );
+  }
 
   // =========================================
   // เรียกหลัง session เสร็จ
@@ -174,17 +168,17 @@ await this.supabase.client
     const weekStart = this.getWeekStart();
 
     const { data: patientTasks, error } = await this.supabase.client
-  .from('patient_tasks')
-  .select(
-    `
+      .from('patient_tasks')
+      .select(
+        `
       id,
       progress,
       completed,
       weekly_tasks!inner ( id, title, target, reward )
     `,
-  )
-  .eq('patient_id', patientId)
-  .eq('week_start', weekStart);
+      )
+      .eq('patient_id', patientId)
+      .eq('week_start', weekStart);
 
     if (error || !patientTasks) {
       console.error(error);
@@ -225,7 +219,7 @@ await this.supabase.client
       }
 
       if (weeklyTask.title === 'สายอึด') {
-        newProgress += session.durationMinutes;
+        newProgress = Math.round(task.progress + session.durationMinutes);
       }
 
       if (newProgress > weeklyTask.target) {
