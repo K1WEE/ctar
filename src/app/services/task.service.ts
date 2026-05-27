@@ -86,10 +86,20 @@ export class TaskService {
         );
 
     // สร้าง weekly_tasks
-    const { data: newTasks } = await this.supabase.client
+    let tasksForWeek: any[] = [];
+
+// เช็ค weekly_tasks ของสัปดาห์นี้
+const { data: existingWeeklyTasks } = await this.supabase.client
   .from('weekly_tasks')
-  .upsert(
-    [
+  .select('id, title')
+  .eq('week_start', weekStart);
+
+// ถ้ายังไม่มี → สร้างใหม่
+if (!existingWeeklyTasks?.length) {
+
+  const { data: createdTasks } = await this.supabase.client
+    .from('weekly_tasks')
+    .insert([
       {
         week_start: weekStart,
         title: 'นักสู้ CTAR',
@@ -122,22 +132,32 @@ export class TaskService {
         target: 3,
         reward: 5,
       },
-    ],
-    { onConflict: 'week_start,title', ignoreDuplicates: true }
-  )
-  .select('id');
+    ])
+    .select('id');
 
-    if (!newTasks?.length) return;
+  tasksForWeek = createdTasks || [];
 
-    // ผูก task กับ patient
-    await this.supabase.client.from('patient_tasks').insert(
-      newTasks.map((t) => ({
-        patient_id: patientId,
-        task_id: t.id,
-        week_start: weekStart,
-      })),
-    );
-  }
+} else {
+
+  // มีอยู่แล้ว → ใช้อันเดิม
+  tasksForWeek = existingWeeklyTasks;
+
+}
+
+// ไม่มี task จริง ๆ
+if (!tasksForWeek.length) return;
+
+// สร้าง patient_tasks ของ user นี้
+await this.supabase.client
+  .from('patient_tasks')
+  .insert(
+    tasksForWeek.map((t) => ({
+      patient_id: patientId,
+      task_id: t.id,
+      week_start: weekStart,
+    }))
+  );
+}
 
   // =========================================
   // เรียกหลัง session เสร็จ
