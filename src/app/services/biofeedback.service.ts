@@ -6,6 +6,7 @@ import { Injectable } from '@angular/core';
 export class BiofeedbackService {
   private audioCtx: AudioContext | null = null;
   private vibrationInterval: any = null;
+  public feedbackVolumeMultiplier = 1.0;
 
   private initAudio() {
     if (!this.audioCtx) {
@@ -31,10 +32,9 @@ export class BiofeedbackService {
       osc.frequency.value = freq;
 
       const now = this.audioCtx.currentTime;
-      gainNode.gain.setValueAtTime(volume, now);
+      gainNode.gain.setValueAtTime(volume * this.feedbackVolumeMultiplier, now);
       // Smooth exponential decay to avoid clicking noises
       gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationMs / 1000);
-
       osc.connect(gainNode);
       gainNode.connect(this.audioCtx.destination);
 
@@ -84,7 +84,7 @@ export class BiofeedbackService {
         osc.frequency.value = freq;
 
         const startTime = now + idx * 0.08;
-        gainNode.gain.setValueAtTime(0.08, startTime);
+        gainNode.gain.setValueAtTime(0.08 * this.feedbackVolumeMultiplier, startTime);
         gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.25);
 
         osc.connect(gainNode);
@@ -98,6 +98,29 @@ export class BiofeedbackService {
       this.vibrate([80, 50, 80, 50, 200]);
     } catch (e) {
       console.warn('Success arpeggio play failed:', e);
+    }
+  }
+
+  /**
+   * Intermediate sound played when the target hold time is met,
+   * signaling the user to release all force.
+   */
+  playHoldComplete() {
+    this.stopVibrationLoop();
+    try {
+      this.initAudio();
+      if (!this.audioCtx) return;
+
+      // Double beep tone: E5 (659.25Hz) then A5 (880.00Hz)
+      this.playTone(659.25, 'sine', 100, 0.08);
+      setTimeout(() => {
+        this.playTone(880.00, 'sine', 100, 0.08);
+      }, 120);
+
+      // Light haptic prompt
+      this.vibrate([60, 40, 60]);
+    } catch (e) {
+      console.warn('Hold complete sound play failed:', e);
     }
   }
 

@@ -75,7 +75,7 @@ import { RewardTasksComponent } from '../reward-task/reward-task.component';
                   routerLink="/calibrate"
                   class="mt-3 w-full min-h-[44px] bg-indigo-500/20 hover:bg-indigo-500/35 text-white font-semibold text-sm rounded-xl border border-indigo-400/30 transition-all duration-300 flex items-center justify-center transform hover:scale-[1.01] active:scale-[0.99]">
                   <i class="fa-solid fa-gauge-high mr-2"></i>
-                  {{ i18n.currentLang() === 'th' ? 'ปรับค่าแรงบีบใหม่ (Recalibrate)' : 'Recalibrate Force' }}
+                  {{ i18n.currentLang() === 'th' ? 'ปรับค่าแรงกดใหม่ (Recalibrate)' : 'Recalibrate Force' }}
                 </button>
               </div>
             </div>
@@ -146,7 +146,7 @@ import { RewardTasksComponent } from '../reward-task/reward-task.component';
                     <div class="flex justify-between items-start">
                       <div>
                         <span class="text-slate-500 dark:text-slate-400 font-medium text-xs block mb-0.5">
-                          {{ i18n.currentLang() === 'th' ? 'แรงบีบล่าสุด' : 'Latest Squeeze Force' }}
+                          {{ i18n.currentLang() === 'th' ? 'แรงกดล่าสุด' : 'Latest Press Force' }}
                         </span>
                         <span class="text-2xl font-extrabold text-slate-950 dark:text-white">
                           {{ lastSession().max_force | number:'1.0-1' }} N
@@ -284,7 +284,7 @@ export class PatientPortalComponent implements OnInit {
     if (!isConnected) {
       return lang === 'th' ? 'เชื่อมต่ออุปกรณ์' : 'Connect Device';
     } else if (!isCalibrated) {
-      return lang === 'th' ? 'วัดแรงบีบตั้งต้น (Calibrate)' : 'Calibrate Baseline';
+      return lang === 'th' ? 'วัดแรงกดตั้งต้น (Calibrate)' : 'Calibrate Baseline';
     } else {
       return lang === 'th' ? 'เริ่มฝึกซ้อม (Start Game)' : 'Start Game';
     }
@@ -334,8 +334,8 @@ export class PatientPortalComponent implements OnInit {
 
     if (pct > 0) {
       return lang === 'th'
-        ? `แรงบีบดีขึ้น ${pct.toFixed(1)}% จากวันแรก! คอและระบบกลืนแข็งแรงขึ้นครับ!`
-        : `Squeeze force improved by ${pct.toFixed(1)}% since day one! Muscles are getting stronger!`;
+        ? `แรงกดดีขึ้น ${pct.toFixed(1)}% จากวันแรก! คอและระบบกลืนแข็งแรงขึ้นครับ!`
+        : `Press force improved by ${pct.toFixed(1)}% since day one! Muscles are getting stronger!`;
     } else if (pct < 0) {
       return lang === 'th'
         ? 'รักษาระดับการฝึกฝนไว้นะครับ ร่างกายอาจมีล้าบ้าง แต่ทำต่อไปได้ผลดีแน่นอน!'

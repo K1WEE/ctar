@@ -258,7 +258,7 @@ import { Chart } from 'chart.js/auto';
                 <i class="fa-solid fa-magnifying-glass-chart text-brand-accent mr-2"></i>
                 <span *ngIf="inspectedSession() !== null">Force Curve — {{ inspectedSession()?.session_date | date:'MMM d, y' }}</span>
                 <span *ngIf="compareSessionIds().length > 0">
-                  {{ i18n.currentLang() === 'th' ? 'เปรียบเทียบกราฟแรงบีบ' : 'Superimposed Force Curve Analysis' }}
+                  {{ i18n.currentLang() === 'th' ? 'เปรียบเทียบกราฟแรงกด' : 'Superimposed Force Curve Analysis' }}
                   ({{ compareSessionIds().length }})
                 </span>
               </h3>

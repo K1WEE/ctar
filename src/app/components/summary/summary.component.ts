@@ -143,6 +143,15 @@ export class SummaryComponent implements OnInit {
     }
 
     this.isSaving = false;
+
+    // Play final session complete voice cue if not muted
+    const isMuted = localStorage.getItem('zen_balloon_muted') === 'true';
+    if (!isMuted) {
+      const lang = this.i18n.currentLang();
+      const path = `/assets/audio/${lang}/cue_session_complete.mp3`;
+      const audio = new Audio(path);
+      audio.play().catch(err => console.warn('Failed to play session complete voice-over:', err));
+    }
   }
 
   getImprovementColor(val: number) {

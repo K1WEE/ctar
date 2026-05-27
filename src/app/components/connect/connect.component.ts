@@ -30,10 +30,10 @@ import { I18nService } from '../../services/i18n.service';
             class="px-8 min-h-[56px] w-full bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center text-lg">
             <i class="fa-solid fa-link mr-3"></i> {{ i18n.t('connect.btnConnect') }}
           </button>
-          <button *ngIf="supabase.userRole() === 'admin'"
+          <button *ngIf="supabase.userRole() === 'admin' || isDevMode()"
             (click)="simulate()"
-            class="px-8 min-h-[48px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 flex items-center justify-center text-base border border-slate-200 dark:border-slate-700 mt-3">
-            <i class="fa-solid fa-flask mr-2"></i> {{ i18n.t('connect.btnSimulate') }} (Admin Only)
+            class="px-8 min-h-[48px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 flex items-center justify-center text-base border border-slate-200 dark:border-slate-700 mt-3 animate-fade-in">
+            <i class="fa-solid fa-flask mr-2"></i> {{ i18n.t('connect.btnSimulate') }}
           </button>
         </div>
 
@@ -59,6 +59,18 @@ export class ConnectComponent {
         setTimeout(() => this.router.navigate(['/calibrate']), 1000);
       }
     });
+  }
+
+  isDevMode(): boolean {
+    if (typeof window !== 'undefined') {
+      const host = window.location.hostname;
+      return host === 'localhost' || 
+             host === '127.0.0.1' || 
+             host.includes('192.168.') || 
+             host.includes('10.') || 
+             host.endsWith('.local');
+    }
+    return false;
   }
 
   connect() {

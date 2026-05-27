@@ -38,16 +38,17 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   // ─── Calibrate ───
   'calibrate.title': { th: 'ปรับตั้งค่าเครื่อง', en: 'Calibration Phase' },
   'calibrate.intro': {
-    th: 'เราจะวัดแรงกดของคุณโดยให้คุณ<strong>บีบ 3 ครั้ง</strong><br><br>แต่ละครั้งจะใช้เวลา 5 วินาที ตามด้วยพัก 5 วินาที เราจะใช้ค่าเฉลี่ยเพื่อตั้งระดับความยากของเกม',
-    en: 'We will measure your strength by asking you to squeeze as hard as you can <strong>3 times</strong>.<br><br>Each squeeze will last 5 seconds, followed by a 5-second rest. We will average your results to set the game difficulty.'
+    th: 'เราจะวัดแรงกดของคุณโดยให้คุณ<strong>กดเต็มแรง 1 ครั้งและปล่อย</strong><br><br>เราจะนำค่าแรงกดสูงสุดนี้ไปใช้ตั้งค่าระดับความยากของเกมให้เหมาะสมกับคุณ',
+    en: 'We will measure your strength by asking you to <strong>press as hard as you can once and release</strong>.<br><br>We will use this peak force to set the game difficulty.'
   },
   'calibrate.start': { th: 'เริ่มปรับตั้งค่า', en: 'Start Calibration' },
   'calibrate.round': { th: 'รอบที่', en: 'Round' },
   'calibrate.of': { th: 'จาก', en: 'of' },
-  'calibrate.squeeze': { th: 'บีบให้แรงที่สุด!', en: 'SQUEEZE AS HARD AS YOU CAN!' },
+  'calibrate.squeeze': { th: 'กดให้แรงที่สุด!', en: 'PRESS AS HARD AS YOU CAN!' },
   'calibrate.rest': { th: 'พักผ่อน...', en: 'REST AND RELAX...' },
   'calibrate.complete': { th: 'ปรับตั้งค่าเสร็จสิ้น! 🎉', en: 'Calibration Complete! 🎉' },
-  'calibrate.avgForce': { th: 'แรงกดเฉลี่ยสูงสุด:', en: 'Average Max Force:' },
+  'calibrate.avgForce': { th: 'แรงกดสูงสุด:', en: 'Peak Force:' },
+  'calibrate.hint': { th: 'กดค้างไว้ให้เต็มแรง แล้วปล่อยเพื่อเสร็จสิ้น', en: 'Press and hold to peak, then release to finish' },
   'calibrate.adjusting': { th: 'กำลังปรับระดับเกม...', en: 'Adjusting game difficulty...' },
   'calibrate.current': { th: 'ปัจจุบัน:', en: 'Current:' },
 
@@ -55,6 +56,12 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'game.activeSession': { th: 'กำลังฝึก', en: 'Active Session' },
   'game.targetReps': { th: 'เป้าหมาย:', en: 'Target Reps:' },
   'game.finish': { th: 'จบการฝึก', en: 'Finish Session' },
+  'game.feedback.squeeze': { th: 'กดและค้างลูกโป่งให้อยู่ในโซนเป้าหมาย...', en: 'Press and hold the balloon in the target zone...' },
+  'game.feedback.hold': { th: 'นิ่งไว้! รักษาตำแหน่ง...', en: 'Perfect! Keep steady.' },
+  'game.feedback.holdAlmost': { th: 'ค้างไว้อีกนิดเดียว...!', en: 'Hold it right there...!' },
+  'game.feedback.tooHard': { th: 'กดแรงเกินไป! ผ่อนแรงลงเล็กน้อย...', en: 'Too hard! Relax slightly...' },
+  'game.feedback.release': { th: 'เยี่ยมยอด! ปล่อยแรงกดให้สุดเพื่อจบ Rep...', en: 'Great hold! Release all force to complete rep...' },
+  'game.feedback.success': { th: 'สำเร็จแล้ว! 🎉', en: 'Rep Completed! 🎉' },
 
   // ─── Summary ───
   'summary.title': { th: 'ฝึกเสร็จแล้ว!', en: 'Session Complete!' },
@@ -115,7 +122,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'detail.compareDay': { th: 'เทียบครั้งก่อน', en: 'vs Prev Day' },
   'detail.compareWeek': { th: 'เทียบสัปดาห์ก่อน', en: 'vs Prev Week' },
   'detail.compareMonth': { th: 'เทียบเดือนก่อน', en: 'vs Prev Month' },
-  'detail.forceCurve': { th: 'กราฟแรงบีบ', en: 'Force Curve' },
+  'detail.forceCurve': { th: 'กราฟแรงกด', en: 'Force Curve' },
   'detail.noRawData': { th: 'ไม่พบข้อมูลกราฟดิบสำหรับการฝึกนี้', en: 'No raw data found for this session.' },
   'pagination.show': { th: 'แสดง', en: 'Show' },
   'pagination.entries': { th: 'รายการ', en: 'entries' },
