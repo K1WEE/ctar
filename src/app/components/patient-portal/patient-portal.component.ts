@@ -81,11 +81,11 @@ import { RewardTasksComponent } from '../reward-task/reward-task.component';
             </div>
           </div>
 
-          <!-- Bottom Grid: Streak Tracker and Progress Summary side by side -->
+          <!-- Bottom Grid: Streak Tracker and Weekly Tasks side by side -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             <!-- Weekly Streak / Consistency Tracker -->
-            <div class="bg-white/80 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between min-h-[260px]">
+            <div class="bg-white/80 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden flex flex-col justify-between h-full">
               <div class="absolute -bottom-16 -left-16 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
               <div>
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center">
@@ -116,91 +116,57 @@ import { RewardTasksComponent } from '../reward-task/reward-task.component';
                   </div>
                 </div>
               </div>
-              
-              <!-- Motivating message at the bottom -->
-              <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-6 text-center border-t border-slate-100 dark:border-white/5 pt-4 relative z-10 font-medium">
-                {{ getWeeklyStreakMessage() }}
-              </p>
-            </div>
 
-            <!-- Stats Card / Progress Summary -->
-            <div class="bg-white/80 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-xl flex flex-col justify-between min-h-[260px]">
-              <div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4 flex items-center">
-                  <i class="fa-solid fa-chart-line text-brand-accent mr-3"></i>
-                  {{ i18n.currentLang() === 'th' ? 'ความก้าวหน้าของคุณ' : 'Your Progress Summary' }}
-                </h3>
-                
-                <div *ngIf="isLoading()" class="flex justify-center py-8">
-                  <i class="fa-solid fa-spinner fa-spin text-2xl text-brand-accent"></i>
-                </div>
-
-                <div *ngIf="!isLoading() && !lastSession()" class="text-center py-6 text-slate-500 dark:text-slate-400">
-                  <i class="fa-solid fa-box-open text-3xl mb-2 opacity-50"></i>
-                  <p>{{ i18n.currentLang() === 'th' ? 'ยังไม่มีข้อมูลการฝึกซ้อม' : 'No training sessions recorded' }}</p>
-                </div>
-
-                <div *ngIf="!isLoading() && lastSession()" class="space-y-4">
-                  <!-- Max Force with Growth Badge -->
-                  <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl relative overflow-hidden">
-                    <div class="flex justify-between items-start">
-                      <div>
-                        <span class="text-slate-500 dark:text-slate-400 font-medium text-xs block mb-0.5">
-                          {{ i18n.currentLang() === 'th' ? 'แรงกดล่าสุด' : 'Latest Press Force' }}
-                        </span>
-                        <span class="text-2xl font-extrabold text-slate-950 dark:text-white">
-                          {{ lastSession().max_force | number:'1.0-1' }} N
-                        </span>
-                      </div>
-                      
-                      <!-- Growth Badge -->
-                      <div *ngIf="growthPercentage() !== 0" class="text-right">
-                        <span 
-                          [class]="growthPercentage() > 0 
-                            ? 'inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm' 
-                            : 'inline-flex items-center px-2.5 py-0.5 rounded-full text-2xs font-bold bg-amber-500/10 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-sm'"
-                        >
-                          <i class="fa-solid mr-1 text-3xs" [ngClass]="growthPercentage() > 0 ? 'fa-arrow-up' : 'fa-circle-check'"></i>
-                          {{ growthPercentage() > 0 ? '+' : '' }}{{ growthPercentage() | number:'1.0-1' }}%
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <!-- Motivating text based on growth -->
-                    <div class="mt-2 text-2xs sm:text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 border-t border-slate-100 dark:border-white/5 pt-2">
-                      <i class="fa-solid text-emerald-500 text-3xs" [ngClass]="growthPercentage() > 0 ? 'fa-circle-up' : 'fa-circle-check'"></i>
-                      <span>
-                        {{ getGrowthMotivationalMessage() }}
-                      </span>
-                    </div>
+              <!-- Stats Row -->
+              <div *ngIf="lastSession()" class="mt-6 pt-5 border-t border-slate-150 dark:border-white/5 relative z-10">
+                <div class="grid grid-cols-3 gap-3">
+                  <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-white/5 p-3 rounded-2xl text-center shadow-sm">
+                    <span class="text-slate-400 dark:text-slate-500 font-extrabold text-[10px] uppercase tracking-wider block mb-1">
+                      {{ i18n.currentLang() === 'th' ? 'แรงกดล่าสุด' : 'Latest Force' }}
+                    </span>
+                    <span class="text-base sm:text-lg font-black text-emerald-500 block">
+                      {{ lastSession().max_force | number:'1.0-1' }}N
+                    </span>
                   </div>
-
-                  <!-- Reps & Duration Stats -->
-                  <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl text-center">
-                      <span class="text-slate-500 dark:text-slate-400 font-medium text-2xs block mb-0.5">
-                        {{ i18n.currentLang() === 'th' ? 'จำนวนครั้งล่าสุด' : 'Latest Reps' }}
-                      </span>
-                      <span class="text-xl font-bold text-amber-600 dark:text-amber-400">
-                        {{ lastSession().reps }} {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}
-                      </span>
-                    </div>
-                    <div class="bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-xl text-center">
-                      <span class="text-slate-500 dark:text-slate-400 font-medium text-2xs block mb-0.5">
-                        {{ i18n.currentLang() === 'th' ? 'เวลาบำบัดรวม' : 'Total Duration' }}
-                      </span>
-                      <span class="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-                        {{ lastSession().duration_seconds }}s
-                      </span>
-                    </div>
+                  <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-white/5 p-3 rounded-2xl text-center shadow-sm">
+                    <span class="text-slate-400 dark:text-slate-500 font-extrabold text-[10px] uppercase tracking-wider block mb-1">
+                      {{ i18n.currentLang() === 'th' ? 'รอบล่าสุด' : 'Latest Reps' }}
+                    </span>
+                    <span class="text-base sm:text-lg font-black text-amber-500 block">
+                      {{ lastSession().reps }} {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}
+                    </span>
+                  </div>
+                  <div class="bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-white/5 p-3 rounded-2xl text-center shadow-sm">
+                    <span class="text-slate-400 dark:text-slate-500 font-extrabold text-[10px] uppercase tracking-wider block mb-1">
+                      {{ i18n.currentLang() === 'th' ? 'เวลารวม' : 'Duration' }}
+                    </span>
+                    <span class="text-base sm:text-lg font-black text-sky-500 block">
+                      {{ lastSession().duration_seconds }}s
+                    </span>
                   </div>
                 </div>
               </div>
+              
+              <!-- Motivating message at the bottom -->
+              <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-4 text-center relative z-10 font-medium">
+                {{ getWeeklyStreakMessage() }}
+              </p>
+
+              <!-- Mobile scroll navigation helper -->
+              <div class="md:hidden mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex justify-center relative z-10">
+                <button
+                  (click)="scrollToTasks()"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all duration-200"
+                >
+                  <span>{{ i18n.currentLang() === 'th' ? 'ดูภารกิจประจำสัปดาห์ของคุณ' : 'View your weekly tasks' }}</span>
+                  <i class="fa-solid fa-arrow-down animate-bounce text-sm"></i>
+                </button>
+              </div>
             </div>
 
-          </div>
-          <div class="mt-10">
-            <app-reward-tasks></app-reward-tasks>
+            <!-- Weekly Tasks Component in the right column -->
+            <app-reward-tasks id="weekly-tasks-card" class="h-full block"></app-reward-tasks>
+
           </div>
         </main>
       </div>
@@ -264,16 +230,20 @@ export class PatientPortalComponent implements OnInit {
     return weekDaysList;
   });
 
-  // Calculate percentage improvement in force from the very first session (baseline) to latest
+  // Calculate percentage improvement in force from the minimum historical session force to latest
   public growthPercentage = computed(() => {
     const sessions = this.sessionsList();
     if (sessions.length < 2) return 0;
     
     const last = sessions[0];
-    const first = sessions[sessions.length - 1];
     
-    if (first.max_force <= 0) return 0;
-    return ((last.max_force - first.max_force) / first.max_force) * 100;
+    // Find the minimum max_force among all sessions in database
+    const forces = sessions.map(s => s.max_force).filter(f => f > 0);
+    if (forces.length === 0) return 0;
+    const minForce = Math.min(...forces);
+    
+    if (minForce <= 0) return 0;
+    return ((last.max_force - minForce) / minForce) * 100;
   });
 
   getPlayButtonText(): string {
@@ -328,19 +298,22 @@ export class PatientPortalComponent implements OnInit {
   getGrowthMotivationalMessage(): string {
     const lang = this.i18n.currentLang();
     const pct = this.growthPercentage();
+    const sessions = this.sessionsList();
 
-    if (pct > 0) {
-      return lang === 'th'
-        ? `แรงกดดีขึ้น ${pct.toFixed(1)}% จากวันแรก! คอและระบบกลืนแข็งแรงขึ้นครับ!`
-        : `Press force improved by ${pct.toFixed(1)}% since day one! Muscles are getting stronger!`;
-    } else if (pct < 0) {
-      return lang === 'th'
-        ? 'รักษาระดับการฝึกฝนไว้นะครับ ร่างกายอาจมีล้าบ้าง แต่ทำต่อไปได้ผลดีแน่นอน!'
-        : 'Maintain your training rhythm! Fatigue happens, but consistency will yield results!';
-    } else {
+    if (sessions.length < 2) {
       return lang === 'th'
         ? 'นี่คือเซสชันแรกของคุณ ยอดเยี่ยมมากครับ! มาตั้งเป้าเพิ่มความแข็งแรงในครั้งถัดไปกัน!'
         : 'This is your baseline session, great job! Let\'s aim for progress in the next one!';
+    }
+
+    if (pct > 0) {
+      return lang === 'th'
+        ? `แรงกดดีขึ้น ${pct.toFixed(1)}% จากครั้งที่แรงน้อยที่สุด! ร่างกายพัฒนาขึ้นเรื่อยๆ ครับ!`
+        : `Press force improved by ${pct.toFixed(1)}% from your lowest recorded session! Making progress!`;
+    } else {
+      return lang === 'th'
+        ? 'รักษาระดับการฝึกฝนไว้นะครับ ร่างกายอาจมีล้าบ้าง แต่ทำต่อไปได้ผลดีแน่นอน!'
+        : 'Maintain your training rhythm! Fatigue happens, but consistency will yield results!';
     }
   }
 
@@ -367,6 +340,10 @@ export class PatientPortalComponent implements OnInit {
       }
     }
     this.isLoading.set(false);
+  }
+
+  scrollToTasks() {
+    document.getElementById('weekly-tasks-card')?.scrollIntoView({ behavior: 'smooth' });
   }
 
   async logout() {

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SupabaseService } from '../../services/supabase.service';
 import { TaskService } from '../../services/task.service';
+import { I18nService } from '../../services/i18n.service';
 
 interface RewardTask {
   id: string;
@@ -28,7 +29,7 @@ interface LeaderboardEntry {
   standalone: true,
   imports: [CommonModule],
   template: `
-  <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-xl">
+  <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-3xl p-6 shadow-xl h-full flex flex-col justify-between">
 
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
@@ -66,61 +67,110 @@ interface LeaderboardEntry {
 
     </div>
 
-    <!-- Tasks -->
-    <div class="space-y-4">
+    <!-- Weekly Overall Progress Card -->
+    <div class="mb-6 bg-gradient-to-br from-emerald-500/10 to-teal-500/5 dark:from-emerald-500/20 dark:to-teal-500/10 border border-emerald-500/25 dark:border-emerald-500/15 rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+      <!-- Glow effect -->
+      <div class="absolute -top-12 -right-12 w-24 h-24 bg-teal-400/20 rounded-full blur-xl pointer-events-none"></div>
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 relative z-10">
+        <div>
+          <span class="text-2xs sm:text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block mb-0.5">
+            {{ i18n.currentLang() === 'th' ? 'ภาพรวมความก้าวหน้า' : 'Overall Progress' }}
+          </span>
+          <h3 class="text-lg sm:text-xl font-black text-slate-800 dark:text-white">
+            {{ i18n.currentLang() === 'th' ? 'อัตราสำเร็จสัปดาห์นี้:' : 'Weekly Completion:' }} <span class="text-emerald-500">{{ weeklyCompletionRate }}%</span>
+          </h3>
+        </div>
+        <div class="text-slate-500 dark:text-slate-400 text-xs font-medium bg-white/60 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 px-3 py-1 rounded-full self-start sm:self-auto shadow-sm">
+          {{ tasks.length }} {{ i18n.currentLang() === 'th' ? 'ภารกิจที่ต้องทำ' : 'tasks active' }}
+        </div>
+      </div>
+      
+      <!-- Big Progress Bar -->
+      <div class="w-full h-3 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden relative z-10 shadow-inner">
+        <div
+          class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-700 ease-out"
+          [style.width.%]="weeklyCompletionRate">
+        </div>
+      </div>
+      
+      <!-- Motivation Message -->
+      <p class="text-xs sm:text-sm font-semibold text-slate-700 dark:text-emerald-300/90 mt-3 sm:mt-4 flex items-center gap-2 relative z-10">
+        <i class="fa-solid fa-circle-check text-emerald-500 animate-pulse text-sm sm:text-base"></i>
+        <span>{{ getWeeklyProgressMessage() }}</span>
+      </p>
+    </div>
 
-      <div
-        *ngFor="let task of tasks"
-        class="bg-slate-100 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-white/5 transition-all hover:scale-[1.01]"
-      >
-
-        <div class="flex items-start justify-between gap-4">
-
-          <div class="flex gap-4 flex-1">
-
+    <!-- Tasks Carousel -->
+    <div class="relative z-10 select-none">
+      <div *ngIf="tasks.length > 0; else noTasks"
+           (touchstart)="onTouchStart($event)"
+           (touchend)="onTouchEnd($event)"
+           class="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-white/5 transition-all duration-300 min-h-[145px] flex flex-col justify-between cursor-grab active:cursor-grabbing shadow-sm overflow-hidden">
+        
+        <div *ngFor="let task of tasks; let i = index">
+          <div *ngIf="i === currentTaskIndex" class="animate-fade-in flex items-start gap-4">
+            
             <!-- Icon -->
             <div
-              class="w-12 h-12 rounded-2xl flex items-center justify-center
-                     bg-indigo-500/20 text-indigo-400 text-xl shrink-0">
-              <i class="fa-solid" [class]="task.icon"></i>
+              class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+              [class]="task.completed ? 'bg-emerald-500/20 text-emerald-500' : 'bg-indigo-500/20 text-indigo-400'">
+              <i class="fa-solid text-xl" [class]="task.icon"></i>
             </div>
 
             <!-- Content -->
-            <div class="flex-1">
-
-              <div class="flex items-center gap-2">
-                <h3 class="font-bold text-slate-800 dark:text-white">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="font-bold text-base text-slate-800 dark:text-white truncate">
                   {{ task.title }}
                 </h3>
-                <div *ngIf="task.completed" class="text-emerald-400">
+                <span *ngIf="task.completed" class="text-emerald-500 text-sm">
                   <i class="fa-solid fa-circle-check"></i>
-                </div>
+                </span>
               </div>
-
-              <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+              <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {{ task.description }}
               </p>
 
-              <!-- Progress -->
+              <!-- Progress Bar -->
               <div class="mt-4">
-                <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                <div class="w-full h-2 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden shadow-inner">
                   <div
-                    class="h-full bg-gradient-to-r from-indigo-500 to-cyan-400 transition-all duration-500"
+                    class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
                     [style.width.%]="(task.progress / task.target) * 100">
                   </div>
                 </div>
-                <div class="flex justify-between text-xs mt-2 text-slate-500 dark:text-slate-400">
+                <div class="flex justify-between text-xs mt-2 text-slate-500 dark:text-slate-400 font-semibold">
                   <span>{{ task.progress }} / {{ task.target }}</span>
-                  <span class="text-yellow-500 font-bold">⭐ {{ task.reward }}</span>
+                  <span class="text-yellow-500 flex items-center gap-1">
+                    <span>⭐</span>
+                    <span>{{ task.reward }}</span>
+                  </span>
                 </div>
               </div>
 
             </div>
-
           </div>
-
         </div>
 
+      </div>
+
+      <ng-template #noTasks>
+        <div class="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-6 border border-slate-200 dark:border-white/5 text-center text-slate-400">
+          <i class="fa-solid fa-clipboard-list text-2xl mb-2 opacity-50"></i>
+          <p class="text-sm">ไม่มีภารกิจในขณะนี้</p>
+        </div>
+      </ng-template>
+
+      <!-- Carousel Indicator Dots -->
+      <div *ngIf="tasks.length > 1" class="flex justify-center gap-2 mt-4">
+        <button
+          *ngFor="let task of tasks; let i = index"
+          (click)="setTaskIndex(i)"
+          class="w-2.5 h-2.5 rounded-full transition-all duration-300 hover:scale-125 focus:outline-none"
+          [class]="i === currentTaskIndex ? 'bg-emerald-500 w-5' : 'bg-slate-300 dark:bg-slate-600'"
+          [attr.aria-label]="'ไปยังภารกิจที่ ' + (i + 1)">
+        </button>
       </div>
 
     </div>
@@ -396,7 +446,85 @@ interface LeaderboardEntry {
   </div>
   `
 })
-export class RewardTasksComponent implements OnInit {
+export class RewardTasksComponent implements OnInit, OnDestroy {
+
+  public i18n = inject(I18nService);
+  public currentTaskIndex = 0;
+  private autoPlayInterval: any;
+  private touchStartX = 0;
+
+  get weeklyCompletionRate(): number {
+    if (!this.tasks || this.tasks.length === 0) return 0;
+    const sum = this.tasks.reduce((acc, t) => {
+      const progressPercent = Math.min(100, (t.progress / t.target) * 100);
+      return acc + progressPercent;
+    }, 0);
+    return Math.round(sum / this.tasks.length);
+  }
+
+  getWeeklyProgressMessage(): string {
+    const rate = this.weeklyCompletionRate;
+    const lang = this.i18n.currentLang();
+    if (lang === 'th') {
+      if (rate === 0) return 'ยังไม่ได้เริ่มภารกิจของสัปดาห์นี้ มาเริ่มฝึกซ้อมกันเลย! 🚀';
+      if (rate < 50) return `ทำภารกิจสำเร็จแล้ว ${rate}%! เริ่มต้นได้ดีมากครับคุณตาคุณยาย 👏`;
+      if (rate < 100) return `ทำภารกิจสำเร็จแล้ว ${rate}%! อีกนิดเดียวจะครบ 100% แล้ว สู้ๆ ครับ! 💪`;
+      return 'ยอดเยี่ยมที่สุด! 🎉 คุณทำภารกิจประจำสัปดาห์ครบ 100% แล้ว!';
+    } else {
+      if (rate === 0) return 'No tasks started yet this week. Let\'s begin training! 🚀';
+      if (rate < 50) return `Weekly tasks ${rate}% completed! Great start! 👏`;
+      if (rate < 100) return `Weekly tasks ${rate}% completed! Almost there, keep it up! 💪`;
+      return 'Outstanding! 🎉 You have completed 100% of your weekly tasks!';
+    }
+  }
+
+  startAutoPlay() {
+    this.stopAutoPlay();
+    if (this.tasks.length <= 1) return;
+    this.autoPlayInterval = setInterval(() => {
+      this.nextTask();
+    }, 7000);
+  }
+
+  stopAutoPlay() {
+    if (this.autoPlayInterval) {
+      clearInterval(this.autoPlayInterval);
+      this.autoPlayInterval = null;
+    }
+  }
+
+  nextTask() {
+    if (this.tasks.length === 0) return;
+    this.currentTaskIndex = (this.currentTaskIndex + 1) % this.tasks.length;
+  }
+
+  prevTask() {
+    if (this.tasks.length === 0) return;
+    this.currentTaskIndex = (this.currentTaskIndex - 1 + this.tasks.length) % this.tasks.length;
+  }
+
+  setTaskIndex(index: number) {
+    this.currentTaskIndex = index;
+    this.startAutoPlay();
+  }
+
+  onTouchStart(event: TouchEvent) {
+    this.touchStartX = event.touches[0].clientX;
+  }
+
+  onTouchEnd(event: TouchEvent) {
+    const touchEndX = event.changedTouches[0].clientX;
+    const diff = this.touchStartX - touchEndX;
+    
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        this.nextTask();
+      } else {
+        this.prevTask();
+      }
+      this.startAutoPlay();
+    }
+  }
 
   tasks: RewardTask[] = [];
   totalStars = 0;
@@ -457,6 +585,11 @@ export class RewardTasksComponent implements OnInit {
     }));
 
     this.totalStars = patientResult.data?.stars || 0;
+    this.startAutoPlay();
+  }
+
+  ngOnDestroy() {
+    this.stopAutoPlay();
   }
 
   async openLeaderboard() {

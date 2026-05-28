@@ -10,7 +10,7 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
   standalone: true,
   imports: [CommonModule, ChinTuckDemoComponent],
   template: `
-    <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl rounded-3xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center border border-slate-200 dark:border-white/10 min-h-[450px] h-full relative overflow-hidden transition-colors duration-300">
+    <div class="game-card bg-white/70 dark:bg-brand-card backdrop-blur-xl rounded-3xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center border border-slate-200 dark:border-white/10 min-h-[450px] h-full relative overflow-hidden transition-colors duration-300">
       
       <!-- Ready State Overlay (Transparent backdrop, showing game behind it) -->
       <div *ngIf="gameFlowState() === 'ready'" class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
@@ -52,9 +52,9 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
       <div class="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-[80px] opacity-10 pointer-events-none"></div>
 
       <!-- Integrated Top Header Bar -->
-      <div class="w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-white/10 relative z-10">
+      <div class="game-header w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-white/10 relative z-10">
         <div class="flex items-center space-x-3 min-w-0">
-          <button (click)="goBack()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors shrink-0">
+          <button (click)="goBack()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-885 dark:hover:text-white transition-colors shrink-0">
             <i class="fa-solid fa-arrow-left text-lg"></i>
           </button>
           <div class="text-left min-w-0">
@@ -80,7 +80,7 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
         </div>
       </div>
 
-      <div class="flex items-center space-x-3 mb-6 relative z-10 mt-1">
+      <div class="game-title-container flex items-center space-x-3 mb-6 relative z-10 mt-1">
          <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-amber-50 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 border border-amber-100 dark:border-transparent transition-colors duration-300">
             <i class="fa-solid fa-parachute-box text-lg xs:text-xl"></i>
          </div>
@@ -105,16 +105,16 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
         </div>
 
         <!-- The Balloon Track (Centered & Dynamically Sized to fill parent container height) -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-28 xs:w-32 h-[85%] xs:h-[90%] bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md rounded-full border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner flex flex-col justify-end z-10 transition-colors duration-300">
+        <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-24 xs:w-28 h-[85%] xs:h-[90%] bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md rounded-full border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner flex flex-col justify-end z-10 transition-colors duration-300">
           
           <!-- Target Zone Overlay (Elderly-Friendly High-Contrast Amber/Orange with indicators) -->
           <div *ngIf="!isReleasing"
-               class="absolute w-full bg-amber-500/30 dark:bg-amber-500/40 border-y-4 border-amber-600 dark:border-amber-400 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] dark:shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-between px-1 xs:px-2"
+               class="absolute w-full bg-amber-500/30 dark:bg-amber-500/40 border-y-4 border-amber-600 dark:border-amber-400 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] dark:shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-between px-1.5 xs:px-2"
                [style.bottom.%]="targetMinPercent" 
                [style.height.%]="targetMaxPercent - targetMinPercent">
-             <i class="fa-solid fa-chevron-right text-amber-700 dark:text-amber-300 text-xs xs:text-sm"></i>
-             <span class="text-xs xs:text-sm font-black text-amber-950 dark:text-amber-100 uppercase tracking-widest pointer-events-none select-none">{{ i18n.t('game.zone.target') }}</span>
-             <i class="fa-solid fa-chevron-left text-amber-700 dark:text-amber-300 text-xs xs:text-sm"></i>
+             <i class="fa-solid fa-chevron-right text-amber-700 dark:text-amber-300 text-[10px] xs:text-xs"></i>
+             <span class="text-[11px] xs:text-xs font-black text-amber-950 dark:text-amber-100 uppercase tracking-tighter whitespace-nowrap pointer-events-none select-none">{{ i18n.t('game.zone.target') }}</span>
+             <i class="fa-solid fa-chevron-left text-amber-700 dark:text-amber-300 text-[10px] xs:text-xs"></i>
           </div>
 
           <!-- Release Green Zone Overlay (Visible only when releasing for relaxation below 4.0N) -->
@@ -122,24 +122,24 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
                class="absolute w-full bg-emerald-500/20 dark:bg-emerald-500/35 border-t-4 border-emerald-500/80 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] flex flex-col items-center justify-center px-1"
                style="bottom: 0;"
                [style.height.%]="restZoneVisualPercent">
-             <i class="fa-solid fa-chevron-down text-emerald-600 dark:text-emerald-400 text-sm mb-0.5"></i>
-             <span class="text-sm xs:text-base font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-widest pointer-events-none select-none">{{ i18n.t('game.zone.rest') }}</span>
+             <i class="fa-solid fa-chevron-down text-emerald-600 dark:text-emerald-400 text-xs mb-0.5"></i>
+             <span class="text-[11px] xs:text-xs font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-tighter whitespace-nowrap pointer-events-none select-none">{{ i18n.t('game.zone.rest') }}</span>
           </div>
 
           <!-- The Floating Balloon (Raised offset slightly to prevent bottom clipping) -->
           <div class="absolute w-full flex justify-center transition-all duration-75 ease-linear"
                [style.bottom.%]="balloonPosition * 0.85 + 6">
-            <div class="w-16 h-20 xs:w-20 xs:h-24 bg-gradient-to-tr from-rose-600 to-pink-500 rounded-[50%] shadow-[0_0_20px_rgba(244,63,94,0.5)] relative flex items-center justify-center
+            <div class="w-14 h-18 xs:w-16 xs:h-20 bg-gradient-to-tr from-rose-600 to-pink-500 rounded-[50%] shadow-[0_0_20px_rgba(244,63,94,0.5)] relative flex items-center justify-center
                         before:content-[''] before:absolute before:-bottom-2 before:w-0 before:h-0 
-                        before:border-l-[6px] before:border-l-transparent before:border-r-[6px] before:border-r-transparent 
-                        before:border-b-[8px] before:border-b-rose-700
+                        before:border-l-[5px] before:border-l-transparent before:border-r-[5px] before:border-r-transparent 
+                        before:border-b-[7px] before:border-b-rose-700
                         transition-transform duration-300"
                   [ngClass]="{'scale-110 shadow-[0_0_30px_rgba(245,158,11,0.7)] border-2 border-amber-400': inTargetZone}">
-               <i class="fa-solid fa-face-smile text-white text-2xl xs:text-3xl drop-shadow-md animate-pulse" *ngIf="inTargetZone"></i>
-               <i class="fa-solid fa-wind text-white text-2xl xs:text-3xl opacity-80" *ngIf="!inTargetZone"></i>
+               <i class="fa-solid fa-face-smile text-white text-xl xs:text-2xl drop-shadow-md animate-pulse" *ngIf="inTargetZone"></i>
+               <i class="fa-solid fa-wind text-white text-xl xs:text-2xl opacity-80" *ngIf="!inTargetZone"></i>
             </div>
             <!-- String -->
-            <div class="absolute top-20 xs:top-24 w-px h-[500px] bg-gradient-to-b from-slate-300 dark:from-white/50 to-transparent"></div>
+            <div class="absolute top-18 xs:top-20 w-px h-[500px] bg-gradient-to-b from-slate-300 dark:from-white/50 to-transparent"></div>
           </div>
         </div>
 
@@ -155,7 +155,7 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
       </div>
 
       <!-- Hold/Release Progress Indicator -->
-      <div class="mt-8 w-full max-w-xs xs:max-w-sm relative z-10">
+      <div class="mt-8 w-full max-w-xs xs:max-w-sm relative z-10 progress-container">
         <div class="flex justify-between text-sm xs:text-base font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wider transition-colors duration-300">
           <span>{{ isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer') }}</span>
           <span class="text-brand-accent">{{ holdProgress | number:'1.0-0' }}%</span>
@@ -170,7 +170,7 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
       </div>
       
       <!-- Feedback Text -->
-      <div class="mt-4 text-center font-bold text-xl xs:text-2xl h-8 xs:h-10 transition-colors duration-300 relative z-10"
+      <div class="mt-4 text-center font-bold text-xl xs:text-2xl h-8 xs:h-10 transition-colors duration-300 relative z-10 feedback-container"
            [ngClass]="isReleasing ? 'text-sky-600 dark:text-sky-400' : (inTargetZone ? 'text-amber-700 dark:text-amber-300 drop-shadow-[0_0_4px_rgba(245,158,11,0.3)] dark:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'text-slate-700 dark:text-slate-300')"
            role="status" aria-live="polite">
         {{ feedbackMessage }}
@@ -178,6 +178,55 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
     </div>
   `,
   styles: [`
+    .game-card {
+      box-sizing: border-box;
+    }
+    
+    @media (max-height: 800px) {
+      .game-card {
+        padding: 0.75rem 1rem !important;
+        min-height: 0 !important;
+      }
+      .game-header {
+        padding-bottom: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+      }
+      .game-title-container {
+        margin-bottom: 0.5rem !important;
+        margin-top: 0 !important;
+      }
+      .game-title-container h2 {
+        font-size: 1.25rem !important;
+      }
+      .game-title-container .w-10 {
+        width: 1.75rem !important;
+        height: 1.75rem !important;
+      }
+      .game-title-container i {
+        font-size: 0.875rem !important;
+      }
+      .progress-container {
+        margin-top: 0.75rem !important;
+      }
+      .feedback-container {
+        margin-top: 0.25rem !important;
+        font-size: 1.125rem !important;
+        height: auto !important;
+      }
+    }
+
+    @media (max-height: 680px) {
+      .game-title-container {
+        display: none !important;
+      }
+      .progress-container {
+        margin-top: 0.5rem !important;
+      }
+      .feedback-container {
+        font-size: 1rem !important;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       :host ::ng-deep .animate-pulse { animation: none !important; }
       :host ::ng-deep [class*="transition"] { transition-duration: 0.01ms !important; }

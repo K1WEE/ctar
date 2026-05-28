@@ -10,7 +10,7 @@ import { I18nService } from '../../services/i18n.service';
   standalone: true,
   imports: [CommonModule, ZenBalloonComponent],
   template: `
-    <div class="h-screen max-h-screen overflow-hidden flex flex-col relative z-10 text-slate-800 dark:text-slate-200 p-3 sm:p-4 md:p-6 lg:p-8 bg-slate-50 dark:bg-slate-950">
+    <div class="game-layout-root h-screen max-h-screen overflow-hidden flex flex-col relative z-10 text-slate-800 dark:text-slate-200 p-3 sm:p-4 md:p-6 lg:p-8 bg-slate-50 dark:bg-slate-950">
       <div class="max-w-[460px] mx-auto w-full h-full flex flex-col min-h-0 justify-center">
         <app-zen-balloon 
           class="w-full h-full block min-h-0"
@@ -23,7 +23,14 @@ import { I18nService } from '../../services/i18n.service';
         </app-zen-balloon>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    @media (max-height: 800px) {
+      .game-layout-root {
+        padding: 0.5rem !important;
+      }
+    }
+  `]
 })
 export class GameComponent implements OnInit {
   public targetReps = 15;
