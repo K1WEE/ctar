@@ -31,16 +31,16 @@ import { I18nService } from '../../services/i18n.service';
           <ellipse cx="100" cy="86" rx="28" ry="7" fill="#B8B8B8" stroke="#A0A0A0" stroke-width="1"/>
           <!-- Pad highlight -->
           <ellipse cx="100" cy="84" rx="18" ry="3" fill="#C8C8C8" opacity="0.5"/>
+          <!-- Glow ring around chin pad (pulses with arrow, moves with pad) -->
+          <ellipse cx="100" cy="86" rx="34" ry="10" fill="none" stroke="#F59E0B" stroke-width="2.5" class="glow-ring"/>
         </g>
 
-        <!-- Animated Press Arrow and Glow Ring -->
+        <!-- Animated Press Arrow -->
         <g class="press-indicators">
           <!-- Arrow shaft -->
           <line x1="100" y1="20" x2="100" y2="48" stroke="#EF4444" stroke-width="3.5" stroke-linecap="round" class="press-arrow"/>
           <!-- Arrow head -->
           <polygon points="92,44 100,58 108,44" fill="#EF4444" class="press-arrow"/>
-          <!-- Glow ring around chin pad (pulses with arrow) -->
-          <ellipse cx="100" cy="94" rx="34" ry="12" fill="none" stroke="#F59E0B" stroke-width="2.5" class="glow-ring"/>
         </g>
         
       </svg>
@@ -95,6 +95,7 @@ import { I18nService } from '../../services/i18n.service';
     .glow-ring {
       opacity: 0;
       animation: glowPulse 3s ease-in-out infinite;
+      transform-origin: 100px 86px;
     }
 
     @keyframes glowPulse {

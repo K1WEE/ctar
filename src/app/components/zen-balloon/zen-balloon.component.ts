@@ -59,7 +59,9 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
           </button>
           <div class="text-left min-w-0">
             <h3 class="font-black text-base xs:text-lg sm:text-xl text-slate-800 dark:text-white leading-tight whitespace-nowrap">{{ i18n.t('game.activeSession') }}</h3>
-            <p class="text-xs xs:text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-tight font-semibold whitespace-nowrap">{{ i18n.t('game.targetReps') }} {{ targetReps }}</p>
+            <p class="text-xs xs:text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-tight font-semibold whitespace-nowrap">
+              {{ i18n.t('game.targetReps') }} {{ targetReps }} &nbsp;|&nbsp; {{ i18n.t('game.hud.reps') }} {{ currentRepVal }}
+            </p>
           </div>
         </div>
         <div class="flex items-center space-x-2 shrink-0">
@@ -80,32 +82,28 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
         </div>
       </div>
 
-      <div class="game-title-container flex items-center space-x-3 mb-6 relative z-10 mt-1">
-         <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-amber-50 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 border border-amber-100 dark:border-transparent transition-colors duration-300">
-            <i class="fa-solid fa-parachute-box text-lg xs:text-xl"></i>
+      <div class="game-title-container flex flex-col items-center mb-6 relative z-10 mt-1 w-full text-center">
+         <div class="flex items-center space-x-3 mb-3">
+            <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-amber-50 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 border border-amber-100 dark:border-transparent transition-colors duration-300">
+               <i class="fa-solid fa-parachute-box text-lg xs:text-xl"></i>
+            </div>
+            <h2 class="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-wide transition-colors duration-300">{{ i18n.t('game.title') }}</h2>
          </div>
-         <h2 class="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-wide transition-colors duration-300">{{ i18n.t('game.title') }}</h2>
+         
+         <!-- Reps Pill Badge (Centered) -->
+         <div class="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 rounded-full text-amber-800 dark:text-amber-400 font-extrabold text-sm sm:text-base shadow-sm">
+            <i class="fa-solid fa-dumbbell text-amber-600 dark:text-amber-500"></i>
+            <span>{{ i18n.t('game.hud.reps') }}:</span>
+            <span class="text-lg sm:text-xl font-black tabular-nums">{{ currentRepVal }}</span>
+            <span class="text-xs sm:text-sm text-slate-400 dark:text-slate-500">/ {{ targetReps }}</span>
+         </div>
       </div>
 
-      <!-- Main Game Area with Side HUDs -->
-      <div class="w-full flex-1 relative flex justify-between items-center z-20 min-h-0">
-        
-        <!-- Left HUD: Forces (Percentage Display) -->
-        <div class="flex flex-col gap-2 xs:gap-4 w-[30%] max-w-[130px] z-20">
-          <div class="text-right bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-2 xs:p-2.5 rounded-xl border border-white/20 dark:border-white/5 w-full shadow-sm">
-             <div class="text-xs xs:text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider mb-0.5 sm:mb-1" aria-label="Current force"><i class="fa-solid fa-bolt text-blue-400 mr-1"></i> {{ i18n.t('game.hud.current') }}</div>
-             <div class="text-2xl xs:text-3xl font-black text-blue-600 dark:text-blue-400 tabular-nums" role="status" aria-live="polite">{{ forcePercent() }}<span class="text-xs text-slate-400 font-bold ml-0.5 sm:ml-1">%</span></div>
-          </div>
-          
-          <div class="text-right bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-2 xs:p-2.5 rounded-xl border border-white/20 dark:border-white/5 w-full shadow-sm">
-             <div class="text-xs xs:text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider mb-0.5 sm:mb-1" aria-label="Peak force"><i class="fa-solid fa-arrow-trend-up text-amber-600 mr-1"></i> {{ i18n.t('game.hud.peak') }}</div>
-             <div class="text-xl xs:text-2xl font-black text-amber-700 dark:text-amber-300 tabular-nums">{{ peakPercent() }}<span class="text-xs text-slate-400 font-bold ml-0.5 sm:ml-1">%</span></div>
-             <div class="text-xs xs:text-sm text-slate-600 dark:text-slate-400 font-bold mt-1 tabular-nums">{{ i18n.t('game.hud.goal') }} 100%</div>
-          </div>
-        </div>
+      <!-- Main Game Area (Centered Single Column) -->
+      <div class="w-full flex-1 relative flex justify-center items-center z-20 min-h-0">
 
         <!-- The Balloon Track (Centered & Dynamically Sized to fill parent container height) -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-24 xs:w-28 h-[85%] xs:h-[90%] bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md rounded-full border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner flex flex-col justify-end z-10 transition-colors duration-300">
+        <div class="relative w-24 xs:w-28 h-[85%] xs:h-[90%] bg-slate-100 dark:bg-slate-800/50 backdrop-blur-md rounded-full border border-slate-200 dark:border-white/10 overflow-hidden shadow-inner flex flex-col justify-end z-10 transition-colors duration-300">
           
           <!-- Target Zone Overlay (Elderly-Friendly High-Contrast Amber/Orange with indicators) -->
           <div *ngIf="!isReleasing"
@@ -140,15 +138,6 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
             </div>
             <!-- String -->
             <div class="absolute top-18 xs:top-20 w-px h-[500px] bg-gradient-to-b from-slate-300 dark:from-white/50 to-transparent"></div>
-          </div>
-        </div>
-
-        <!-- Right HUD: Reps -->
-        <div class="flex flex-col gap-2 xs:gap-4 w-[30%] max-w-[130px] z-20">
-          <div class="text-left bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-2 xs:p-2.5 rounded-xl border border-white/20 dark:border-white/5 w-full h-full shadow-sm">
-             <div class="text-xs xs:text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider mb-0.5 sm:mb-1" aria-label="Repetition count"><i class="fa-solid fa-dumbbell text-amber-600 mr-1"></i> {{ i18n.t('game.hud.reps') }}</div>
-             <div class="text-3xl xs:text-4xl font-black text-amber-700 dark:text-amber-300 tabular-nums">{{ currentRepVal }}</div>
-             <div class="text-sm xs:text-base font-bold text-slate-500 mt-1 tabular-nums">/ {{ targetReps }}</div>
           </div>
         </div>
 
@@ -239,6 +228,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   public gameFlowState = signal<'ready' | 'countdown' | 'playing'>('ready');
   public countdownValue = signal<number>(3);
   private countdownTimer: any;
+  private voiceTimeout: any;
   private router = inject(Router);
 
   public isMuted = false;
@@ -380,7 +370,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.updateDifficulty();
 
     // Play introductory welcome cue
-    setTimeout(() => {
+    this.setVoiceTimeout(() => {
       this.playVoice('intro.mp3');
     }, 600);
   }
@@ -393,6 +383,13 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       this.activeAudio = null;
       this.biofeedback.feedbackVolumeMultiplier = 1.0;
     }
+  }
+
+  private setVoiceTimeout(callback: () => void, delay: number) {
+    if (this.voiceTimeout) {
+      clearTimeout(this.voiceTimeout);
+    }
+    this.voiceTimeout = setTimeout(callback, delay);
   }
 
   private playVoice(filename: string) {
@@ -472,7 +469,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                 this.playVoice('cue_rep_success.mp3');
 
                 // Play squeeze instruction cue after success chime has finished playing (3.5s delay)
-                setTimeout(() => {
+                this.setVoiceTimeout(() => {
                   if (!this.isReleasing && !this.inTargetZone && this.currentRepVal < this.targetReps) {
                     this.playVoice('cue_squeeze.mp3');
                   }
@@ -628,7 +625,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.startGameLoop();
     
     // Play initial squeeze instruction cue after starting
-    setTimeout(() => {
+    this.setVoiceTimeout(() => {
       if (this.gameFlowState() === 'playing' && !this.isReleasing && !this.inTargetZone) {
         this.playVoice('cue_squeeze.mp3');
       }
@@ -641,6 +638,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     }
     if (this.countdownTimer) {
       clearInterval(this.countdownTimer);
+    }
+    if (this.voiceTimeout) {
+      clearTimeout(this.voiceTimeout);
     }
     this.biofeedback.stopVibrationLoop();
     if (this.activeAudio) {

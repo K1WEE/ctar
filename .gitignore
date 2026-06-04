@@ -42,3 +42,6 @@ testem.log
 Thumbs.db
 src/environments/
 .env
+.agents/
+.gemini/
+.claude/
