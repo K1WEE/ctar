@@ -10,11 +10,19 @@ export class SupabaseService {
   public currentUser = signal<User | null>(null);
   public userRole = signal<string>('user');
 
+  /**
+   * Resolves once the initial session has been restored from storage.
+   * Route guards must await this before reading currentUser(), otherwise a
+   * page refresh evaluates the guard before the async session lookup completes
+   * and the user is wrongly bounced to /login.
+   */
+  public sessionReady: Promise<void>;
+
   constructor() {
     this.client = createClient(environment.supabase.url, environment.supabase.key);
-    
+
     // Check initial session
-    this.client.auth.getSession().then(({ data }) => {
+    this.sessionReady = this.client.auth.getSession().then(({ data }) => {
       const user = data.session?.user || null;
       this.currentUser.set(user);
       if (user) {

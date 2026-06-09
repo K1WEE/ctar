@@ -9,20 +9,24 @@ import { GameComponent } from './components/game/game.component';
 import { SummaryComponent } from './components/summary/summary.component';
 import { SupabaseService } from './services/supabase.service';
 
-const authGuard: CanActivateFn = () => {
+const authGuard: CanActivateFn = async () => {
   const supabase = inject(SupabaseService);
   const router = inject(Router);
-  
+
+  await supabase.sessionReady;
+
   if (supabase.currentUser()) {
     return true;
   }
-  
+
   return router.parseUrl('/login');
 };
 
 const doctorGuard: CanActivateFn = async () => {
   const supabase = inject(SupabaseService);
   const router = inject(Router);
+
+  await supabase.sessionReady;
 
   const user = supabase.currentUser();
   if (!user) return router.parseUrl('/login');

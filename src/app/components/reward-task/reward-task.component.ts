@@ -78,7 +78,7 @@ interface LeaderboardEntry {
             {{ i18n.currentLang() === 'th' ? 'ภาพรวมความก้าวหน้า' : 'Overall Progress' }}
           </span>
           <h3 class="text-lg sm:text-xl font-black text-slate-800 dark:text-white">
-            {{ i18n.currentLang() === 'th' ? 'อัตราสำเร็จสัปดาห์นี้:' : 'Weekly Completion:' }} <span class="text-emerald-500">{{ weeklyCompletionRate }}%</span>
+            {{ i18n.currentLang() === 'th' ? 'พัฒนาการสัปดาห์นี้:' : 'Weekly Progress:' }} <span class="text-emerald-500">{{ weeklyCompletionRate }}%</span>
           </h3>
         </div>
         <div class="text-slate-500 dark:text-slate-400 text-xs font-medium bg-white/60 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 px-3 py-1 rounded-full self-start sm:self-auto shadow-sm">

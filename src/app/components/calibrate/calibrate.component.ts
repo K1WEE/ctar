@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, effect, NgZone, signal } from '@angular/core';
+import { Component, OnDestroy, inject, effect, NgZone, signal, isDevMode as ngIsDevMode } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CtarLogicService } from '../../services/ctar-logic.service';
@@ -6,6 +6,7 @@ import { I18nService } from '../../services/i18n.service';
 import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.component';
 import { BleService } from '../../services/ble.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { BiofeedbackService } from '../../services/biofeedback.service';
 
 @Component({
   selector: 'app-calibrate',
@@ -18,15 +19,18 @@ import { SupabaseService } from '../../services/supabase.service';
         
         <!-- Header Actions -->
         <div class="flex items-center justify-between mb-4 shrink-0 relative z-10">
-          <button (click)="goBack()" class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors shrink-0">
-            <i class="fa-solid fa-arrow-left text-base"></i>
+          <button (click)="goBack()"
+            [attr.aria-label]="backButtonLabel()"
+            [title]="backButtonLabel()"
+            class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors shrink-0 cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+            <i class="fa-solid text-base" [ngClass]="state() === 'intro' ? 'fa-arrow-left' : 'fa-rotate-left'" aria-hidden="true"></i>
           </button>
           
           <!-- Connection Icon status tracker -->
           <div class="w-12 h-12 rounded-full flex items-center justify-center shadow-inner border absolute left-1/2 -translate-x-1/2 transition-colors duration-300"
                [ngClass]="bleService.connectionState() === 'Connected' 
-                 ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-250 dark:border-emerald-500/30' 
-                 : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-550 border-slate-200 dark:border-slate-700'">
+                 ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+                 : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700'">
             <i class="text-xl" 
                [ngClass]="bleService.connectionState() === 'Connected' 
                  ? 'fa-solid fa-check text-emerald-600 dark:text-emerald-400' 
@@ -37,10 +41,10 @@ import { SupabaseService } from '../../services/supabase.service';
         
         <!-- Main content area that expands vertically to push footer to the bottom -->
         <div class="flex-1 flex flex-col justify-center py-2">
-          <h2 class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white mb-2 leading-tight">{{ getPageStateTitle() }}</h2>
+          <h2 class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white mb-2 leading-tight" role="status" aria-live="polite">{{ getPageStateTitle() }}</h2>
           
           <!-- Subtitle help text in active testing to remove bottom help cards -->
-          <p *ngIf="state() === 'pulling'" class="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-450 mb-3 animate-pulse">
+          <p *ngIf="state() === 'pulling'" class="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400 mb-3 animate-pulse">
             {{ i18n.currentLang() === 'th' ? 'ก้มคางกดลงค้างไว้ให้แรงที่สุด!' : 'Press and hold your chin down as hard as you can!' }}
           </p>
 
@@ -52,15 +56,15 @@ import { SupabaseService } from '../../services/supabase.service';
             
             <!-- Steps block for seniors (larger text and badges) -->
             <div class="steps-block space-y-2.5 text-left w-full bg-slate-100/50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
-              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-355 font-bold">
+              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-bold">
                 <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-2xs font-black shrink-0 shadow-sm">1</span>
                 <span>{{ i18n.t('onboarding.step1') }}</span>
               </div>
-              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-355 font-bold">
+              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-bold">
                 <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-2xs font-black shrink-0 shadow-sm">2</span>
                 <span>{{ i18n.t('onboarding.step2') }}</span>
               </div>
-              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-355 font-bold">
+              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-bold">
                 <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-2xs font-black shrink-0 shadow-sm">3</span>
                 <span>{{ i18n.t('onboarding.step3') }}</span>
               </div>
@@ -77,14 +81,33 @@ import { SupabaseService } from '../../services/supabase.service';
               <p class="text-sm sm:text-base font-black text-amber-600 dark:text-amber-400 leading-relaxed">
                 {{ i18n.currentLang() === 'th' ? 'ก้มคางกดลงให้แรงที่สุด เพื่อเริ่มต้นจับเวลา...' : 'Press chin down firmly to start the timer...' }}
               </p>
+
+              <!-- Live force feedback so the user knows their press is being detected before the 5N threshold -->
+              <div class="mt-3 text-left">
+                <div class="flex justify-between items-baseline text-xs font-bold text-amber-700 dark:text-amber-300 mb-1">
+                  <span>{{ i18n.currentLang() === 'th' ? 'แรงกดขณะนี้' : 'Current force' }}</span>
+                  <span class="tabular-nums">{{ ctar.currentForce() | number:'1.0-1' }} / 5.0 N</span>
+                </div>
+                <div class="w-full h-2.5 rounded-full bg-amber-200/60 dark:bg-amber-900/40 overflow-hidden">
+                  <div class="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-150"
+                       [style.width.%]="waitingProgress()"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Shown when the device is connected but no force has arrived for a while -->
+            <div *ngIf="showWaitingHint()" role="alert"
+                 class="mt-2.5 bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 p-3 rounded-xl text-left text-sm font-bold w-full flex items-start gap-2">
+              <i class="fa-solid fa-circle-info text-base mt-0.5 shrink-0" aria-hidden="true"></i>
+              <span>{{ i18n.currentLang() === 'th' ? 'ยังไม่พบแรงกดจากอุปกรณ์ ลองตรวจสอบว่าสวมอุปกรณ์ถูกต้อง หรือกดคางลงอีกครั้ง' : 'No force detected yet. Check the device is positioned correctly, then press your chin down again.' }}</span>
             </div>
           </div>
 
           <!-- PULLING PANEL: Active Strength Test (Large SVG replaced with compact md size) -->
           <div *ngIf="state() === 'pulling'" class="animate-fade-in flex flex-col items-center w-full">
             
-            <!-- Highly Compact Inner Card -->
-            <div class="w-full rounded-2xl p-5 mb-3 border-2 transition-all duration-300 shadow-sm flex flex-col items-center bg-rose-50/80 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/30">
+            <!-- Highly Compact Inner Card (Without pink background color) -->
+            <div class="w-full rounded-2xl p-5 mb-3 border-2 transition-all duration-300 shadow-sm flex flex-col items-center border-rose-200 dark:border-rose-900/30">
               
               <!-- Compact size SVG (md instead of lg to save height) -->
               <div class="mb-3 flex justify-center">
@@ -96,12 +119,12 @@ import { SupabaseService } from '../../services/supabase.service';
               </p>
               
               <!-- Massive live force value for elderly -->
-              <div class="text-7xl sm:text-8xl font-black text-rose-600 dark:text-rose-455 tabular-nums tracking-tight mb-3">
+              <div class="text-7xl sm:text-8xl font-black text-rose-600 dark:text-rose-400 tabular-nums tracking-tight mb-3">
                 {{ ctar.currentForce() | number:'1.0-1' }}<span class="text-2xl sm:text-3xl font-bold ml-1">N</span>
               </div>
               
               <!-- Timer Badge -->
-              <div class="px-4 py-1.5 bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-350 rounded-full font-black text-sm flex items-center gap-1.5 shadow-sm">
+              <div class="px-4 py-1.5 bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 rounded-full font-black text-sm flex items-center gap-1.5 shadow-sm">
                 <i class="fa-regular fa-clock animate-pulse"></i>
                 <span>{{ i18n.currentLang() === 'th' ? 'เวลาบันทึกแรง:' : 'Testing time:' }} {{ timeLeft() }}s</span>
               </div>
@@ -111,7 +134,7 @@ import { SupabaseService } from '../../services/supabase.service';
           <!-- FINISHED PANEL: Result + Auto Navigate (Highly Compact) -->
           <div *ngIf="state() === 'finished'" class="animate-fade-in space-y-4 w-full pt-2 flex flex-col items-center justify-center">
             
-            <div class="text-slate-550 dark:text-slate-400 font-extrabold text-sm uppercase tracking-wider">
+            <div class="text-slate-500 dark:text-slate-400 font-extrabold text-sm uppercase tracking-wider">
               {{ i18n.currentLang() === 'th' ? 'แรงกดสูงสุดที่ทดสอบได้' : 'Peak Force Measured' }}
             </div>
             
@@ -133,23 +156,23 @@ import { SupabaseService } from '../../services/supabase.service';
           <div *ngIf="state() === 'intro'" class="animate-fade-in space-y-2.5 w-full">
             <button 
               (click)="connect()"
-              class="px-6 min-h-[52px] w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-lg flex items-center justify-center">
+              class="px-6 min-h-[52px] w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-lg flex items-center justify-center cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
               <i class="fa-solid fa-link mr-2.5 text-base"></i> {{ i18n.t('connect.btnConnect') }}
             </button>
             
             <button *ngIf="supabase.userRole() === 'admin' || isDevMode()"
               (click)="simulate()"
-              class="px-6 min-h-[44px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 flex items-center justify-center text-sm border border-slate-200 dark:border-slate-700 mt-2">
+              class="px-6 min-h-[44px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 flex items-center justify-center text-sm border border-slate-200 dark:border-slate-700 mt-2 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
               <i class="fa-solid fa-flask mr-1.5"></i> {{ i18n.t('connect.btnSimulate') }}
             </button>
             
             <!-- Disconnection warning -->
-            <div *ngIf="disconnectWarning" class="mt-2.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-3 rounded-xl text-left text-sm font-bold w-full flex items-start gap-2">
+            <div *ngIf="disconnectWarning" role="alert" class="mt-2.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-3 rounded-xl text-left text-sm font-bold w-full flex items-start gap-2">
               <i class="fa-solid fa-circle-exclamation text-base mt-0.5 shrink-0 text-red-500 animate-pulse"></i>
               <span>{{ i18n.currentLang() === 'th' ? 'การเชื่อมต่ออุปกรณ์ขาดหาย! กรุณาเชื่อมต่อใหม่อีกครั้ง' : 'Device disconnected! Please connect again.' }}</span>
             </div>
             
-            <div *ngIf="bleService.error()" class="mt-2.5 bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-left text-sm">
+            <div *ngIf="bleService.error()" role="alert" class="mt-2.5 bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-left text-sm">
               <p class="font-bold flex items-center"><i class="fa-solid fa-circle-exclamation mr-1.5"></i> {{ i18n.t('error.title') }}</p>
               <p class="mt-0.5 text-xs">{{ friendlyError(bleService.error()) }}</p>
             </div>
@@ -162,7 +185,7 @@ import { SupabaseService } from '../../services/supabase.service';
               (mouseup)="setMockSqueezing(false)"
               (touchstart)="setMockSqueezing(true)"
               (touchend)="setMockSqueezing(false)"
-              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base">
+              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
               <i class="fa-solid fa-circle-chevron-down mr-2 text-base animate-bounce"></i>
               {{ i18n.currentLang() === 'th' ? 'กดค้างตรงนี้เพื่อกดจำลองแรง' : 'Hold here to simulate force' }}
             </button>
@@ -175,7 +198,7 @@ import { SupabaseService } from '../../services/supabase.service';
               (mouseup)="setMockSqueezing(false)"
               (touchstart)="setMockSqueezing(true)"
               (touchend)="setMockSqueezing(false)"
-              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-extrabold rounded-2xl shadow-lg transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base">
+              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-extrabold rounded-2xl shadow-lg transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
               <i class="fa-solid fa-circle-chevron-down mr-2 text-base animate-pulse"></i>
               {{ i18n.currentLang() === 'th' ? 'กดค้างไว้ต่อเนื่อง...' : 'Keep holding...' }}
             </button>
@@ -183,14 +206,20 @@ import { SupabaseService } from '../../services/supabase.service';
 
           <!-- FINISHED PANEL: Result + Auto Navigate -->
           <div *ngIf="state() === 'finished'" class="w-full pt-1.5 flex flex-col gap-2.5">
-            <button 
+            <button
               (click)="goToGame()"
-              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-lg">
+              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-lg border-0 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
               {{ i18n.currentLang() === 'th' ? 'เริ่มเล่นเกม →' : 'Start Game →' }}
             </button>
-            <span class="text-xs text-slate-400 dark:text-slate-500 animate-pulse font-semibold text-center">
-              {{ i18n.currentLang() === 'th' ? 'กำลังเริ่มเกมอัตโนมัติใน 3 วินาที...' : 'Starting game automatically in 3s...' }}
-            </span>
+            <div *ngIf="autoNavCountdown() !== null" class="flex items-center justify-center gap-3" role="status" aria-live="polite">
+              <span class="text-sm text-slate-600 dark:text-slate-300 font-bold tabular-nums">
+                {{ i18n.currentLang() === 'th' ? 'เริ่มเกมอัตโนมัติใน' : 'Starting automatically in' }} {{ autoNavCountdown() }} {{ i18n.currentLang() === 'th' ? 'วินาที' : 's' }}
+              </span>
+              <button (click)="cancelAutoNav()"
+                class="min-h-[44px] px-4 text-sm font-bold text-slate-600 dark:text-slate-300 underline underline-offset-4 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer bg-transparent border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 rounded-xl">
+                {{ i18n.currentLang() === 'th' ? 'ยกเลิก' : 'Cancel' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -268,16 +297,25 @@ export class CalibrateComponent implements OnDestroy {
   // Use Signals to guarantee UI reactivity and change detection triggers
   public state = signal<'intro' | 'waiting' | 'pulling' | 'finished'>('intro');
   public timeLeft = signal<number>(3); // Changed from 5s to 3s based on user request
+  // null = auto-navigation cancelled or not running
+  public autoNavCountdown = signal<number | null>(null);
+  public showWaitingHint = signal<boolean>(false);
   public peaks: number[] = [];
   public averagePeak = 0;
   public disconnectWarning = false;
-  
+
   private timer: any;
   private autoNavTimer: any;
-  
+  private waitingHintTimer: any;
+  // Timestamp when force first crossed the 5N threshold; the test only starts
+  // after the press is sustained, so a brief accidental spike can't trigger it
+  private thresholdHoldStart: number | null = null;
+  private activeAudio: HTMLAudioElement | null = null;
+
   public i18n = inject(I18nService);
   public bleService = inject(BleService);
   public supabase = inject(SupabaseService);
+  private biofeedback = inject(BiofeedbackService);
   private ngZone = inject(NgZone);
 
   constructor(public ctar: CtarLogicService, private router: Router) {
@@ -299,15 +337,58 @@ export class CalibrateComponent implements OnDestroy {
       }
     }, { allowSignalWrites: true });
 
-    // Monitor force to trigger calibration
+    // Monitor force to trigger calibration. The 20Hz stream re-runs this
+    // effect on every sample, so requiring the press to be sustained for
+    // 500ms filters out accidental spikes and gives the user a moment to
+    // register that the test is about to begin.
     effect(() => {
       const force = this.ctar.currentForce();
-      if (this.state() === 'waiting' && force >= 5.0) {
-        this.ngZone.run(() => {
-          this.beginCalibration();
-        });
+      if (this.state() !== 'waiting') {
+        this.thresholdHoldStart = null;
+        return;
+      }
+      if (force >= 5.0) {
+        if (this.thresholdHoldStart === null) {
+          this.thresholdHoldStart = Date.now();
+        } else if (Date.now() - this.thresholdHoldStart >= 500) {
+          this.thresholdHoldStart = null;
+          this.ngZone.run(() => {
+            this.beginCalibration();
+          });
+        }
+      } else {
+        this.thresholdHoldStart = null;
       }
     }, { allowSignalWrites: true });
+
+    // Surface a help hint if the device is connected but no press arrives,
+    // so the user is not left waiting on a silent sensor forever
+    effect(() => {
+      const currentState = this.state();
+      if (this.waitingHintTimer) {
+        clearTimeout(this.waitingHintTimer);
+        this.waitingHintTimer = null;
+      }
+      this.showWaitingHint.set(false);
+      if (currentState === 'waiting') {
+        this.waitingHintTimer = setTimeout(() => {
+          this.ngZone.run(() => this.showWaitingHint.set(true));
+        }, 30000);
+      }
+    }, { allowSignalWrites: true });
+  }
+
+  /** Progress (0-100) toward the 5N threshold that starts the test */
+  waitingProgress(): number {
+    return Math.min(100, (this.ctar.currentForce() / 5.0) * 100);
+  }
+
+  backButtonLabel(): string {
+    const lang = this.i18n.currentLang();
+    if (this.state() === 'intro') {
+      return lang === 'th' ? 'กลับไปหน้าหลัก' : 'Back to dashboard';
+    }
+    return lang === 'th' ? 'เริ่มการทดสอบใหม่' : 'Restart the test';
   }
 
   getPageStateTitle(): string {
@@ -325,7 +406,9 @@ export class CalibrateComponent implements OnDestroy {
   }
 
   isDevMode(): boolean {
-    return true; // Force true so that Simulate button is always visible during local verification
+    // Production builds must hide the Simulate button from patients —
+    // calibrating against simulated force corrupts real clinical data.
+    return ngIsDevMode();
   }
 
   connect() {
@@ -352,8 +435,40 @@ export class CalibrateComponent implements OnDestroy {
     return this.i18n.t('error.connectionFailed');
   }
 
+  /**
+   * Plays a localized voice cue (same asset convention as ZenBalloon).
+   * Audio is the primary "test started/finished" signal here because the
+   * user's eyes are on their chin movement, not the screen.
+   */
+  private playVoice(filename: string) {
+    if (this.activeAudio) {
+      this.activeAudio.pause();
+      this.activeAudio = null;
+    }
+
+    const lang = this.i18n.currentLang();
+    const audio = new Audio(`/assets/audio/${lang}/${filename}`);
+    this.activeAudio = audio;
+
+    const cleanup = () => {
+      if (this.activeAudio === audio) {
+        this.activeAudio = null;
+      }
+    };
+    audio.onended = cleanup;
+    audio.onerror = cleanup;
+
+    audio.play().catch(err => {
+      console.warn(`Voice playback failed for ${filename}:`, err);
+      cleanup();
+    });
+  }
+
   beginCalibration() {
     console.log('CTAR: Calibration threshold met. Starting...');
+    // Voice + haptics announce the start so it registers even with eyes off-screen
+    this.playVoice('cue_hold.mp3');
+    this.biofeedback.vibrate([80, 50, 80]);
     this.state.set('pulling');
     this.timeLeft.set(3); // Timer resets to 3s instead of 5s
     this.ctar.peakForce.set(0); 
@@ -382,6 +497,9 @@ export class CalibrateComponent implements OnDestroy {
 
   finishCalibration() {
     console.log('CTAR: Completing calibration...');
+    // Tell the user they can stop pressing — voice first, chime as backup
+    this.playVoice('cue_release.mp3');
+    this.biofeedback.playHoldComplete();
     this.state.set('finished');
     this.averagePeak = this.peaks.length > 0 ? this.peaks[0] : this.ctar.peakForce();
     const safeMax = Math.max(10, this.averagePeak); 
@@ -389,21 +507,36 @@ export class CalibrateComponent implements OnDestroy {
 
     // Clear existing timer if any
     if (this.autoNavTimer) {
-      clearTimeout(this.autoNavTimer);
+      clearInterval(this.autoNavTimer);
     }
 
-    // Auto-navigate fallback after 3 seconds for 50+ seniors. Wrap in ngZone to ensure router updates.
-    this.autoNavTimer = setTimeout(() => {
+    // Auto-navigate with a visible, cancellable countdown. 8 seconds gives
+    // elderly users time to read their result (3s was too fast to react to).
+    this.autoNavCountdown.set(8);
+    this.autoNavTimer = setInterval(() => {
       this.ngZone.run(() => {
-        this.router.navigate(['/game']);
+        const left = (this.autoNavCountdown() ?? 1) - 1;
+        if (left <= 0) {
+          clearInterval(this.autoNavTimer);
+          this.autoNavTimer = null;
+          this.router.navigate(['/game']);
+        } else {
+          this.autoNavCountdown.set(left);
+        }
       });
-    }, 3000);
+    }, 1000);
+  }
+
+  cancelAutoNav() {
+    if (this.autoNavTimer) {
+      clearInterval(this.autoNavTimer);
+      this.autoNavTimer = null;
+    }
+    this.autoNavCountdown.set(null);
   }
 
   goToGame() {
-    if (this.autoNavTimer) {
-      clearTimeout(this.autoNavTimer);
-    }
+    this.cancelAutoNav();
     this.router.navigate(['/game']);
   }
 
@@ -412,7 +545,14 @@ export class CalibrateComponent implements OnDestroy {
       clearInterval(this.timer);
     }
     if (this.autoNavTimer) {
-      clearTimeout(this.autoNavTimer);
+      clearInterval(this.autoNavTimer);
+    }
+    if (this.waitingHintTimer) {
+      clearTimeout(this.waitingHintTimer);
+    }
+    if (this.activeAudio) {
+      this.activeAudio.pause();
+      this.activeAudio = null;
     }
   }
 
@@ -420,7 +560,7 @@ export class CalibrateComponent implements OnDestroy {
     const currentState = this.state();
     if (currentState === 'waiting' || currentState === 'pulling' || currentState === 'finished') {
       if (this.timer) clearInterval(this.timer);
-      if (this.autoNavTimer) clearTimeout(this.autoNavTimer);
+      this.cancelAutoNav();
       this.state.set(this.bleService.connectionState() === 'Connected' ? 'waiting' : 'intro');
       this.disconnectWarning = false;
     } else {
