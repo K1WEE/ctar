@@ -1,7 +1,9 @@
 import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { BiofeedbackService } from '../../services/biofeedback.service';
+import { BleService } from '../../services/ble.service';
 import { I18nService } from '../../services/i18n.service';
 import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.component';
 
@@ -9,8 +11,18 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
   selector: 'app-zen-balloon',
   standalone: true,
   imports: [CommonModule, ChinTuckDemoComponent],
+  animations: [
+    // Re-pops the countdown digit on every value change, then stays fully
+    // visible — unlike animate-ping which fades the number out while it shows
+    trigger('countdownPop', [
+      transition('* => *', [
+        style({ transform: 'scale(1.35)', opacity: 0.4 }),
+        animate('250ms ease-out', style({ transform: 'scale(1)', opacity: 1 })),
+      ]),
+    ]),
+  ],
   template: `
-    <div class="game-card bg-white/70 dark:bg-brand-card backdrop-blur-xl rounded-3xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center border border-slate-200 dark:border-white/10 min-h-[450px] h-full relative overflow-hidden transition-colors duration-300">
+    <div [@.disabled]="prefersReducedMotion" class="game-card bg-white/70 dark:bg-brand-card backdrop-blur-xl rounded-3xl shadow-xl p-4 sm:p-6 w-full flex flex-col items-center border border-slate-200 dark:border-white/10 min-h-[450px] h-full relative overflow-hidden transition-colors duration-300">
       
       <!-- Ready State Overlay (Transparent backdrop, showing game behind it) -->
       <div *ngIf="gameFlowState() === 'ready'" class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
@@ -31,7 +43,7 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
           </div>
           
           <!-- Back button in modal to let them exit -->
-          <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-850 dark:hover:text-white text-xs font-bold rounded-lg transition-colors w-full mt-1">
+          <button (click)="goBack()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white text-xs font-bold rounded-lg transition-colors w-full mt-1">
             {{ i18n.currentLang() === 'th' ? 'ย้อนกลับ' : 'Go Back' }}
           </button>
         </div>
@@ -40,11 +52,52 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
       <!-- Countdown State Overlay -->
       <div *ngIf="gameFlowState() === 'countdown'" class="absolute inset-0 bg-slate-950/40 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in text-center">
         <span class="text-white font-bold uppercase tracking-widest text-sm xs:text-base sm:text-lg mb-4 drop-shadow-md">
-          {{ i18n.currentLang() === 'th' ? 'เตรียมตัวฝึกซ้อม...' : 'Prepare yourself...' }}
+          {{ i18n.currentLang() === 'th' ? 'ปล่อยมือ เตรียมตัว...' : 'Release and get ready...' }}
         </span>
-        <!-- Massive pulsing number -->
-        <div class="text-8xl xs:text-9xl font-black text-amber-400 tabular-nums animate-[ping_1s_infinite] select-none drop-shadow-lg">
+        <!-- Massive number: pops in per digit, stays readable (no ping fade-out) -->
+        <div [@countdownPop]="countdownValue()" class="text-8xl xs:text-9xl font-black text-amber-400 tabular-nums select-none drop-shadow-lg" role="status" aria-live="assertive">
           {{ countdownValue() }}
+        </div>
+      </div>
+
+      <!-- Disconnected State Overlay -->
+      <div *ngIf="gameFlowState() === 'disconnected'" class="absolute inset-0 bg-slate-950/60 backdrop-blur-[3px] z-40 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
+        <div role="alert" class="bg-white/95 dark:bg-slate-900/95 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-4 animate-scale-up">
+          <div class="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <i class="fa-brands fa-bluetooth-b text-2xl text-red-500" aria-hidden="true"></i>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
+            {{ i18n.currentLang() === 'th' ? 'การเชื่อมต่อหลุด' : 'Connection Lost' }}
+          </h2>
+          <p class="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
+            {{ i18n.currentLang() === 'th' ? 'กรุณาเชื่อมต่ออุปกรณ์ใหม่อีกครั้ง เพื่อฝึกต่อ' : 'Please reconnect the device to continue training.' }}
+          </p>
+          <button (click)="goToConnect()"
+            class="px-6 min-h-[52px] w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 text-base cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+            <i class="fa-solid fa-link mr-2" aria-hidden="true"></i>{{ i18n.currentLang() === 'th' ? 'เชื่อมต่อใหม่' : 'Reconnect' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Exit Confirmation Overlay -->
+      <div *ngIf="showExitConfirm()" class="absolute inset-0 bg-slate-950/60 backdrop-blur-[3px] z-40 flex items-center justify-center p-6 rounded-3xl animate-fade-in">
+        <div role="alertdialog" aria-modal="true" class="bg-white/95 dark:bg-slate-900/95 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-3 animate-scale-up">
+          <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
+            {{ i18n.currentLang() === 'th' ? 'ออกจากการฝึก?' : 'Leave training?' }}
+          </h2>
+          <p class="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
+            {{ i18n.currentLang() === 'th'
+              ? 'ฝึกไปแล้ว ' + currentRepVal + ' ครั้ง ถ้าออกตอนนี้ความคืบหน้าจะไม่ถูกบันทึก'
+              : 'You completed ' + currentRepVal + ' reps. Leaving now will not save your progress.' }}
+          </p>
+          <button (click)="cancelExit()"
+            class="px-6 min-h-[52px] w-full bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 text-base cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+            {{ i18n.currentLang() === 'th' ? 'ฝึกต่อ' : 'Keep training' }}
+          </button>
+          <button (click)="confirmExit()"
+            class="px-6 min-h-[44px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 text-sm cursor-pointer border border-slate-200 dark:border-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+            {{ i18n.currentLang() === 'th' ? 'ออกจากการฝึก' : 'Leave' }}
+          </button>
         </div>
       </div>
 
@@ -54,13 +107,16 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
       <!-- Integrated Top Header Bar -->
       <div class="game-header w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-white/10 relative z-10">
         <div class="flex items-center space-x-3 min-w-0">
-          <button (click)="goBack()" class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-885 dark:hover:text-white transition-colors shrink-0">
-            <i class="fa-solid fa-arrow-left text-lg"></i>
+          <button (click)="goBack()"
+            [attr.aria-label]="i18n.currentLang() === 'th' ? 'ออกจากการฝึก' : 'Leave training'"
+            class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
+            <i class="fa-solid fa-arrow-left text-lg" aria-hidden="true"></i>
           </button>
           <div class="text-left min-w-0">
             <h3 class="font-black text-base xs:text-lg sm:text-xl text-slate-800 dark:text-white leading-tight whitespace-nowrap">{{ i18n.t('game.activeSession') }}</h3>
+            <!-- Rep count lives only in the centered pill below to avoid two competing counters -->
             <p class="text-xs xs:text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-tight font-semibold whitespace-nowrap">
-              {{ i18n.t('game.targetReps') }} {{ targetReps }} &nbsp;|&nbsp; {{ i18n.t('game.hud.reps') }} {{ currentRepVal }}
+              {{ i18n.t('game.targetReps') }} {{ targetReps }}
             </p>
           </div>
         </div>
@@ -69,7 +125,9 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
             (click)="toggleMute()" 
             class="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 border bg-white dark:bg-slate-800"
             [ngClass]="isMuted ? 'border-slate-200 text-slate-400 dark:border-white/10 dark:text-slate-500' : 'border-amber-200 text-amber-600 dark:border-amber-500/30 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-500/5'"
-            [title]="isMuted ? (i18n.currentLang() === 'th' ? 'เปิดเสียงพากย์' : 'Unmute Voice') : (i18n.currentLang() === 'th' ? 'ปิดเสียงพากย์' : 'Mute Voice')">
+            [title]="isMuted ? (i18n.currentLang() === 'th' ? 'เปิดเสียงพากย์' : 'Unmute Voice') : (i18n.currentLang() === 'th' ? 'ปิดเสียงพากย์' : 'Mute Voice')"
+            [attr.aria-label]="isMuted ? (i18n.currentLang() === 'th' ? 'เปิดเสียงพากย์' : 'Unmute Voice') : (i18n.currentLang() === 'th' ? 'ปิดเสียงพากย์' : 'Mute Voice')"
+            [attr.aria-pressed]="isMuted">
             <i class="fa-solid" [ngClass]="isMuted ? 'fa-volume-xmark' : 'fa-volume-high'"></i>
           </button>
           
@@ -108,8 +166,8 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
           <!-- Target Zone Overlay (Elderly-Friendly High-Contrast Amber/Orange with indicators) -->
           <div *ngIf="!isReleasing"
                class="absolute w-full bg-amber-500/30 dark:bg-amber-500/40 border-y-4 border-amber-600 dark:border-amber-400 transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] dark:shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center justify-between px-1.5 xs:px-2"
-               [style.bottom.%]="targetMinPercent" 
-               [style.height.%]="targetMaxPercent - targetMinPercent">
+               [style.bottom.%]="targetZoneVisualBottom"
+               [style.height.%]="targetZoneVisualHeight">
              <i class="fa-solid fa-chevron-right text-amber-700 dark:text-amber-300 text-[10px] xs:text-xs"></i>
              <span class="text-[11px] xs:text-xs font-black text-amber-950 dark:text-amber-100 uppercase tracking-tighter whitespace-nowrap pointer-events-none select-none">{{ i18n.t('game.zone.target') }}</span>
              <i class="fa-solid fa-chevron-left text-amber-700 dark:text-amber-300 text-[10px] xs:text-xs"></i>
@@ -225,8 +283,10 @@ import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.componen
 })
 export class ZenBalloonComponent implements OnInit, OnDestroy {
   public i18n = inject(I18nService);
-  public gameFlowState = signal<'ready' | 'countdown' | 'playing'>('ready');
+  public bleService = inject(BleService);
+  public gameFlowState = signal<'ready' | 'countdown' | 'playing' | 'disconnected'>('ready');
   public countdownValue = signal<number>(3);
+  public showExitConfirm = signal<boolean>(false);
   private countdownTimer: any;
   private voiceTimeout: any;
   private router = inject(Router);
@@ -234,6 +294,11 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   public isMuted = false;
   private lastVoicePlayTime = 0;
   private activeAudio: HTMLAudioElement | null = null;
+  // Sustained-violation accumulator for the rest phase (see game loop)
+  private restViolationMs = 0;
+  // Angular animations run via WAAPI; the CSS reduced-motion rules can't stop them
+  public prefersReducedMotion = typeof matchMedia !== 'undefined'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // Driven strictly by the hardware BLE signal internally
   @Input({ required: true }) currentForce!: Signal<number>;
@@ -277,7 +342,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private requiredHoldTimeMs = 2000; // Constant 2.0 seconds hold time
   private currentHoldMs = 0;
 
-  public feedbackMessage = "Breathe and tuck to lift...";
+  public feedbackMessage = '';
   private gameloop: any;
 
   // Visual maximum scale of the tube based on calibration
@@ -300,9 +365,20 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     return Math.min(100, Math.round((this.currentForce() / 5.0) * 100));
   }
 
+  // The balloon is drawn at (pos * 0.85 + 6)% from the bottom, so every zone
+  // must use the same mapping — otherwise the visuals drift away from the
+  // in-zone logic as positions get higher.
+  public get targetZoneVisualBottom(): number {
+    return this.targetMinPercent * 0.85 + 6;
+  }
+
+  public get targetZoneVisualHeight(): number {
+    return (this.targetMaxPercent - this.targetMinPercent) * 0.85;
+  }
+
   // Ensure rest zone has minimum visual height of 15% for readability
   public get restZoneVisualPercent(): number {
-    return Math.max(15, this.releaseThresholdPercent);
+    return Math.max(15, this.releaseThresholdPercent * 0.85 + 6);
   }
 
   constructor(private ngZone: NgZone, private biofeedback: BiofeedbackService) {
@@ -352,21 +428,54 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
             this.biofeedback.startVibrationLoop();
             this.playVoice('cue_hold.mp3');
           } else {
+            // The hold vibration must stop on every zone exit — leaving it
+            // running tells the user's hand they're still doing fine
+            this.biofeedback.stopVibrationLoop();
             if (this.currentHoldMs > 50) {
               this.biofeedback.playExitZone();
-            } else {
-              this.biofeedback.stopVibrationLoop();
             }
           }
         });
       }
     }, { allowSignalWrites: true });
+
+    // Freeze the session if the BLE device drops mid-game — otherwise the
+    // balloon silently sticks at the last force value and the user keeps
+    // pressing with no response. Resumes to the ready screen on reconnect.
+    effect(() => {
+      const connection = this.bleService.connectionState();
+      const flow = this.gameFlowState();
+      if (connection !== 'Connected' && (flow === 'playing' || flow === 'countdown')) {
+        this.ngZone.run(() => this.handleDisconnect());
+      } else if (connection === 'Connected' && flow === 'disconnected') {
+        this.ngZone.run(() => this.gameFlowState.set('ready'));
+      }
+    }, { allowSignalWrites: true });
+  }
+
+  private handleDisconnect() {
+    if (this.gameloop) {
+      clearInterval(this.gameloop);
+      this.gameloop = null;
+    }
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+    }
+    this.biofeedback.stopVibrationLoop();
+    this.inTargetZone = false;
+    this.gameFlowState.set('disconnected');
+    this.playVoice('cue_disconnected.mp3', true);
+  }
+
+  goToConnect() {
+    this.router.navigate(['/connect']);
   }
 
   ngOnInit() {
     this.isMuted = localStorage.getItem('zen_balloon_muted') === 'true';
     // Initialize visuals for rep 0
     this.isReleasing = false;
+    this.feedbackMessage = this.i18n.t('game.feedback.squeeze');
     this.updateDifficulty();
 
     // Play introductory welcome cue
@@ -392,14 +501,12 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.voiceTimeout = setTimeout(callback, delay);
   }
 
-  private playVoice(filename: string) {
+  private playVoice(filename: string, bypassThrottle = false) {
     if (this.isMuted) return;
 
-    const now = Date.now();
-    if (now - this.lastVoicePlayTime < 3000) {
+    if (!bypassThrottle && Date.now() - this.lastVoicePlayTime < 3000) {
       return;
     }
-    this.lastVoicePlayTime = now;
 
     if (this.activeAudio) {
       this.activeAudio.pause();
@@ -425,7 +532,11 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     audio.onerror = cleanup;
     audio.onpause = cleanup;
 
-    audio.play().catch(err => {
+    audio.play().then(() => {
+      // Consume the throttle window only when playback actually starts —
+      // a missing/failed file must not silence the next 3s of real cues
+      this.lastVoicePlayTime = Date.now();
+    }).catch(err => {
       console.warn(`Voice playback failed for ${path}:`, err);
       cleanup();
     });
@@ -443,6 +554,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
         if (this.isReleasing) {
           // Release phase: Wait for force to drop below threshold (4.0 Newtons)
           if (force < this.releaseThreshold) {
+            this.restViolationMs = 0;
             const wasResting = this.currentRestMs > 0;
             this.currentRestMs += 50;
             const newProgress = (this.currentRestMs / 2000) * 100;
@@ -477,8 +589,11 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
               }
             });
           } else {
-            // Squeezed during rest: reset rest progress immediately to enforce continuous rest
-            if (this.currentRestMs !== 0 || this.holdProgress !== 0) {
+            // Squeezed during rest. Elderly users commonly tremor around the
+            // threshold, so a momentary spike only pauses the rest counter —
+            // progress resets only after a sustained (300ms) violation.
+            this.restViolationMs += 50;
+            if (this.restViolationMs >= 300 && (this.currentRestMs !== 0 || this.holdProgress !== 0)) {
               this.ngZone.run(() => {
                 this.currentRestMs = 0;
                 this.holdProgress = 0;
@@ -588,7 +703,20 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   goBack() {
+    // Mid-session exits discard completed reps — make sure it's intentional
+    if (this.gameFlowState() === 'playing' && this.currentRepVal > 0) {
+      this.showExitConfirm.set(true);
+      return;
+    }
     this.router.navigate(['/dashboard']);
+  }
+
+  confirmExit() {
+    this.router.navigate(['/dashboard']);
+  }
+
+  cancelExit() {
+    this.showExitConfirm.set(false);
   }
 
   finishSession() {
@@ -598,19 +726,24 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   startCountdown() {
     this.gameFlowState.set('countdown');
     this.countdownValue.set(3);
-    
+    // Audible tick per second so the start moment registers even with eyes
+    // on the chin movement; a higher tone marks the actual start
+    this.biofeedback.playTone(659.25, 'sine', 150, 0.1);
+
     if (this.countdownTimer) {
       clearInterval(this.countdownTimer);
     }
-    
+
     this.countdownTimer = setInterval(() => {
       this.ngZone.run(() => {
         const currentVal = this.countdownValue();
         if (currentVal <= 1) {
           clearInterval(this.countdownTimer);
+          this.biofeedback.playTone(880, 'sine', 300, 0.12);
           this.startGame();
         } else {
           this.countdownValue.set(currentVal - 1);
+          this.biofeedback.playTone(659.25, 'sine', 150, 0.1);
         }
       });
     }, 1000);

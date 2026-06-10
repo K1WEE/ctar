@@ -1,4 +1,5 @@
 import { Component, OnDestroy, inject, effect, NgZone, signal, isDevMode as ngIsDevMode } from '@angular/core';
+import { trigger, transition, style, animate } from '@angular/animations';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CtarLogicService } from '../../services/ctar-logic.service';
@@ -12,10 +13,24 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
   selector: 'app-calibrate',
   standalone: true,
   imports: [CommonModule, ChinTuckDemoComponent],
+  animations: [
+    // Gentle morph between state panels: the leaving block collapses while the
+    // entering one expands, so the card height glides instead of snapping.
+    trigger('panelSwap', [
+      transition(':enter', [
+        style({ opacity: 0, height: '0px', overflow: 'hidden', transform: 'translateY(6px)' }),
+        animate('240ms 60ms ease-out', style({ opacity: 1, height: '*', transform: 'none' })),
+      ]),
+      transition(':leave', [
+        style({ overflow: 'hidden' }),
+        animate('200ms ease-in', style({ opacity: 0, height: '0px' })),
+      ]),
+    ]),
+  ],
   template: `
     <div class="min-h-screen flex flex-col items-center justify-center p-3 sm:p-6 bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
       <!-- max-w-md on mobile expands the card's readability. min-h-[82vh] reduces vertical negative space on phone viewports -->
-      <div class="calibrate-card w-full max-w-md min-h-[82vh] sm:min-h-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/20 text-center relative overflow-hidden transition-colors duration-300 flex flex-col justify-between scrollbar-thin">
+      <div [@.disabled]="prefersReducedMotion" class="calibrate-card w-full max-w-md min-h-[82vh] sm:min-h-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/20 text-center relative overflow-hidden transition-colors duration-300 flex flex-col justify-between scrollbar-thin">
         
         <!-- Header Actions -->
         <div class="flex items-center justify-between mb-4 shrink-0 relative z-10">
@@ -44,35 +59,38 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
           <h2 class="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white mb-2 leading-tight" role="status" aria-live="polite">{{ getPageStateTitle() }}</h2>
           
           <!-- Subtitle help text in active testing to remove bottom help cards -->
-          <p *ngIf="state() === 'pulling'" class="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400 mb-3 animate-pulse">
+          <p *ngIf="state() === 'pulling'" @panelSwap class="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400 mb-3 animate-pulse">
             {{ i18n.currentLang() === 'th' ? 'ก้มคางกดลงค้างไว้ให้แรงที่สุด!' : 'Press and hold your chin down as hard as you can!' }}
           </p>
 
-          <!-- UNIFIED DISPLAY: Shows animation and steps during both Intro (Connecting) and Waiting (Ready) states -->
-          <div *ngIf="state() === 'intro' || state() === 'waiting'" class="animate-fade-in flex flex-col items-center w-full mb-3">
-            <div class="flex justify-center mb-3">
-              <app-chin-tuck-demo size="md" [showLabel]="false" class="demo-animation"></app-chin-tuck-demo>
-            </div>
-            
+          <!-- Persistent demo anchor: stays in place across intro/waiting/pulling so the
+               panel swap below it doesn't yank the user's main visual reference.
+               Grows to lg once the device is connected to emphasize "press as hard as you can" -->
+          <div *ngIf="state() !== 'finished'" class="flex justify-center mb-3">
+            <app-chin-tuck-demo [size]="state() === 'waiting' ? 'lg' : 'md'" [showLabel]="false" class="demo-animation"></app-chin-tuck-demo>
+          </div>
+
+          <!-- UNIFIED DISPLAY: Steps during both Intro (Connecting) and Waiting (Ready) states -->
+          <div *ngIf="state() === 'intro' || state() === 'waiting'" @panelSwap class="flex flex-col items-center w-full mb-3">
             <!-- Steps block for seniors (larger text and badges) -->
             <div class="steps-block space-y-2.5 text-left w-full bg-slate-100/50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
-              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-bold">
-                <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-2xs font-black shrink-0 shadow-sm">1</span>
+              <div class="flex items-center gap-3 text-base sm:text-lg text-slate-700 dark:text-slate-300 font-bold">
+                <span class="w-7 h-7 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-sm">1</span>
                 <span>{{ i18n.t('onboarding.step1') }}</span>
               </div>
-              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-bold">
-                <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-2xs font-black shrink-0 shadow-sm">2</span>
+              <div class="flex items-center gap-3 text-base sm:text-lg text-slate-700 dark:text-slate-300 font-bold">
+                <span class="w-7 h-7 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-sm">2</span>
                 <span>{{ i18n.t('onboarding.step2') }}</span>
               </div>
-              <div class="flex items-center gap-3 text-sm sm:text-base text-slate-700 dark:text-slate-300 font-bold">
-                <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-2xs font-black shrink-0 shadow-sm">3</span>
+              <div class="flex items-center gap-3 text-base sm:text-lg text-slate-700 dark:text-slate-300 font-bold">
+                <span class="w-7 h-7 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-sm">3</span>
                 <span>{{ i18n.t('onboarding.step3') }}</span>
               </div>
             </div>
           </div>
 
           <!-- WAITING PANEL: Pulsing waiting prompt -->
-          <div *ngIf="state() === 'waiting'" class="animate-fade-in flex flex-col items-center w-full mb-2">
+          <div *ngIf="state() === 'waiting'" @panelSwap class="flex flex-col items-center w-full mb-2">
             <div class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl w-full shadow-sm">
               <div class="flex items-center justify-center gap-1.5 text-amber-700 dark:text-amber-300 font-extrabold text-sm mb-1">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
@@ -96,24 +114,19 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
             </div>
 
             <!-- Shown when the device is connected but no force has arrived for a while -->
-            <div *ngIf="showWaitingHint()" role="alert"
+            <div *ngIf="showWaitingHint()" @panelSwap role="alert"
                  class="mt-2.5 bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 p-3 rounded-xl text-left text-sm font-bold w-full flex items-start gap-2">
               <i class="fa-solid fa-circle-info text-base mt-0.5 shrink-0" aria-hidden="true"></i>
               <span>{{ i18n.currentLang() === 'th' ? 'ยังไม่พบแรงกดจากอุปกรณ์ ลองตรวจสอบว่าสวมอุปกรณ์ถูกต้อง หรือกดคางลงอีกครั้ง' : 'No force detected yet. Check the device is positioned correctly, then press your chin down again.' }}</span>
             </div>
           </div>
 
-          <!-- PULLING PANEL: Active Strength Test (Large SVG replaced with compact md size) -->
-          <div *ngIf="state() === 'pulling'" class="animate-fade-in flex flex-col items-center w-full">
-            
+          <!-- PULLING PANEL: Active Strength Test (demo SVG lives in the persistent anchor above) -->
+          <div *ngIf="state() === 'pulling'" @panelSwap class="flex flex-col items-center w-full">
+
             <!-- Highly Compact Inner Card (Without pink background color) -->
             <div class="w-full rounded-2xl p-5 mb-3 border-2 transition-all duration-300 shadow-sm flex flex-col items-center border-rose-200 dark:border-rose-900/30">
-              
-              <!-- Compact size SVG (md instead of lg to save height) -->
-              <div class="mb-3 flex justify-center">
-                <app-chin-tuck-demo size="md" [showLabel]="false" class="demo-animation"></app-chin-tuck-demo>
-              </div>
-              
+
               <p class="text-xs sm:text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">
                 {{ i18n.currentLang() === 'th' ? 'แรงกดขณะนี้' : 'Current Force' }}
               </p>
@@ -132,7 +145,7 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
           </div>
           
           <!-- FINISHED PANEL: Result + Auto Navigate (Highly Compact) -->
-          <div *ngIf="state() === 'finished'" class="animate-fade-in space-y-4 w-full pt-2 flex flex-col items-center justify-center">
+          <div *ngIf="state() === 'finished'" @panelSwap class="space-y-4 w-full pt-2 flex flex-col items-center justify-center">
             
             <div class="text-slate-500 dark:text-slate-400 font-extrabold text-sm uppercase tracking-wider">
               {{ i18n.currentLang() === 'th' ? 'แรงกดสูงสุดที่ทดสอบได้' : 'Peak Force Measured' }}
@@ -153,7 +166,7 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
         <!-- Footer Actions area -->
         <div class="mt-3 w-full shrink-0">
           <!-- INTRO PANEL: Connect Buttons -->
-          <div *ngIf="state() === 'intro'" class="animate-fade-in space-y-2.5 w-full">
+          <div *ngIf="state() === 'intro'" @panelSwap class="space-y-2.5 w-full">
             <button 
               (click)="connect()"
               class="px-6 min-h-[52px] w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-lg flex items-center justify-center cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
@@ -178,34 +191,27 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
             </div>
           </div>
 
-          <!-- WAITING PANEL: Mock Squeeze Button for Testing -->
-          <div *ngIf="state() === 'waiting' && bleService.deviceName() === 'Mock CTAR Device'" class="w-full">
+          <!-- Mock Squeeze Button (waiting + pulling): a single persistent element so the
+               waiting->pulling swap never removes the button mid-press; only color/text shift -->
+          <div *ngIf="(state() === 'waiting' || state() === 'pulling') && bleService.deviceName() === 'Mock CTAR Device'" @panelSwap class="w-full">
             <button
               (mousedown)="setMockSqueezing(true)"
               (mouseup)="setMockSqueezing(false)"
               (touchstart)="setMockSqueezing(true)"
               (touchend)="setMockSqueezing(false)"
-              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-amber-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-              <i class="fa-solid fa-circle-chevron-down mr-2 text-base animate-bounce"></i>
-              {{ i18n.currentLang() === 'th' ? 'กดค้างตรงนี้เพื่อกดจำลองแรง' : 'Hold here to simulate force' }}
-            </button>
-          </div>
-
-          <!-- PULLING PANEL: Mock Squeeze Button for Testing -->
-          <div *ngIf="state() === 'pulling' && bleService.deviceName() === 'Mock CTAR Device'" class="w-full">
-            <button
-              (mousedown)="setMockSqueezing(true)"
-              (mouseup)="setMockSqueezing(false)"
-              (touchstart)="setMockSqueezing(true)"
-              (touchend)="setMockSqueezing(false)"
-              class="px-6 min-h-[52px] w-full bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-extrabold rounded-2xl shadow-lg transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-rose-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-              <i class="fa-solid fa-circle-chevron-down mr-2 text-base animate-pulse"></i>
-              {{ i18n.currentLang() === 'th' ? 'กดค้างไว้ต่อเนื่อง...' : 'Keep holding...' }}
+              class="px-6 min-h-[52px] w-full bg-gradient-to-r text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-base border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              [ngClass]="state() === 'pulling'
+                ? 'from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 focus-visible:ring-rose-300'
+                : 'from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 focus-visible:ring-amber-300'">
+              <i class="fa-solid fa-circle-chevron-down mr-2 text-base" [ngClass]="state() === 'pulling' ? 'animate-pulse' : 'animate-bounce'"></i>
+              {{ state() === 'pulling'
+                ? (i18n.currentLang() === 'th' ? 'กดค้างไว้ต่อเนื่อง...' : 'Keep holding...')
+                : (i18n.currentLang() === 'th' ? 'กดค้างตรงนี้เพื่อกดจำลองแรง' : 'Hold here to simulate force') }}
             </button>
           </div>
 
           <!-- FINISHED PANEL: Result + Auto Navigate -->
-          <div *ngIf="state() === 'finished'" class="w-full pt-1.5 flex flex-col gap-2.5">
+          <div *ngIf="state() === 'finished'" @panelSwap class="w-full pt-1.5 flex flex-col gap-2.5">
             <button
               (click)="goToGame()"
               class="px-6 min-h-[52px] w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-lg border-0 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
@@ -250,12 +256,12 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
         gap: 0.25rem !important;
       }
       .steps-block > div {
-        font-size: 0.8rem !important;
+        font-size: 0.95rem !important;
       }
       .steps-block span.rounded-full {
-        width: 1.25rem !important;
-        height: 1.25rem !important;
-        font-size: 0.7rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        font-size: 0.8rem !important;
       }
       .text-7xl {
         font-size: 4rem !important;
@@ -276,7 +282,7 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
         padding: 0.5rem 0.75rem !important;
       }
       .steps-block > div {
-        font-size: 0.75rem !important;
+        font-size: 0.9rem !important;
       }
       .text-7xl {
         font-size: 3.5rem !important;
@@ -311,6 +317,10 @@ export class CalibrateComponent implements OnDestroy {
   // after the press is sustained, so a brief accidental spike can't trigger it
   private thresholdHoldStart: number | null = null;
   private activeAudio: HTMLAudioElement | null = null;
+  // Angular animations run via WAAPI, so the global CSS reduced-motion rule
+  // can't stop them — they must be disabled explicitly via [@.disabled]
+  public prefersReducedMotion = typeof matchMedia !== 'undefined'
+    && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   public i18n = inject(I18nService);
   public bleService = inject(BleService);

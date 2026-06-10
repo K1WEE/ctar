@@ -192,15 +192,23 @@ export class DataSyncService {
   }
 
   /**
-   * Fetches all sessions for a specific patient.
+   * Fetches sessions for a specific patient, newest first.
+   * Pass `limit` when only recent history is needed (e.g. the patient portal
+   * shows one week — fetching a year of rows there is wasted transfer).
    */
-  async fetchPatientSessions(patientId: string): Promise<any[]> {
+  async fetchPatientSessions(patientId: string, limit?: number): Promise<any[]> {
     try {
-      const { data, error } = await this.supabase
+      let query = this.supabase
         .from('sessions')
         .select('id, session_date, max_force, avg_force, reps, duration_seconds, file_url')
         .eq('patient_id', patientId)
         .order('session_date', { ascending: false });
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];

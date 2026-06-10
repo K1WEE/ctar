@@ -47,15 +47,15 @@ import { I18nService } from '../../services/i18n.service';
 
       <!-- Step Labels -->
       <div *ngIf="showLabel" class="mt-4 space-y-2.5 text-left w-full max-w-xs px-4">
-        <div class="flex items-center gap-3 text-base text-slate-700 dark:text-slate-355 font-semibold">
+        <div class="flex items-center gap-3 text-base text-slate-700 dark:text-slate-300 font-semibold">
           <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">1</span>
           <span>{{ i18n.t('onboarding.step1') }}</span>
         </div>
-        <div class="flex items-center gap-3 text-base text-slate-700 dark:text-slate-355 font-semibold">
+        <div class="flex items-center gap-3 text-base text-slate-700 dark:text-slate-300 font-semibold">
           <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">2</span>
           <span>{{ i18n.t('onboarding.step2') }}</span>
         </div>
-        <div class="flex items-center gap-3 text-base text-slate-700 dark:text-slate-355 font-semibold">
+        <div class="flex items-center gap-3 text-base text-slate-700 dark:text-slate-300 font-semibold">
           <span class="w-6 h-6 rounded-full bg-cyan-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-sm">3</span>
           <span>{{ i18n.t('onboarding.step3') }}</span>
         </div>
@@ -66,6 +66,8 @@ import { I18nService } from '../../services/i18n.service';
     .chin-tuck-demo.size-sm .chin-tuck-svg { width: 80px; height: auto; }
     .chin-tuck-demo.size-md .chin-tuck-svg { width: 160px; height: auto; }
     .chin-tuck-demo.size-lg .chin-tuck-svg { width: 220px; height: auto; }
+    /* Smooth growth when the size input changes at runtime (e.g. md -> lg on device connect) */
+    .chin-tuck-svg { transition: width 300ms ease; }
 
     /* Head & stem slide down to simulate chin pressing down */
     .movable-parts {

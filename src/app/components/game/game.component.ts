@@ -1,4 +1,4 @@
-import { Component, OnInit, effect, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, effect, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { CtarLogicService } from '../../services/ctar-logic.service';
@@ -32,14 +32,20 @@ import { I18nService } from '../../services/i18n.service';
     }
   `]
 })
-export class GameComponent implements OnInit {
+export class GameComponent implements OnInit, OnDestroy {
   public targetReps = 15;
   public i18n = inject(I18nService);
 
+  private sessionEnding = false;
+  private endTimer: any;
+
   constructor(public ctar: CtarLogicService, private router: Router) {
     effect(() => {
-      if (this.ctar.repCount() >= this.targetReps) {
-        this.finishSession();
+      if (this.ctar.repCount() >= this.targetReps && !this.sessionEnding) {
+        this.sessionEnding = true;
+        // Let the final rep's success chime + voice cue and the celebration
+        // message play out before yanking the user to the summary page
+        this.endTimer = setTimeout(() => this.finishSession(), 2500);
       }
     });
   }
@@ -48,6 +54,12 @@ export class GameComponent implements OnInit {
     this.ctar.resetSession();
     if (this.ctar.calibrationMaxForce() === 0) {
       this.router.navigate(['/calibrate']);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.endTimer) {
+      clearTimeout(this.endTimer);
     }
   }
 
