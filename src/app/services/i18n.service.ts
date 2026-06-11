@@ -81,6 +81,12 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'error.saveFailed': { th: 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่', en: 'Failed to save session data to cloud.' },
   'error.noData': { th: 'ไม่พบข้อมูลการฝึกในรอบนี้', en: 'No data recorded in this session.' },
   'error.loginRequired': { th: 'กรุณาเข้าสู่ระบบก่อนบันทึก', en: 'You must be logged in to save.' },
+  'register.error.firstName': { th: 'กรุณากรอกชื่อจริง', en: 'First name is required' },
+  'register.error.lastName': { th: 'กรุณากรอกนามสกุล', en: 'Last name is required' },
+  'register.error.email': { th: 'กรุณากรอกอีเมล', en: 'Email is required' },
+  'register.error.passwordRequired': { th: 'กรุณากรอกรหัสผ่าน', en: 'Password is required' },
+  'register.error.passwordLength': { th: 'รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร', en: 'Password must be at least 6 characters' },
+  'register.error.passwordComplexity': { th: 'รหัสผ่านต้องมีอักษรพิมพ์ใหญ่ พิมพ์เล็ก และตัวเลข (เช่น Ctar1234)', en: 'Password must contain uppercase, lowercase, and numbers (e.g. Ctar1234)' },
 
   // ─── Dashboard / Navigation ───
   'nav.clinicRecords': { th: 'บันทึกทางคลินิก', en: 'Clinical Records' },

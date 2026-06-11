@@ -7,10 +7,16 @@ import { z } from 'zod';
 import { I18nService } from '../../services/i18n.service';
 
 export const UserSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().min(1, 'Email is required'),
-  password: z.string().min(1, 'Password is required').min(6, 'Password must be at least 6 characters'),
+  firstName: z.string().min(1, 'register.error.firstName'),
+  lastName: z.string().min(1, 'register.error.lastName'),
+  email: z.string().min(1, 'register.error.email'),
+  password: z.string()
+    .min(1, 'register.error.passwordRequired')
+    .min(6, 'register.error.passwordLength')
+    .refine(
+      (val) => /[a-z]/.test(val) && /[A-Z]/.test(val) && /[0-9]/.test(val),
+      { message: 'register.error.passwordComplexity' }
+    ),
   role: z.enum(['user', 'doctor']),
 });
 export type User = z.infer<typeof UserSchema>;
@@ -139,8 +145,8 @@ export class RegisterComponent {
     });
 
     if (!validationResult.success) {
-      // Get the first error message
-      this.error = validationResult.error.issues[0].message;
+      // Get the first error message and translate it
+      this.error = this.i18n.t(validationResult.error.issues[0].message);
       return;
     }
     
