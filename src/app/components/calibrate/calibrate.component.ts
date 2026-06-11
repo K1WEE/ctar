@@ -1,4 +1,4 @@
-import { Component, OnDestroy, inject, effect, NgZone, signal, isDevMode as ngIsDevMode } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, effect, NgZone, signal, isDevMode as ngIsDevMode } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -299,7 +299,7 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
     }
   `]
 })
-export class CalibrateComponent implements OnDestroy {
+export class CalibrateComponent implements OnInit, OnDestroy {
   // Use Signals to guarantee UI reactivity and change detection triggers
   public state = signal<'intro' | 'waiting' | 'pulling' | 'finished'>('intro');
   public timeLeft = signal<number>(3); // Changed from 5s to 3s based on user request
@@ -313,6 +313,7 @@ export class CalibrateComponent implements OnDestroy {
   private timer: any;
   private autoNavTimer: any;
   private waitingHintTimer: any;
+  private introTimer: any;
   // Timestamp when force first crossed the 5N threshold; the test only starts
   // after the press is sustained, so a brief accidental spike can't trigger it
   private thresholdHoldStart: number | null = null;
@@ -336,10 +337,13 @@ export class CalibrateComponent implements OnDestroy {
         this.disconnectWarning = false;
         if (this.state() === 'intro') {
           this.state.set('waiting');
+          // Eyes are on the device now — announce success + next step by voice
+          this.playVoice('cue_calibrate_ready.mp3');
         }
       } else {
         if (this.state() === 'waiting' || this.state() === 'pulling') {
           this.disconnectWarning = true;
+          this.playVoice('cue_disconnected.mp3');
         }
         if (this.state() !== 'finished') {
           this.state.set('intro');
@@ -382,10 +386,24 @@ export class CalibrateComponent implements OnDestroy {
       this.showWaitingHint.set(false);
       if (currentState === 'waiting') {
         this.waitingHintTimer = setTimeout(() => {
-          this.ngZone.run(() => this.showWaitingHint.set(true));
+          this.ngZone.run(() => {
+            this.showWaitingHint.set(true);
+            // Spoken so the user pressing with eyes down also hears it
+            this.playVoice('cue_no_force.mp3');
+          });
         }, 30000);
       }
     }, { allowSignalWrites: true });
+  }
+
+  ngOnInit() {
+    // Welcome / orientation cue while the user is still looking at the screen.
+    // Skipped if a device connects first (cue_calibrate_ready takes over).
+    this.introTimer = setTimeout(() => {
+      if (this.state() === 'intro') {
+        this.playVoice('calibrate_intro.mp3');
+      }
+    }, 600);
   }
 
   /** Progress (0-100) toward the 5N threshold that starts the test */
@@ -507,8 +525,9 @@ export class CalibrateComponent implements OnDestroy {
 
   finishCalibration() {
     console.log('CTAR: Completing calibration...');
-    // Tell the user they can stop pressing — voice first, chime as backup
-    this.playVoice('cue_release.mp3');
+    // "Release, done, heading to the game" — covers stop-pressing + result +
+    // what happens next, since the screen auto-advances on its own
+    this.playVoice('cue_calibrate_done.mp3');
     this.biofeedback.playHoldComplete();
     this.state.set('finished');
     this.averagePeak = this.peaks.length > 0 ? this.peaks[0] : this.ctar.peakForce();
@@ -559,6 +578,9 @@ export class CalibrateComponent implements OnDestroy {
     }
     if (this.waitingHintTimer) {
       clearTimeout(this.waitingHintTimer);
+    }
+    if (this.introTimer) {
+      clearTimeout(this.introTimer);
     }
     if (this.activeAudio) {
       this.activeAudio.pause();

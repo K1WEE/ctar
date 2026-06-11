@@ -468,7 +468,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   goToConnect() {
-    this.router.navigate(['/connect']);
+    // Re-establishing the device after a mid-game drop also re-runs calibration,
+    // which re-verifies the sensor is working before training resumes.
+    this.router.navigate(['/calibrate']);
   }
 
   ngOnInit() {
@@ -577,8 +579,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                 this.currentRestMs = 0;
                 this.updateFeedback();
 
-                // Play success rep voice cue
-                this.playVoice('cue_rep_success.mp3');
+                // Play success rep voice cue — a once-per-rep reward that must
+                // bypass the 3s throttle (the rest phase is shorter than 3s)
+                this.playVoice('cue_rep_success.mp3', true);
 
                 // Play squeeze instruction cue after success chime has finished playing (3.5s delay)
                 this.setVoiceTimeout(() => {
@@ -618,8 +621,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                 this.currentRestMs = 0;
                 this.updateFeedback();
 
-                // Prompt user to release force
-                this.playVoice('cue_release.mp3');
+                // Prompt user to release force — a state-transition cue fired
+                // exactly 2s after cue_hold, so it must bypass the 3s throttle
+                this.playVoice('cue_release.mp3', true);
               });
             }
           } else {

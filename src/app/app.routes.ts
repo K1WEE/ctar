@@ -3,7 +3,6 @@ import { inject } from '@angular/core';
 import { LoginComponent } from './components/login/login.component';
 import { RegisterComponent } from './components/register/register.component';
 import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { ConnectComponent } from './components/connect/connect.component';
 import { CalibrateComponent } from './components/calibrate/calibrate.component';
 import { GameComponent } from './components/game/game.component';
 import { SummaryComponent } from './components/summary/summary.component';
@@ -34,7 +33,7 @@ const doctorGuard: CanActivateFn = async () => {
   const role = await supabase.getUserRole(user.id);
   if (role === 'doctor' || role === 'admin') return true;
 
-  return router.parseUrl('/connect');
+  return router.parseUrl('/patient-portal');
 };
 
 export const routes: Routes = [
@@ -46,7 +45,6 @@ export const routes: Routes = [
 
   // Patient flow
   { path: 'patient-portal', loadComponent: () => import('./components/patient-portal/patient-portal.component').then(m => m.PatientPortalComponent), canActivate: [authGuard] },
-  { path: 'connect', component: ConnectComponent, canActivate: [authGuard] },
   { path: 'calibrate', component: CalibrateComponent, canActivate: [authGuard] },
   { path: 'game', component: GameComponent, canActivate: [authGuard] },
   { path: 'summary', component: SummaryComponent, canActivate: [authGuard] },

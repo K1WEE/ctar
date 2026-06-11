@@ -271,10 +271,9 @@ export class PatientPortalComponent implements OnInit {
   // that says "Connect Device" but routes to /game strands the user in a
   // game waiting for a device that isn't there.
   getPlayButtonLink(): string {
-    if (this.bleService.connectionState() !== 'Connected') {
-      return '/connect';
-    }
-    if (!this.isCalibrated()) {
+    // /calibrate handles device connection itself, so an unconnected user
+    // goes there too — there is no separate /connect step.
+    if (this.bleService.connectionState() !== 'Connected' || !this.isCalibrated()) {
       return '/calibrate';
     }
     return '/game';
