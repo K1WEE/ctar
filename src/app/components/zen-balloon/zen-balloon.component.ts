@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit, HostListener, ElementRef, ViewChild, inject, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit, HostListener, ElementRef, ViewChild, inject, signal, computed } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { CommonModule } from '@angular/common';
 import { NavbarService } from '../../services/navbar.service';
@@ -54,7 +54,7 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
               <app-chin-tuck-demo size="md" [showLabel]="false" aria-hidden="true" />
             </div>
             <div class="start-guide">
-            <p class="start-target">{{ i18n.t('game.targetReps') }} <strong>{{ targetReps }}</strong> {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}</p>
+            <p class="start-target"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{ i18n.t('game.targetReps') }} <strong>{{ targetReps }}</strong> {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}</p>
             <ol class="start-steps" [attr.aria-label]="i18n.currentLang() === 'th' ? 'ขั้นตอนการฝึก' : 'Training steps'">
               <li><span aria-hidden="true">1</span><p>{{ i18n.t('game.start.step1') }}</p></li>
               <li><span aria-hidden="true">2</span><p>{{ i18n.t('game.start.step2') }}</p></li>
@@ -143,21 +143,22 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
       </div>
 
       <div class="game-play-content w-full flex flex-col items-center" [attr.inert]="activeOverlay ? '' : null" [attr.aria-hidden]="activeOverlay ? 'true' : null">
-      <h2 class="game-title-container">{{ i18n.t('game.title') }}</h2>
       <dl class="game-stats">
-        <div class="flex-1 rounded-xl px-4 py-3 bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200">
-          <dt>{{ i18n.t('game.hud.reps') }}</dt>
+        <div class="stat stat-reps">
+          <dt><i class="fa-solid fa-repeat" aria-hidden="true"></i>{{ i18n.t('game.hud.reps') }}</dt>
           <dd><strong>{{ currentRepVal }}</strong><span> / {{ targetReps }}</span></dd>
-        </div>
-        <div class="force-readout flex-1 rounded-xl px-4 py-3 bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200" *ngIf="gameFlowState() === 'playing'">
-          <dt>{{ i18n.currentLang() === 'th' ? 'แรงกด' : 'Force' }}</dt>
-          <dd>{{ forcePercent() }}<span>%</span></dd>
+          <dd class="stat-bar" aria-hidden="true"><span [style.width.%]="targetReps ? (currentRepVal / targetReps) * 100 : 0"></span></dd>
         </div>
       </dl>
 
       <div class="game-main-area" [class.session-complete]="sessionComplete">
         <div class="sky-cloud cloud-left" aria-hidden="true"></div>
         <div class="sky-cloud cloud-right" aria-hidden="true"></div>
+        <!-- Force sits beside the track so the patient reads it while watching the balloon. -->
+        <dl class="force-side force-readout" *ngIf="gameFlowState() === 'playing'">
+          <dt>{{ i18n.currentLang() === 'th' ? 'แรงกด' : 'Force' }}</dt>
+          <dd class="force-value">{{ forcePercent() }}<span>%</span></dd>
+        </dl>
         <!-- Scale the entire track together: target contact depends on rendered
              rectangles, so changing only the balloon would change the exercise. -->
         <!-- The Balloon Track (Centered & Dynamically Sized to fill parent container height) -->
@@ -199,13 +200,30 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
           </div>
         </div>
 
+        <!-- Per-rep praise; decorative, the cue line below announces success. -->
+        <div *ngFor="let p of praiseList(); trackBy: trackPraise" class="praise-burst" aria-hidden="true">
+          <span class="praise-glow"></span>
+          <span class="praise-rays"></span>
+          <i *ngFor="let c of confetti" class="confetti" [style.--a]="c.a + 'deg'" [style.--d]="c.d + 'px'" [style.--c]="c.c" [style.--r]="c.r + 'deg'"></i>
+          <svg class="praise-star" viewBox="0 0 100 96">
+            <defs>
+              <linearGradient id="praiseStarFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#fff3a3"/><stop offset=".45" stop-color="#ffd23f"/><stop offset="1" stop-color="#f59e0b"/>
+              </linearGradient>
+            </defs>
+            <path d="M50 4c3 0 5 2 6.5 5l10 20.5 22.5 3.3c6.5 1 8.5 6.5 4 11L76.5 59.6l3.9 22.4c1.1 6.5-3.8 10-9.6 7L50 78.4 29.2 89c-5.8 3-10.7-.5-9.6-7l3.9-22.4L7 43.8c-4.5-4.5-2.5-10 4-11l22.5-3.3L43.5 9C45 6 47 4 50 4z" fill="url(#praiseStarFill)" stroke="#e8920c" stroke-width="2"/>
+            <ellipse cx="38" cy="30" rx="9" ry="5" fill="#fff" opacity=".55" transform="rotate(-30 38 30)"/>
+          </svg>
+          <span class="sparkle s1"></span><span class="sparkle s2"></span><span class="sparkle s3"></span><span class="sparkle s4"></span>
+          <strong class="praise-text"><span class="praise-outline">{{ p.text }}</span><span class="praise-fill">{{ p.text }}</span></strong>
+        </div>
       </div>
 
 
       <!-- Hold/Release Progress Indicator -->
       <div class="progress-container">
         <div class="flex justify-between text-sm xs:text-base font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wider transition-colors duration-300">
-          <span>{{ sessionComplete ? i18n.t('game.sessionComplete') : (isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer')) }}</span>
+          <span class="hold-label"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i>{{ sessionComplete ? i18n.t('game.sessionComplete') : (isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer')) }}</span>
           <span class="text-blue-700 dark:text-blue-300">{{ holdProgress | number:'1.0-0' }}%</span>
         </div>
         <div class="h-3 xs:h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-slate-200 dark:border-white/5 transition-colors duration-300" role="progressbar" [attr.aria-label]="isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer')" [attr.aria-valuenow]="holdProgress" aria-valuemin="0" aria-valuemax="100">
@@ -224,60 +242,26 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
     </div>
   `,
   styles: [`
+    /* Layout and exercise geometry live here; visual theme is in src/training.css. */
     .game-overlay { position:fixed; inset:var(--app-navbar-height, 0px) 0 0; overflow-y:auto; z-index:40; }
     .game-dialog { max-height:calc(100dvh - var(--app-navbar-height, 0px) - 2rem); display:flex; flex-direction:column; overflow:hidden; }
     .dialog-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-    .start-screen { background:#fff; }
-    .start-layout { max-width:960px; margin:auto; padding:24px 20px max(20px, env(safe-area-inset-bottom)); display:grid; gap:24px; }
-    .start-header h2 { font-size:clamp(1.5rem,3vw,2.5rem); line-height:1.35; font-weight:700; text-wrap:balance; }
-    .start-header p { margin-top:8px; color:#475569; line-height:1.6; }
-    .start-content { display:grid; gap:20px; }
-    .start-demo { display:flex; justify-content:center; padding:8px; background:#f0f9ff; border-radius:16px; }
-    .start-guide { display:grid; align-content:center; gap:20px; }
-    .start-target { color:#475569; font-size:1.125rem; }
-    .start-target strong { color:#1d4ed8; font-size:1.75rem; font-weight:700; margin-inline:4px; }
-    .start-steps { display:grid; gap:16px; }
-    .start-steps li { display:flex; align-items:baseline; gap:12px; font-size:1.125rem; line-height:1.6; }
-    .start-steps li > span { color:#1d4ed8; font-weight:700; }
-    .start-actions button { width:100%; min-height:52px; padding:12px 20px; border-radius:12px; background:#1d4ed8; color:#fff; font-size:1.125rem; font-weight:700; }
-    .start-actions button:hover { background:#1e40af; }
-    .game-play-content { display:grid; grid-template-areas:'title' 'stats' 'scene' 'progress' 'cue'; gap:16px; }
-    .game-title-container { grid-area:title; font-size:1rem; font-weight:600; color:#475569; }
+    .game-play-content { display:grid; grid-template-areas:'stats' 'scene' 'progress' 'cue'; gap:16px; width:100%; max-width:640px; margin-inline:auto; }
     .feedback-container { grid-area:cue; min-height:4.35em; text-align:center; font-size:clamp(1.375rem,2.5vw,2rem); line-height:1.45; font-weight:700; text-wrap:balance; }
-    .game-main-area { grid-area:scene; display:flex; align-items:center; justify-content:center; position:relative; isolation:isolate; padding:16px; border-radius:16px; background:#e8f4fc; overflow:hidden; }
+    .game-main-area { grid-area:scene; display:flex; align-items:center; justify-content:center; position:relative; isolation:isolate; padding:16px; overflow:hidden; }
     /* Keep the original dimensions and force-to-position mapping. A common
        transform preserves intersection at every force, including edge contact. */
-    .game-track { height:clamp(16rem,45dvh,32rem); min-height:16rem; flex-shrink:0; box-shadow:none; background:#f8fcff; }
-    .sky-cloud { position:absolute; width:100px; height:28px; border-radius:50px; background:#fff; opacity:0.8; }
-    .sky-cloud::before { content:''; position:absolute; width:44px; height:44px; bottom:0; left:18px; border-radius:50%; background:inherit; }
-    .cloud-left { left:-24px; top:24%; }
-    .cloud-right { right:-32px; top:65%; transform:scale(0.8); }
+    .game-track { height:clamp(16rem,45dvh,32rem); min-height:16rem; flex-shrink:0; }
     .progress-container { grid-area:progress; min-width:0; }
-    .progress-container > div:first-child { gap:12px; letter-spacing:normal; }
     .game-stats { grid-area:stats; display:flex; gap:12px; }
-    .game-stats dt { font-size:1rem; }
-    .game-stats dd { font-size:2rem; font-weight:700; font-variant-numeric:tabular-nums; }
-    .game-stats dd span { font-size:1rem; font-weight:500; }
-    .session-complete { animation:celebrate 600ms ease-out; }
-    @keyframes celebrate { 50% { background:#d1fae5; } }
-    :host-context(.dark) .start-screen { background:#0f172a; }
-    :host-context(.dark) .start-demo, :host-context(.dark) .game-main-area { background:#142e43; }
-    :host-context(.dark) .game-track { background:#1e293b; }
-    :host-context(.dark) .sky-cloud { background:#304c62; }
-    :host-context(.dark) .start-header p, :host-context(.dark) .start-target,
-    :host-context(.dark) .game-title-container { color:#cbd5e1; }
-    :host-context(.dark) .start-target strong, :host-context(.dark) .start-steps li > span { color:#93c5fd; }
     @media(min-width:768px) {
-      .start-layout { padding:32px; gap:32px; }
-      .start-content { grid-template-columns:1fr 1.3fr; gap:40px; }
-      .start-demo { padding:32px; }
-      .start-actions { width:100%; max-width:480px; justify-self:center; }
-      .game-play-content { grid-template-columns:minmax(0,1fr) minmax(160px,0.4fr); grid-template-areas:'title title' 'scene stats' 'progress stats' 'cue stats'; gap:20px 32px; align-items:start; }
       .game-main-area { padding-block:calc(clamp(16rem,45dvh,32rem) * 0.1 + 24px); }
       .game-track { transform:scale(1.2); }
-      .game-stats { flex-direction:column; }
-      .cloud-left { left:8%; }
-      .cloud-right { right:6%; }
+    }
+    /* Desktop: scene fills the viewport height on the left, HUD centred on the right. */
+    @media(min-width:1024px) {
+      .game-play-content { max-width:1040px; grid-template-columns:minmax(0,1.2fr) minmax(320px,0.8fr); grid-template-rows:1fr auto auto auto 1fr; grid-template-areas:'scene .' 'scene stats' 'scene progress' 'scene cue' 'scene .'; gap:20px 32px; }
+      .game-main-area { min-height:calc(100dvh - var(--app-navbar-height, 0px) - 4rem); }
     }
     @media(max-height:600px) and (orientation:landscape) {
       .game-overlay:not(.start-screen) { justify-content:flex-start !important; overflow-y:auto; padding:8px !important; }
@@ -745,6 +729,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                   clearInterval(this.gameloop);
                   this.biofeedback.stopVibrationLoop();
                   this.biofeedback.playSuccess();
+                  this.showPraise();
                   this.updateFeedback();
                   this.repCompleted.emit();
                   return;
@@ -896,7 +881,28 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     if (announce && stateChanged) this.playGameCue(state);
   }
 
+  public praise = signal<{ id: number; text: string } | null>(null);
+  public praiseList = computed(() => { const p = this.praise(); return p ? [p] : []; });
+  public trackPraise = (_: number, p: { id: number }) => p.id;
+  // Fixed burst layout: angle, distance, colour and spin per confetti piece.
+  public confetti = [
+    { a: -150, d: 120, c: '#f472b6', r: 30 }, { a: -120, d: 135, c: '#fbbf24', r: -20 }, { a: -95, d: 110, c: '#60a5fa', r: 45 },
+    { a: -60, d: 130, c: '#f472b6', r: -35 }, { a: -30, d: 120, c: '#fbbf24', r: 15 }, { a: 10, d: 115, c: '#60a5fa', r: -50 },
+    { a: 160, d: 115, c: '#fbbf24', r: 25 }, { a: 195, d: 125, c: '#f472b6', r: -15 }, { a: 40, d: 105, c: '#fbbf24', r: 60 },
+    { a: 135, d: 100, c: '#60a5fa', r: -40 },
+  ];
+  private praiseSeq = 0;
+  private praiseTimer: any;
+
+  public showPraise() {
+    const n = 1 + Math.floor(Math.random() * 4);
+    this.praise.set({ id: ++this.praiseSeq, text: this.i18n.t(`game.praise.${n}`) });
+    clearTimeout(this.praiseTimer);
+    this.praiseTimer = setTimeout(() => this.ngZone.run(() => this.praise.set(null)), 1800);
+  }
+
   private triggerSuccessAnimation() {
+    this.showPraise();
     this.successFeedbackUntil = Date.now() + 1800;
     this.applyFeedbackState('success', undefined, true);
     this.holdProgress = 100;
@@ -1045,6 +1051,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.destroyed = true;
+    clearTimeout(this.praiseTimer);
     this.unregisterNavbar?.();
     this.stopGameLoop();
     if (this.countdownTimer) {

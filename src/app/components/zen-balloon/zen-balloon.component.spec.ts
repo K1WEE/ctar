@@ -70,13 +70,30 @@ describe('ZenBalloonComponent target contact', () => {
         component.feedbackMessage = component.i18n.t(key);
         fixture.detectChanges();
         expect([scene.offsetTop, stats.offsetTop, scene.offsetHeight]).withContext(`${lang}: ${key}`).toEqual(baseline);
-        expect(cue.offsetTop).toBeGreaterThan(scene.offsetTop + scene.offsetHeight);
+        // The cue never overlaps the scene: below it on narrow screens, beside it on desktop.
+        const belowScene = cue.offsetTop > scene.offsetTop + scene.offsetHeight;
+        const besideScene = cue.offsetLeft >= scene.offsetLeft + scene.offsetWidth;
+        expect(belowScene || besideScene).withContext(`${lang}: ${key} cue placement`).toBeTrue();
       }
       const style = getComputedStyle(cue);
       expect(parseFloat(style.minHeight)).toBeGreaterThanOrEqual(parseFloat(style.lineHeight) * 3 - 0.1);
     }
     component.i18n.setLang(language);
   });
+
+  it('shows a decorative praise burst after a completed rep, then clears it', fakeAsync(() => {
+    component.gameFlowState.set('playing');
+    (component as any).triggerSuccessAnimation();
+    fixture.detectChanges();
+    const burst = fixture.nativeElement.querySelector('.praise-burst');
+    expect(burst).not.toBeNull();
+    expect(burst.getAttribute('aria-hidden')).toBe('true');
+    expect(component.praise()?.text).toMatch(/!$/);
+    tick(1800);
+    fixture.detectChanges();
+    expect(component.praise()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.praise-burst')).toBeNull();
+  }));
 
   describe('voice selection', () => {
     let clips: Array<{ src: string; play: jasmine.Spy; pause: jasmine.Spy; onerror?: () => void; onended?: () => void; onpause?: () => void }>;

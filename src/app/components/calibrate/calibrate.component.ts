@@ -44,6 +44,7 @@ import { calibrationStepForState } from './calibrate-flow';
       </header>
 
       <div class="workspace">
+        <p class="eyebrow">{{ i18n.currentLang() === 'th' ? 'ขั้นตอนที่' : 'Step' }} {{ currentStep }}/3 · {{ stepLabel(currentStep) }}</p>
         <h1 id="calibration-title" role="status" aria-live="polite">{{ getPageStateTitle() }}</h1>
         <div *ngIf="state() !== 'finished'" class="device-guide" aria-hidden="true">
           <app-chin-tuck-demo size="lg" [showLabel]="false"></app-chin-tuck-demo>
@@ -59,8 +60,10 @@ import { calibrationStepForState } from './calibrate-flow';
             <p>{{ i18n.currentLang() === 'th' ? 'แรงกดขณะนี้' : 'Current Force' }}</p>
             <p class="force">{{ ctar.currentForce() | number:'1.0-1' }}<span>N</span></p>
             <p class="timer"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ i18n.currentLang() === 'th' ? 'เวลาบันทึกแรง:' : 'Testing time:' }} {{ timeLeft() }}s</p>
+            <div class="timer-bar" aria-hidden="true"><span [style.width.%]="timeLeft() / 3 * 100"></span></div>
           </div>
           <div *ngIf="state() === 'finished'" class="measurement result">
+            <span class="result-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
             <p>{{ i18n.currentLang() === 'th' ? 'แรงกดสูงสุดที่ทดสอบได้' : 'Peak Force Measured' }}</p>
             <p class="force">{{ averagePeak | number:'1.0-1' }}<span>N</span></p>
             <p class="success"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ i18n.currentLang() === 'th' ? 'บันทึกแรงกดสำเร็จ พร้อมเริ่มเล่นเกม' : 'Force calibrated successfully' }}</p>
@@ -102,69 +105,6 @@ import { calibrationStepForState } from './calibrate-flow';
       </footer>
     </section>
   `,
-  styles: [`
-    :host { display:block; background:#fff; color:#1e293b; }
-    .calibration { min-height:calc(100dvh - var(--app-navbar-height, 0px)); max-width:1200px; margin:auto; padding:20px 32px max(16px, env(safe-area-inset-bottom)); display:grid; grid-template-rows:auto 1fr auto; gap:16px; }
-    .flow-header { display:flex; align-items:center; gap:16px; border-bottom:1px solid #e2e8f0; padding-bottom:12px; }
-    nav { flex:1; }
-    .progress-steps { display:flex; justify-content:space-between; gap:12px; max-width:560px; margin:auto; }
-    .progress-steps li { display:flex; align-items:center; gap:8px; color:#64748b; font-size:.875rem; }
-    .step-number { width:28px; height:28px; display:grid; place-items:center; border:1px solid #cbd5e1; border-radius:50%; flex-shrink:0; }
-    .reached { color:#1d4ed8 !important; font-weight:700; }
-    .reached .step-number { color:white; background:#1d4ed8; border-color:#1d4ed8; }
-    .restart { width:44px; height:44px; flex-shrink:0; border-radius:8px; }
-    .workspace { display:grid; grid-template-columns:1fr 1.2fr; grid-template-rows:auto 1fr; column-gap:48px; align-items:center; align-content:center; padding:16px 0; }
-    h1 { grid-column:1 / -1; font-size:clamp(1.5rem, 3vw, 2.5rem); line-height:1.3; font-weight:700; margin-bottom:20px; }
-    .device-guide { display:flex; align-items:center; justify-content:center; align-self:stretch; background:#f8fafc; border-radius:16px; }
-    .instructions { display:grid; gap:24px; }
-    .instructions li { display:flex; align-items:baseline; gap:16px; font-size:1.25rem; line-height:1.5; }
-    .instructions li > span { color:#1d4ed8; font-weight:700; font-variant-numeric:tabular-nums; }
-    .notice { margin-top:16px; padding:12px; background:#eff6ff; color:#1e40af; border-radius:8px; font-size:1rem; line-height:1.45; }
-    .error { background:#fff7ed; color:#9a3412; }
-    .measurement { text-align:center; }
-    .press-instruction { margin-bottom:16px; font-size:1.25rem; font-weight:600; }
-    .force { font-size:clamp(3rem, 8vw, 5rem); line-height:1.2; font-weight:700; font-variant-numeric:tabular-nums; color:#1d4ed8; margin:12px 0; }
-    .force span { font-size:1.25rem; margin-left:8px; }
-    .success { color:#047857; }
-    [data-state="finished"] .guidance { grid-column:1 / -1; }
-    .actions { display:flex; flex-direction:column; align-items:center; gap:4px; padding-top:16px; border-top:1px solid #e2e8f0; }
-    .primary { width:100%; max-width:480px; min-height:52px; padding:12px 20px; border-radius:10px; background:#1d4ed8; color:white; font-size:1.125rem; font-weight:700; }
-    .primary:hover { background:#1e40af; }
-    .secondary { min-height:44px; padding:8px 12px; color:#475569; font-size:.875rem; text-decoration:underline; text-underline-offset:4px; }
-    .secondary:hover, .restart:hover { background:#f1f5f9; }
-    .simulate { touch-action:none; user-select:none; }
-    .auto-start { display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:8px; }
-    :host-context(.dark) { background:#0f172a; color:#e2e8f0; }
-    :host-context(.dark) .device-guide { background:#1e293b; }
-    :host-context(.dark) .flow-header, :host-context(.dark) .actions { border-color:#334155; }
-    :host-context(.dark) .secondary, :host-context(.dark) .progress-steps li { color:#cbd5e1; }
-    :host-context(.dark) .reached, :host-context(.dark) .force, :host-context(.dark) .instructions li > span { color:#93c5fd !important; }
-    :host-context(.dark) .success { color:#6ee7b7; }
-    :host-context(.dark) .secondary:hover, :host-context(.dark) .restart:hover { background:#334155; }
-    @media(max-width:639px) {
-      .calibration { padding:12px 20px max(12px, env(safe-area-inset-bottom)); gap:12px; }
-      .flow-header { gap:8px; padding-bottom:8px; }
-      .progress-steps { gap:8px; }
-      .progress-steps li { gap:4px; font-size:.8rem; }
-      .step-number { width:24px; height:24px; }
-      .workspace { grid-template-columns:1fr; grid-template-rows:auto minmax(80px, 1fr) auto; gap:12px; padding:0; }
-      h1 { margin:0; }
-      .device-guide { background:transparent; min-height:80px; }
-      .device-guide ::ng-deep .chin-tuck-svg { width:auto; height:clamp(80px, 18dvh, 170px); }
-      .instructions { gap:12px; }
-      .instructions li { font-size:1rem; gap:12px; }
-      .actions { padding-top:12px; }
-      .notice { margin-top:12px; }
-      [data-state="finished"] .workspace { grid-template-rows:auto 1fr; }
-    }
-    @media(max-height:700px) and (max-width:639px) {
-      .calibration { gap:8px; padding-top:8px; }
-      .workspace { grid-template-rows:auto auto; gap:8px; }
-      .device-guide { display:none; }
-      .instructions { gap:8px; }
-      .notice { padding:8px; margin-top:4px; font-size:.875rem; }
-    }
-  `]
 })
 export class CalibrateComponent implements OnInit, OnDestroy {
   // Use Signals to guarantee UI reactivity and change detection triggers

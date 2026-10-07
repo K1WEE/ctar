@@ -119,6 +119,10 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'game.feedback.success2': { th: 'ทำได้ดีมาก ผ่านไปอีกหนึ่งรอบ', en: 'Excellent, one more rep completed' },
   'game.feedback.success3': { th: 'เก่งมาก คุณรักษาแรงได้ดี', en: 'Well done, you kept the force steady' },
   'game.feedback.success4': { th: 'สำเร็จแล้ว พักหายใจก่อนรอบต่อไป', en: 'Success, take a breath before the next rep' },
+  'game.praise.1': { th: 'เก่งมาก!', en: 'Great job!' },
+  'game.praise.2': { th: 'เยี่ยมเลย!', en: 'Awesome!' },
+  'game.praise.3': { th: 'สุดยอด!', en: 'Well done!' },
+  'game.praise.4': { th: 'ดีมาก!', en: 'Excellent!' },
 
   // ─── Summary ───
   'summary.title': { th: 'ฝึกเสร็จแล้ว!', en: 'Session Complete!' },

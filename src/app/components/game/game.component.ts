@@ -12,7 +12,7 @@ import { DataSyncService } from '../../services/data-sync.service';
   standalone: true,
   imports: [CommonModule, ZenBalloonComponent],
   template: `
-    <div class="game-layout-root text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-950">
+    <div class="game-layout-root text-slate-900 dark:text-slate-200 bg-[#f5f7fb] dark:bg-[#0b1220]">
       <div class="game-content">
         <app-zen-balloon 
           class="w-full h-full block min-h-0"
