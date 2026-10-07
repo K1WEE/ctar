@@ -1,7 +1,7 @@
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter, Router } from '@angular/router';
-import { GameComponent } from './game.component';
+import { FINISH_FALLBACK_MS, GameComponent } from './game.component';
 import { CtarLogicService } from '../../services/ctar-logic.service';
 import { DataSyncService } from '../../services/data-sync.service';
 import { SupabaseService } from '../../services/supabase.service';
@@ -73,7 +73,50 @@ describe('GameComponent training session', () => {
     tick(4000);
     expect(navigate).not.toHaveBeenCalled();
     fixture.componentInstance.onExitDialogChange(false);
-    tick(3500);
+    tick(FINISH_FALLBACK_MS);
+    expect(navigate).toHaveBeenCalledOnceWith(['/summary']);
+    fixture.destroy();
+  }));
+
+  it('goes to the summary as soon as the final praise has been heard', fakeAsync(() => {
+    const fixture = TestBed.createComponent(GameComponent);
+    fixture.detectChanges();
+    tick();
+    repCount.set(3);
+    fixture.detectChanges();
+    tick(1000);
+    expect(navigate).not.toHaveBeenCalled();
+    fixture.componentInstance.onCelebrationDone();
+    expect(navigate).toHaveBeenCalledOnceWith(['/summary']);
+    tick(FINISH_FALLBACK_MS);
+    expect(navigate).toHaveBeenCalledTimes(1);
+    fixture.destroy();
+  }));
+
+  it('still reaches the summary if the praise never reports back', fakeAsync(() => {
+    const fixture = TestBed.createComponent(GameComponent);
+    fixture.detectChanges();
+    tick();
+    repCount.set(3);
+    fixture.detectChanges();
+    tick(FINISH_FALLBACK_MS - 1);
+    expect(navigate).not.toHaveBeenCalled();
+    tick(1);
+    expect(navigate).toHaveBeenCalledOnceWith(['/summary']);
+    fixture.destroy();
+  }));
+
+  it('waits for an open save decision even after the praise ends', fakeAsync(() => {
+    const fixture = TestBed.createComponent(GameComponent);
+    fixture.detectChanges();
+    tick();
+    repCount.set(3);
+    fixture.detectChanges();
+    fixture.componentInstance.onExitDialogChange(true);
+    fixture.componentInstance.onCelebrationDone();
+    tick(FINISH_FALLBACK_MS);
+    expect(navigate).not.toHaveBeenCalled();
+    fixture.componentInstance.onExitDialogChange(false);
     expect(navigate).toHaveBeenCalledOnceWith(['/summary']);
     fixture.destroy();
   }));

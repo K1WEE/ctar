@@ -7,12 +7,15 @@ import { I18nService } from '../../services/i18n.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { DataSyncService } from '../../services/data-sync.service';
 
+// Safety net in case the final praise never reports that it finished.
+export const FINISH_FALLBACK_MS = 3000;
+
 @Component({
   selector: 'app-game',
   standalone: true,
   imports: [CommonModule, ZenBalloonComponent],
   template: `
-    <div class="game-layout-root text-slate-900 dark:text-slate-200 bg-[#f5f7fb] dark:bg-[#0b1220]">
+    <div class="game-layout-root text-slate-900 dark:text-slate-200">
       <div class="game-content">
         <app-zen-balloon 
           class="w-full h-full block min-h-0"
@@ -23,6 +26,7 @@ import { DataSyncService } from '../../services/data-sync.service';
           [targetReps]="targetReps()"
           [requiredHoldTimeMs]="holdDurationMs()"
           (repCompleted)="onGameRep()"
+          (celebrationDone)="onCelebrationDone()"
           (sessionExit)="onSessionExit($event)"
           (exitDialogChange)="onExitDialogChange($event)">
         </app-zen-balloon>
@@ -47,6 +51,7 @@ export class GameComponent implements OnInit, OnDestroy {
   private exitDialogOpen = false;
   private exitCommitted = false;
   private endTimer: any;
+  private celebrated = false;
   private supabase = inject(SupabaseService);
   private dataSync = inject(DataSyncService);
 
@@ -54,9 +59,10 @@ export class GameComponent implements OnInit, OnDestroy {
     effect(() => {
       if (this.ctar.repCount() >= this.targetReps() && !this.sessionEnding) {
         this.sessionEnding = true;
-        // Let the final rep's success chime + voice cue and the celebration
-        // message play out before yanking the user to the summary page
-        this.scheduleFinish();
+        // Leave when the final praise has been heard (onCelebrationDone);
+        // the timer only covers a voice that never reports back.
+        if (this.celebrated && !this.exitDialogOpen) this.leaveForSummary();
+        else this.scheduleFinish();
       }
     });
   }
@@ -101,7 +107,15 @@ export class GameComponent implements OnInit, OnDestroy {
     this.exitDialogOpen = open;
     this.ctar.setSessionPaused(open);
     clearTimeout(this.endTimer);
-    if (!open && this.sessionEnding) this.scheduleFinish();
+    if (!open && this.sessionEnding) {
+      if (this.celebrated) this.leaveForSummary();
+      else this.scheduleFinish();
+    }
+  }
+
+  onCelebrationDone(): void {
+    this.celebrated = true;
+    if (this.sessionEnding && !this.exitDialogOpen) this.leaveForSummary();
   }
 
   onSessionExit(choice: 'save' | 'discard'): void {
@@ -118,7 +132,14 @@ export class GameComponent implements OnInit, OnDestroy {
   }
 
   private scheduleFinish(): void {
-    if (!this.exitDialogOpen) this.endTimer = setTimeout(() => this.finishSession(), 3500);
+    if (!this.exitDialogOpen) this.endTimer = setTimeout(() => this.leaveForSummary(), FINISH_FALLBACK_MS);
+  }
+
+  private leaveForSummary(): void {
+    if (this.exitCommitted) return;
+    this.exitCommitted = true;
+    clearTimeout(this.endTimer);
+    this.finishSession();
   }
 
   finishSession() {

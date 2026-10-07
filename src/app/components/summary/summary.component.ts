@@ -6,73 +6,64 @@ import { DataSyncService } from '../../services/data-sync.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { I18nService } from '../../services/i18n.service';
 import { TaskService } from '../../services/task.service';
+import { SkySceneComponent } from '../sky-scene/sky-scene.component';
 
 @Component({
   selector: 'app-summary',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SkySceneComponent],
   template: `
-    <div class="min-h-screen p-4 py-6 flex items-start sm:items-center justify-center overflow-y-auto">
-      <div class="my-2 sm:my-0 max-w-2xl w-full bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200 dark:border-slate-700">
-        
-        <div class="text-center mb-8">
-          <div class="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner border border-emerald-200 dark:border-emerald-500/30">
-            <i class="fa-solid fa-trophy text-4xl"></i>
-          </div>
-          <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white mb-2">{{ i18n.t('summary.title') }}</h2>
-          <p class="text-slate-600 dark:text-slate-300 text-lg">{{ i18n.t('summary.subtitle') }}</p>
+    <app-sky-scene></app-sky-scene>
+    <div class="summary-page">
+      <section class="summary-card" aria-labelledby="summary-title">
+        <header class="summary-header">
+          <div class="summary-trophy" aria-hidden="true"><i class="fa-solid fa-trophy"></i></div>
+          <h2 id="summary-title">{{ i18n.t('summary.title') }}</h2>
+          <p>{{ i18n.t('summary.subtitle') }}</p>
+        </header>
+
+        <div *ngIf="isSaving" class="summary-saving" role="status">
+          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+          <p>{{ i18n.t('summary.saving') }}</p>
         </div>
 
-        <div *ngIf="isSaving" class="text-center py-8">
-          <i class="fa-solid fa-spinner fa-spin text-4xl text-brand-accent mb-4"></i>
-          <p class="text-slate-600 dark:text-slate-300 text-base">{{ i18n.t('summary.saving') }}</p>
-        </div>
-
-        <div *ngIf="!isSaving" class="space-y-6 animate-fade-in">
-          
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
-              <div class="text-slate-600 dark:text-slate-300 text-base font-medium mb-1">{{ i18n.t('summary.duration') }}</div>
-              <div class="text-3xl font-bold text-slate-800 dark:text-white">{{ currentStats.duration }}s</div>
+        <div *ngIf="!isSaving" class="summary-body animate-fade-in">
+          <dl class="summary-stats">
+            <div class="summary-stat">
+              <dt><i class="fa-solid fa-stopwatch" aria-hidden="true"></i>{{ i18n.t('summary.duration') }}</dt>
+              <dd class="summary-value">{{ currentStats.duration }}<span>s</span></dd>
             </div>
-            
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
-              <div class="text-slate-600 dark:text-slate-300 text-base font-medium mb-1">{{ i18n.t('summary.reps') }}</div>
-              <div class="text-3xl font-bold text-slate-800 dark:text-white">{{ currentStats.reps }}</div>
-              <div class="text-sm mt-2" [ngClass]="getImprovementColor(improvement.reps)">
-                <i class="fa-solid" [ngClass]="getImprovementIcon(improvement.reps)"></i>
+            <div class="summary-stat stat-gold">
+              <dt><i class="fa-solid fa-repeat" aria-hidden="true"></i>{{ i18n.t('summary.reps') }}</dt>
+              <dd class="summary-value">{{ currentStats.reps }}</dd>
+              <dd class="summary-delta" [ngClass]="getImprovementColor(improvement.reps)">
+                <i class="fa-solid" [ngClass]="getImprovementIcon(improvement.reps)" aria-hidden="true"></i>
                 {{ formatImprovement(improvement.reps) }}
-              </div>
+              </dd>
             </div>
-
-            <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
-              <div class="text-slate-600 dark:text-slate-300 text-base font-medium mb-1">{{ i18n.t('summary.peakForce') }}</div>
-              <div class="text-3xl font-bold text-slate-800 dark:text-white">{{ currentStats.maxForce | number:'1.0-1' }} N</div>
-              <div class="text-sm mt-2" [ngClass]="getImprovementColor(improvement.maxForce)">
-                <i class="fa-solid" [ngClass]="getImprovementIcon(improvement.maxForce)"></i>
+            <div class="summary-stat">
+              <dt><i class="fa-solid fa-gauge-high" aria-hidden="true"></i>{{ i18n.t('summary.peakForce') }}</dt>
+              <dd class="summary-value">{{ currentStats.maxForce | number:'1.0-1' }}<span>N</span></dd>
+              <dd class="summary-delta" [ngClass]="getImprovementColor(improvement.maxForce)">
+                <i class="fa-solid" [ngClass]="getImprovementIcon(improvement.maxForce)" aria-hidden="true"></i>
                 {{ formatImprovement(improvement.maxForce) }} N
-              </div>
+              </dd>
             </div>
+          </dl>
+
+          <div *ngIf="isOfflineSaved" role="status" class="summary-note note-warn">
+            <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> {{ i18n.t('summary.savedOffline') }}
           </div>
 
-          <div *ngIf="isOfflineSaved" role="status" class="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 p-4 rounded-xl text-center text-base font-semibold">
-            <i class="fa-solid fa-cloud-arrow-up mr-2" aria-hidden="true"></i> {{ i18n.t('summary.savedOffline') }}
+          <div *ngIf="saveError" role="alert" class="summary-note note-error">
+            <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ saveError }}
           </div>
 
-          <div *ngIf="saveError" role="alert" class="bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 p-4 rounded-xl text-center text-base">
-            <i class="fa-solid fa-circle-exclamation mr-1" aria-hidden="true"></i> {{ saveError }}
-          </div>
-
-          <div class="mt-8 pt-6 border-t border-slate-200 dark:border-white/10 text-center">
-            <button 
-              (click)="finish()"
-              class="px-8 min-h-[56px] bg-brand-accent hover:bg-blue-700 text-white font-semibold text-lg rounded-xl shadow-sm transition-colors duration-200">
-              {{ i18n.t('summary.done') }}
-            </button>
+          <div class="summary-actions">
+            <button type="button" (click)="finish()">{{ i18n.t('summary.done') }}</button>
           </div>
         </div>
-
-      </div>
+      </section>
     </div>
   `
 })
@@ -177,9 +168,9 @@ export class SummaryComponent implements OnInit {
 
   getImprovementColor(val: number) {
     const improvement = val;
-    if (improvement > 0) return 'text-emerald-700 dark:text-emerald-400';
-    if (improvement < 0) return 'text-rose-700 dark:text-rose-400';
-    return 'text-slate-500 dark:text-slate-400';
+    if (improvement > 0) return 'delta-up';
+    if (improvement < 0) return 'delta-down';
+    return 'delta-flat';
   }
 
   getImprovementIcon(val: number) {

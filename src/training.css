@@ -83,9 +83,112 @@ app-calibrate .auto-start { display:flex; align-items:center; flex-wrap:wrap; ju
   app-calibrate .notice { padding:10px 12px; margin-top:8px; font-size:.9375rem; }
 }
 
+/* ---- app-sky-scene (game + summary backdrop) ---- */
+:root { --meadow-h:clamp(72px,13vh,150px); }
+app-sky-scene { --sky-top:#9fd3f7; --sky-bottom:#e8f6fe; --cloud:#fff; --bird:#334155; --hill-back:#9ad97f; --hill-front:#5fb550; }
+.dark app-sky-scene { --sky-top:#0b1d3a; --sky-bottom:#1d3a5f; --cloud:#33507a; --bird:#cbd5e1; --hill-back:#1f4d3a; --hill-front:#16382b; }
+/* Sky scene: drifting clouds, a flock every ~6s, meadow at the bottom. */
+app-sky-scene { background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 85%); }
+app-sky-scene .cloud { position:absolute; left:0; top:var(--y); width:var(--w); height:calc(var(--w) * .32); border-radius:999px; background:var(--cloud); opacity:var(--o, .9); animation:cloud-drift var(--t) linear calc(var(--d) - var(--clock, 0ms)) infinite; will-change:transform; }
+app-sky-scene .cloud::before, app-sky-scene .cloud::after { content:''; position:absolute; bottom:30%; border-radius:50%; background:inherit; }
+app-sky-scene .cloud::before { left:16%; width:42%; aspect-ratio:1; }
+app-sky-scene .cloud::after { left:46%; width:30%; aspect-ratio:1; }
+app-sky-scene .c1 { --y:9%; --w:170px; --t:95s; --d:-20s; }
+app-sky-scene .c2 { --y:24%; --w:110px; --t:70s; --d:-48s; --o:.75; }
+app-sky-scene .c3 { --y:42%; --w:140px; --t:110s; --d:-80s; --o:.8; }
+app-sky-scene .c4 { --y:58%; --w:90px; --t:65s; --d:-10s; --o:.65; }
+app-sky-scene .c5 { --y:15%; --w:220px; --t:130s; --d:-100s; --o:.6; }
+@keyframes cloud-drift { from { transform:translateX(100vw); } to { transform:translateX(-100%); } }
+
+/* Two flocks on a 26s cycle, offset by 13s: each crosses in ~7s, then ~6s of empty sky. */
+app-sky-scene .bird-flock { position:absolute; left:0; display:flex; gap:14px; align-items:flex-start; transform:translateX(-25vw); animation:bird-pass 26s linear infinite; animation-delay:calc(var(--fd) - var(--clock, 0ms)); }
+app-sky-scene .bird-flock.f1 { top:14%; --fd:4s; }
+app-sky-scene .bird-flock.f2 { top:30%; --fd:17s; }
+app-sky-scene .bird { width:42px; height:auto; aspect-ratio:30 / 12; overflow:visible; }
+app-sky-scene .bird:nth-child(2) { width:34px; margin-top:16px; }
+app-sky-scene .bird:nth-child(3) { width:30px; margin-top:-8px; }
+app-sky-scene .bird path { fill:none; stroke:var(--bird); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transform-box:fill-box; transform-origin:50% 90%; animation:bird-flap 420ms ease-in-out infinite alternate; }
+app-sky-scene .bird:nth-child(2) path { animation-delay:-140ms; }
+app-sky-scene .bird:nth-child(3) path { animation-delay:-280ms; }
+@keyframes bird-pass { 0% { transform:translate(-25vw, 0); } 27% { transform:translate(110vw, -5vh); } 100% { transform:translate(110vw, -5vh); } }
+@keyframes bird-flap { from { transform:scaleY(1); } to { transform:scaleY(-.35); } }
+
+app-sky-scene .hill-back { fill:var(--hill-back); }
+app-sky-scene .hill-front { fill:var(--hill-front); }
+@media (prefers-reduced-motion: reduce) {
+  app-sky-scene .cloud { animation-play-state:paused; }
+  app-sky-scene .bird-flock { display:none; }
+}
+
+/* ---- app-summary: same card language as the game, floating on the sky ---- */
+app-summary { display:block; --card:#fff; --line:#e2e8f0; --ink:#0f172a; --muted:#475569; --brand:#1d4ed8; --brand-hover:#1e40af; --brand-soft:#eff6ff; --gold-soft:#fffbeb; --gold-ink:#92400e; }
+.dark app-summary { --card:#111a2e; --line:#24324d; --ink:#e2e8f0; --muted:#cbd5e1; --brand:#2563eb; --brand-hover:#1d4ed8; --brand-soft:#172554; --gold-soft:#2b1d07; --gold-ink:#fcd34d; }
+app-summary .summary-page { position:relative; z-index:1; min-height:calc(100dvh - var(--app-navbar-height, 0px)); display:grid; place-items:center; padding:24px 16px calc(var(--meadow-h) * .6 + 16px); color:var(--ink); }
+app-summary .summary-card { width:100%; max-width:720px; display:grid; gap:24px; padding:28px 20px; border:1px solid var(--line); border-radius:28px; background:var(--card); box-shadow:0 1px 2px rgb(15 23 42 / 4%), 0 16px 40px -16px rgb(30 64 175 / 25%); }
+app-summary .summary-header { text-align:center; }
+app-summary .summary-trophy { width:88px; height:88px; margin:0 auto 16px; display:grid; place-items:center; border-radius:50%; background:radial-gradient(circle at 50% 40%, #fff7d6 0%, var(--gold-soft) 70%); border:1px solid #fde68a; color:#d97706; font-size:2.5rem; box-shadow:0 8px 24px -10px rgb(217 119 6 / 45%); animation:summary-pop 500ms cubic-bezier(.2,1.5,.4,1) 250ms both; }
+.dark app-summary .summary-trophy { background:radial-gradient(circle at 50% 40%, #3b2a0a 0%, var(--gold-soft) 70%); border-color:#78350f; color:#fbbf24; }
+app-summary .summary-header h2 { font-size:clamp(1.75rem,3.5vw,2.25rem); line-height:1.3; font-weight:800; text-wrap:balance; }
+app-summary .summary-header p { margin-top:6px; color:var(--muted); font-size:1.125rem; line-height:1.6; }
+app-summary .summary-saving { display:grid; justify-items:center; gap:12px; padding:24px 0; color:var(--muted); font-size:1.0625rem; }
+app-summary .summary-saving i { color:var(--brand); font-size:2.25rem; }
+app-summary .summary-body { display:grid; gap:16px; }
+app-summary .summary-stats { display:grid; gap:12px; }
+app-summary .summary-stat { display:grid; grid-template-columns:1fr auto; align-items:center; gap:4px 12px; padding:16px 18px; border:1px solid var(--line); border-radius:22px; background:var(--card); }
+app-summary .summary-stat dt { display:flex; align-items:center; gap:12px; font-size:1.125rem; font-weight:600; }
+app-summary .summary-stat dt i { width:40px; height:40px; flex-shrink:0; display:grid; place-items:center; border-radius:12px; background:var(--brand-soft); color:var(--brand); font-size:1.125rem; }
+.dark app-summary .summary-stat dt i { color:#93c5fd; }
+app-summary .stat-gold dt i { background:var(--gold-soft); color:var(--gold-ink); }
+.dark app-summary .stat-gold dt i { color:var(--gold-ink); }
+app-summary .summary-value { color:#1d4ed8; font-size:2rem; line-height:1.1; font-weight:800; font-variant-numeric:tabular-nums; text-align:right; }
+.dark app-summary .summary-value { color:#93c5fd; }
+app-summary .stat-gold .summary-value { color:#b45309; }
+.dark app-summary .stat-gold .summary-value { color:#fbbf24; }
+app-summary .summary-value span { margin-left:2px; font-size:.55em; }
+app-summary .summary-delta { grid-column:1 / -1; justify-self:end; display:inline-flex; align-items:center; gap:6px; padding:2px 10px; border-radius:999px; font-size:.9375rem; font-weight:600; }
+app-summary .delta-up { background:#ecfdf5; color:#047857; }
+app-summary .delta-down { background:#fff1f2; color:#be123c; }
+app-summary .delta-flat { background:#f1f5f9; color:#475569; }
+.dark app-summary .delta-up { background:#06281f; color:#6ee7b7; }
+.dark app-summary .delta-down { background:#3b0a14; color:#fda4af; }
+.dark app-summary .delta-flat { background:#1e293b; color:#cbd5e1; }
+app-summary .summary-note { display:flex; align-items:center; justify-content:center; gap:8px; padding:14px 16px; border-radius:16px; text-align:center; font-size:1rem; font-weight:600; }
+app-summary .note-warn { background:#fffbeb; border:1px solid #fde68a; color:#92400e; }
+app-summary .note-error { background:#fff1f2; border:1px solid #fecdd3; color:#be123c; }
+.dark app-summary .note-warn { background:#2b1d07; border-color:#78350f; color:#fcd34d; }
+.dark app-summary .note-error { background:#3b0a14; border-color:#881337; color:#fda4af; }
+app-summary .summary-actions { padding-top:8px; display:flex; justify-content:center; }
+app-summary .summary-actions button { width:100%; max-width:420px; min-height:56px; padding:12px 24px; border-radius:16px; background:var(--brand); color:#fff; font-size:1.1875rem; font-weight:700; cursor:pointer; box-shadow:0 8px 20px -8px rgb(29 78 216 / 60%); transition:background-color 150ms ease, box-shadow 150ms ease; }
+app-summary .summary-actions button:hover { background:var(--brand-hover); box-shadow:0 10px 24px -8px rgb(29 78 216 / 70%); }
+app-summary .summary-actions button:focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+@keyframes summary-pop { from { transform:scale(.4); opacity:0; } to { transform:scale(1); opacity:1; } }
+@media(min-width:768px) {
+  app-summary .summary-card { padding:36px; gap:28px; }
+  app-summary .summary-stats { grid-template-columns:repeat(3, minmax(0, 1fr)); }
+  app-summary .summary-stat { grid-template-columns:1fr; grid-template-rows:auto auto 1.75rem; align-content:start; justify-items:center; text-align:center; padding:20px 16px; gap:10px; }
+  app-summary .summary-stat dt { flex-direction:column; gap:8px; font-size:1.0625rem; }
+  app-summary .summary-value { text-align:center; font-size:2.5rem; }
+  app-summary .summary-delta { justify-self:center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  app-summary .summary-trophy { animation:none; }
+}
+
+/* ---- Route slide: game -> summary (View Transitions; sky and navbar stay put) ---- */
+html.vt-slide main.app-page { view-transition-name:page; }
+html.vt-slide app-sky-scene { view-transition-name:sky; }
+::view-transition-group(sky) { z-index:0; animation:none; }
+::view-transition-old(sky) { display:none; }
+::view-transition-new(sky) { animation:none; }
+::view-transition-group(page) { z-index:1; animation-duration:420ms; }
+::view-transition-old(page) { animation:vt-slide-out 420ms cubic-bezier(.4,0,.2,1) both; }
+::view-transition-new(page) { animation:vt-slide-in 420ms cubic-bezier(.4,0,.2,1) both; }
+@keyframes vt-slide-out { to { transform:translateX(-35%); opacity:0; } }
+@keyframes vt-slide-in { from { transform:translateX(100%); } }
+
 /* ---- app-zen-balloon ---- */
-app-zen-balloon { --bg:#f5f7fb; --card:#fff; --line:#e2e8f0; --ink:#0f172a; --muted:#475569; --brand:#1d4ed8; --brand-hover:#1e40af; --brand-soft:#eff6ff; --brand-ink:#1e40af; --gold-soft:#fffbeb; --gold-ink:#92400e; --gold:#f59e0b; --sky-top:#dbeafe; --sky-bottom:#f0f9ff; --cloud:#fff; }
-.dark app-zen-balloon { --bg:#0b1220; --card:#111a2e; --line:#24324d; --ink:#e2e8f0; --muted:#cbd5e1; --brand:#2563eb; --brand-hover:#1d4ed8; --brand-soft:#172554; --brand-ink:#bfdbfe; --gold-soft:#2b1d07; --gold-ink:#fcd34d; --sky-top:#0f2a4a; --sky-bottom:#13203a; --cloud:#24405f; }
+app-zen-balloon { --bg:#f5f7fb; --card:#fff; --line:#e2e8f0; --ink:#0f172a; --muted:#475569; --brand:#1d4ed8; --brand-hover:#1e40af; --brand-soft:#eff6ff; --brand-ink:#1e40af; --gold-soft:#fffbeb; --gold-ink:#92400e; --gold:#f59e0b; }
+.dark app-zen-balloon { --bg:#0b1220; --card:#111a2e; --line:#24324d; --ink:#e2e8f0; --muted:#cbd5e1; --brand:#2563eb; --brand-hover:#1d4ed8; --brand-soft:#172554; --brand-ink:#bfdbfe; --gold-soft:#2b1d07; --gold-ink:#fcd34d; }
 
 /* Preparation screen: one card matching the calibration page */
 app-zen-balloon .start-screen { display:flex; background:var(--bg); color:var(--ink); }
@@ -107,13 +210,10 @@ app-zen-balloon .start-actions button:focus-visible { outline:3px solid #93c5fd;
 
 /* Play HUD */
 app-zen-balloon .game-play-content { color:var(--ink); }
-app-zen-balloon .game-main-area { border:1px solid var(--line); border-radius:28px; background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%); }
+app-zen-balloon .game-main-area { border-radius:28px; }
 app-zen-balloon .game-track { background:rgb(255 255 255 / 85%); box-shadow:inset 0 2px 6px rgb(15 23 42 / 8%), 0 8px 24px -10px rgb(30 64 175 / 30%); }
 .dark app-zen-balloon .game-track { background:#162238; }
-app-zen-balloon .sky-cloud { position:absolute; width:100px; height:28px; border-radius:50px; background:var(--cloud); opacity:0.85; }
-app-zen-balloon .sky-cloud::before { content:''; position:absolute; width:44px; height:44px; bottom:0; left:18px; border-radius:50%; background:inherit; }
-app-zen-balloon .cloud-left { left:-24px; top:24%; }
-app-zen-balloon .cloud-right { right:-32px; top:65%; transform:scale(0.8); }
+
 app-zen-balloon .session-complete { animation:zen-celebrate 600ms ease-out; }
 @keyframes zen-celebrate { 50% { background:#d1fae5; } }
 
@@ -179,8 +279,6 @@ app-zen-balloon .sparkle.s4 { left:70px; top:-130px; width:16px; height:16px; an
   app-zen-balloon .start-content { grid-template-columns:1fr 1.3fr; gap:40px; }
   app-zen-balloon .start-demo { padding:32px; }
   app-zen-balloon .start-actions { width:100%; max-width:480px; justify-self:center; }
-  app-zen-balloon .cloud-left { left:6%; }
-  app-zen-balloon .cloud-right { right:4%; }
   app-zen-balloon .force-side { left:calc(50% + 100px); }
   app-zen-balloon .force-value { font-size:2.75rem; }
   app-zen-balloon .praise-burst { top:46%; }
@@ -189,8 +287,6 @@ app-zen-balloon .sparkle.s4 { left:70px; top:-130px; width:16px; height:16px; an
   app-zen-balloon .stat, app-zen-balloon .progress-container { padding:22px 24px; }
   app-zen-balloon .feedback-container { font-size:1.5rem; }
   app-zen-balloon .feedback-container::before, app-zen-balloon .feedback-container::after { flex-basis:32px; }
-  app-zen-balloon .cloud-left { left:8%; top:20%; }
-  app-zen-balloon .cloud-right { right:8%; top:70%; }
 }
 @media(max-width:767px) {
   app-zen-balloon .start-layout { width:calc(100% - 24px); margin-block:12px; padding:20px 16px; border-radius:22px; }

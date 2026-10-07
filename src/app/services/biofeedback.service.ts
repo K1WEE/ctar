@@ -64,40 +64,46 @@ export class BiofeedbackService {
   }
 
   /**
-   * Ascending arpeggio chime for successfully completing a repetition.
+   * Short "ta-da" fanfare for completing a repetition, played as the praise star appears.
    */
   playSuccess() {
     this.stopVibrationLoop();
     try {
       this.initAudio();
       if (!this.audioCtx) return;
-
-      const now = this.audioCtx.currentTime;
-      // Ascending C Major Triad (C5 -> E5 -> G5 -> C6)
-      const notes = [523.25, 659.25, 783.99, 1046.50];
-      
-      notes.forEach((freq, idx) => {
-        const osc = this.audioCtx!.createOscillator();
-        const gainNode = this.audioCtx!.createGain();
-
-        osc.type = 'sine';
+      const ctx = this.audioCtx;
+      const now = ctx.currentTime;
+      // Volume is captured now, so a voice clip that starts right after doesn't duck the fanfare.
+      const level = this.feedbackVolumeMultiplier;
+      const note = (freq: number, type: OscillatorType, start: number, duration: number, volume: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
         osc.frequency.value = freq;
+        const t = now + start;
+        // Short attack avoids clicks; exponential tail sounds like a struck bell.
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(volume * level, t + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + duration + 0.02);
+      };
 
-        const startTime = now + idx * 0.08;
-        gainNode.gain.setValueAtTime(0.08 * this.feedbackVolumeMultiplier, startTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.25);
-
-        osc.connect(gainNode);
-        gainNode.connect(this.audioCtx!.destination);
-
-        osc.start(startTime);
-        osc.stop(startTime + 0.3);
-      });
+      // "Ta-da": quick rising run G4 -> C5 -> E5 -> G5 ...
+      [392.0, 523.25, 659.25, 783.99].forEach((freq, i) => note(freq, 'triangle', i * 0.06, 0.2, 0.12));
+      // ... landing on a bright C major chord that rings out ...
+      [1046.5, 1318.51, 1567.98].forEach(freq => note(freq, 'sine', 0.24, 0.9, 0.06));
+      note(523.25, 'triangle', 0.24, 0.9, 0.08);
+      // ... with a few sparkles on top.
+      [[2637.02, 0.32], [3135.96, 0.42], [2349.32, 0.52], [3520.0, 0.64]]
+        .forEach(([freq, start]) => note(freq, 'sine', start, 0.14, 0.03));
 
       // Celebratory haptic pattern: double short pulse, then hold
       this.vibrate([80, 50, 80, 50, 200]);
     } catch (e) {
-      console.warn('Success arpeggio play failed:', e);
+      console.warn('Success fanfare play failed:', e);
     }
   }
 

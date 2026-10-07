@@ -6,29 +6,22 @@ import { BiofeedbackService } from '../../services/biofeedback.service';
 import { BleService } from '../../services/ble.service';
 import { I18nService } from '../../services/i18n.service';
 import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.component';
+import { SkySceneComponent } from '../sky-scene/sky-scene.component';
+import { VoiceCue, VoiceLine, ZenBalloonVoiceCoach } from './zen-balloon-voice';
 
 
 type FeedbackState = 'squeeze' | 'hold' | 'holdAlmost' | 'tooHard' | 'release' | 'success';
 
 const FEEDBACK_ROTATE_MS = 5000;
-const GAME_CUE_COOLDOWN_MS = 4000;
-
-type GameCue = FeedbackState | 'intro';
-// Only request files shipped with the Thai voice pack.
-const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }> = {
-  intro: { files: ['game_intro.mp3'], fallback: 'intro.mp3' },
-  squeeze: { files: ['game_squeeze_01.mp3', 'game_squeeze_02.mp3', 'game_squeeze_03.mp3', 'game_squeeze_04.mp3'], fallback: 'cue_squeeze.mp3' },
-  hold: { files: ['cue_hold.mp3'] },
-  holdAlmost: { files: ['cue_hold.mp3'] },
-  tooHard: { files: ['cue_too_hard.mp3'] },
-  release: { files: ['cue_release.mp3'] },
-  success: { files: ['cue_rep_success.mp3'] },
-};
+// Released-force time that completes a rep.
+export const REST_MS = 500;
+// With no praise voice to wait for, linger only long enough to see the star.
+export const SILENT_CELEBRATION_MS = 1200;
 
 @Component({
   selector: 'app-zen-balloon',
   standalone: true,
-  imports: [CommonModule, ChinTuckDemoComponent],
+  imports: [CommonModule, ChinTuckDemoComponent, SkySceneComponent],
   animations: [
     // Re-pops the countdown digit on every value change, then stays fully
     // visible — unlike animate-ping which fades the number out while it shows
@@ -41,8 +34,9 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
   ],
   template: `
     <div [@.disabled]="prefersReducedMotion" class="game-card relative w-full">
+      <!-- Decorative sky fills the viewport below the navbar, behind the HUD. -->
+      <app-sky-scene></app-sky-scene>
 
-      <!-- Preparation shares the full-page layout of calibration. -->
       <div *ngIf="activeOverlay === 'ready'" class="game-overlay start-screen">
         <div role="dialog" aria-modal="false" data-dialog="start" aria-labelledby="game-start-title" aria-describedby="game-start-description" class="start-layout">
           <header class="start-header">
@@ -152,8 +146,6 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
       </dl>
 
       <div class="game-main-area" [class.session-complete]="sessionComplete">
-        <div class="sky-cloud cloud-left" aria-hidden="true"></div>
-        <div class="sky-cloud cloud-right" aria-hidden="true"></div>
         <!-- Force sits beside the track so the patient reads it while watching the balloon. -->
         <dl class="force-side force-readout" *ngIf="gameFlowState() === 'playing'">
           <dt>{{ i18n.currentLang() === 'th' ? 'แรงกด' : 'Force' }}</dt>
@@ -246,7 +238,7 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
     .game-overlay { position:fixed; inset:var(--app-navbar-height, 0px) 0 0; overflow-y:auto; z-index:40; }
     .game-dialog { max-height:calc(100dvh - var(--app-navbar-height, 0px) - 2rem); display:flex; flex-direction:column; overflow:hidden; }
     .dialog-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-    .game-play-content { display:grid; grid-template-areas:'stats' 'scene' 'progress' 'cue'; gap:16px; width:100%; max-width:640px; margin-inline:auto; }
+    .game-play-content { position:relative; z-index:1; padding-bottom:calc(var(--meadow-h) * .5); display:grid; grid-template-areas:'stats' 'scene' 'progress' 'cue'; gap:16px; width:100%; max-width:640px; margin-inline:auto; }
     .feedback-container { grid-area:cue; min-height:4.35em; text-align:center; font-size:clamp(1.375rem,2.5vw,2rem); line-height:1.45; font-weight:700; text-wrap:balance; }
     .game-main-area { grid-area:scene; display:flex; align-items:center; justify-content:center; position:relative; isolation:isolate; padding:16px; overflow:hidden; }
     /* Keep the original dimensions and force-to-position mapping. A common
@@ -260,7 +252,7 @@ const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }
     }
     /* Desktop: scene fills the viewport height on the left, HUD centred on the right. */
     @media(min-width:1024px) {
-      .game-play-content { max-width:1040px; grid-template-columns:minmax(0,1.2fr) minmax(320px,0.8fr); grid-template-rows:1fr auto auto auto 1fr; grid-template-areas:'scene .' 'scene stats' 'scene progress' 'scene cue' 'scene .'; gap:20px 32px; }
+      .game-play-content { max-width:1040px; grid-template-columns:minmax(0,1.2fr) minmax(320px,0.8fr); grid-template-rows:1fr auto auto auto 1fr; grid-template-areas:'scene .' 'scene stats' 'scene progress' 'scene cue' 'scene .'; gap:20px 32px; padding-bottom:0; }
       .game-main-area { min-height:calc(100dvh - var(--app-navbar-height, 0px) - 4rem); }
     }
     @media(max-height:600px) and (orientation:landscape) {
@@ -295,10 +287,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private dialogFocusTimer: ReturnType<typeof setTimeout> | null = null;
 
   public isMuted = false;
-  private lastVoicePlayTime = 0;
   private activeAudio: HTMLAudioElement | null = null;
-  private lastGameCueAt = 0;
-  private readonly cueIndices: Partial<Record<GameCue, number>> = {};
+  private readonly voice = new ZenBalloonVoiceCoach((line, cue) => this.speakLine(line, cue));
+  // While a clip plays, the cue text is pinned to the sentence being spoken.
+  private spokenTextKey: string | null = null;
   private feedbackState: FeedbackState | null = null;
   private feedbackLastChangedAt = 0;
   private successFeedbackUntil = 0;
@@ -312,10 +304,11 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   };
   private readonly feedbackMessageKeys: Record<FeedbackState, string[]> = {
     squeeze: ['game.feedback.squeeze1', 'game.feedback.squeeze2', 'game.feedback.squeeze3', 'game.feedback.squeeze4'],
-    hold: ['game.feedback.hold1', 'game.feedback.hold2', 'game.feedback.hold3', 'game.feedback.hold4'],
-    holdAlmost: ['game.feedback.hold4', 'game.feedback.hold2', 'game.feedback.hold1'],
-    tooHard: ['game.feedback.tooHard1', 'game.feedback.tooHard2', 'game.feedback.tooHard3', 'game.feedback.tooHard4'],
-    release: ['game.feedback.release1', 'game.feedback.release2', 'game.feedback.release3', 'game.feedback.release4'],
+    // Same sentences as the recorded clips, so silent and spoken cues agree.
+    hold: ['game.feedback.hold1'],
+    holdAlmost: ['game.feedback.holdAlmost'],
+    tooHard: ['game.feedback.tooHard1'],
+    release: ['game.feedback.release1'],
     success: ['game.feedback.success1', 'game.feedback.success2', 'game.feedback.success3', 'game.feedback.success4'],
   };
   // Sustained-violation accumulator for the rest phase (see game loop)
@@ -347,6 +340,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
 
   // Emitted safely upwards to the logic service so we avoid mutating service internals here
   @Output() repCompleted = new EventEmitter<void>();
+  // The final rep's praise has been heard (or shown, when silent); safe to leave for the summary.
+  @Output() celebrationDone = new EventEmitter<void>();
+  private celebrationTimer: ReturnType<typeof setTimeout> | null = null;
+  private finalPraiseSpeaking = false;
 
   // Configurable Target Zone in Newtons
   public targetMin = 20;
@@ -503,6 +500,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       if (touching) {
         this.biofeedback.playEnterZone();
         this.biofeedback.startVibrationLoop();
+        this.voice.enteredZone();
       } else {
         this.biofeedback.stopVibrationLoop();
         if (this.currentHoldMs > 50) this.biofeedback.playExitZone();
@@ -524,7 +522,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.inTargetZone = false;
     this.sensorDataStale.set(false);
     this.gameFlowState.set('disconnected');
-    this.playVoice('cue_disconnected.mp3', true);
+    this.playAudioFile('cue_disconnected.mp3');
   }
 
   goToConnect() {
@@ -552,7 +550,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   beginSession() {
     this.hasStarted = true;
     // This click is the user gesture that safely unlocks audio on mobile browsers.
-    this.playGameCue('intro', true);
+    this.voice.start();
     this.startCountdown();
   }
 
@@ -566,7 +564,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   toggleMute() {
     this.isMuted = !this.isMuted;
     localStorage.setItem('zen_balloon_muted', String(this.isMuted));
-    if (this.isMuted) this.stopVoice();
+    if (this.isMuted) this.stopActiveFeedback();
   }
 
   private setVoiceTimeout(callback: () => void, delay: number) {
@@ -584,6 +582,8 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   private stopActiveFeedback() {
+    this.voice.reset();
+    this.spokenTextKey = null;
     if (this.voiceTimeout) {
       clearTimeout(this.voiceTimeout);
       this.voiceTimeout = null;
@@ -624,22 +624,26 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     }
   }
 
-  private playGameCue(key: GameCue, bypassCooldown = false) {
-    if (this.destroyed || this.isMuted || this.progressionPaused || !this.i18n.voiceLanguage()) return;
-    if (!bypassCooldown && Date.now() - this.lastGameCueAt < GAME_CUE_COOLDOWN_MS) return;
-    this.lastGameCueAt = Date.now();
-    const cue = GAME_CUES[key];
-    const index = this.cueIndices[key] ?? 0;
-    this.playAudioFile(cue.files[index], () => {
-      // Text can rotate without a voice. Consume a variant only when it plays.
-      this.cueIndices[key] = (index + 1) % cue.files.length;
-      this.lastGameCueAt = Date.now();
-    }, cue.fallback);
+  private speakLine(line: VoiceLine, cue: VoiceCue): boolean {
+    const finalPraise = cue === 'success' && this.sessionComplete;
+    const played = this.playAudioFile(line.file, line.fallback, () => {
+      this.spokenTextKey = null;
+      this.voice.finished();
+      if (!this.spokenTextKey) this.refreshFeedbackText();
+      if (finalPraise) this.celebrationDone.emit();
+    });
+    if (finalPraise) this.finalPraiseSpeaking = played;
+    // The intro plays under the countdown overlay; there is no cue line to pin.
+    if (played && cue !== 'intro') {
+      this.spokenTextKey = line.textKey;
+      this.feedbackMessage = this.i18n.t(line.textKey);
+    }
+    return played;
   }
 
-  private playVoice(filename: string, bypassThrottle = false) {
-    if (!bypassThrottle && Date.now() - this.lastVoicePlayTime < 3000) return;
-    this.playAudioFile(filename, () => { this.lastVoicePlayTime = Date.now(); });
+  private refreshFeedbackText() {
+    this.feedbackLastChangedAt = 0;
+    this.updateFeedback();
   }
 
   private stopVoice() {
@@ -649,32 +653,36 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.biofeedback.feedbackVolumeMultiplier = 1.0;
   }
 
-  private playAudioFile(filename: string, onStarted: () => void, fallbackFilename?: string) {
+  /** Plays one clip, replacing the current one. `onFinished` runs once when it ends or fails for good. */
+  private playAudioFile(filename: string, fallbackFilename?: string, onFinished?: () => void): boolean {
     const lang = this.i18n.voiceLanguage();
-    if (this.destroyed || this.isMuted || this.progressionPaused || !lang) return;
+    if (this.destroyed || this.isMuted || this.progressionPaused || !lang) return false;
     this.stopVoice();
     const audio = new Audio(`/assets/audio/${lang}/${filename}`);
     this.activeAudio = audio;
-    const cleanup = () => {
-      if (this.activeAudio !== audio) return;
+    const release = () => {
       this.activeAudio = null;
       this.biofeedback.feedbackVolumeMultiplier = 1.0;
+    };
+    const finished = () => {
+      // stopVoice() detaches the clip first, so a replaced clip never reports back.
+      if (this.activeAudio !== audio) return;
+      release();
+      onFinished?.();
     };
     const failed = () => {
       // A replaced, paused or already-failed clip must never launch a fallback.
       if (this.activeAudio !== audio) return;
-      cleanup();
-      if (fallbackFilename) {
-        this.playAudioFile(fallbackFilename, () => { this.lastGameCueAt = Date.now(); });
-      }
+      release();
+      if (fallbackFilename && this.playAudioFile(fallbackFilename, undefined, onFinished)) return;
+      onFinished?.();
     };
-    audio.onended = cleanup;
-    audio.onpause = cleanup;
+    audio.onended = finished;
+    audio.onpause = finished;
     audio.onerror = failed;
     this.biofeedback.feedbackVolumeMultiplier = 0.2;
-    audio.play().then(() => {
-      if (this.activeAudio === audio) onStarted();
-    }).catch(failed);
+    audio.play().catch(failed);
+    return true;
   }
 
   /**
@@ -715,21 +723,23 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
           if (force < this.releaseThreshold) {
             this.restViolationMs = 0;
             this.currentRestMs += 50;
-            const newProgress = (this.currentRestMs / 2000) * 100;
+            const newProgress = (this.currentRestMs / REST_MS) * 100;
             
             this.ngZone.run(() => {
               this.holdProgress = newProgress;
               this.updateFeedback();
 
-              if (this.currentRestMs >= 2000) {
+              if (this.currentRestMs >= REST_MS) {
                 // Keep the final completed bar visible throughout the summary delay.
                 if (this.currentRepVal + 1 >= this.targetReps) {
                   this.sessionComplete = true;
                   this.holdProgress = 100;
                   clearInterval(this.gameloop);
-                  this.biofeedback.stopVibrationLoop();
                   this.biofeedback.playSuccess();
-                  this.showPraise();
+                  this.showPraise(this.voice.repCompleted());
+                  if (!this.finalPraiseSpeaking) {
+                    this.celebrationTimer = setTimeout(() => this.celebrationDone.emit(), SILENT_CELEBRATION_MS);
+                  }
                   this.updateFeedback();
                   this.repCompleted.emit();
                   return;
@@ -737,12 +747,11 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                 this.isReleasing = false;
                 this.repCompleted.emit();
                 this.triggerSuccessAnimation();
-                this.biofeedback.playSuccess();
                 this.currentHoldMs = 0;
                 this.holdProgress = 0;
                 this.currentRestMs = 0;
+                this.voice.beginRep(false);
                 this.updateFeedback();
-
               }
             });
           } else {
@@ -756,8 +765,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                 this.holdProgress = 0;
                 this.updateFeedback();
 
-                // Warn about squeezing during rest
-                this.playVoice('cue_rest_warning.mp3');
+                this.voice.restViolation();
               });
             }
           }
@@ -773,20 +781,18 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
                 this.biofeedback.playHoldComplete();
                 this.holdProgress = 0; // Starts at 0 for rest progress
                 this.currentRestMs = 0;
+                this.voice.holdCompleted();
                 this.updateFeedback();
-
               });
             }
           } else {
             // Normal depletion if balloon exits target zone
             this.currentHoldMs -= 50;
             if (this.currentHoldMs < 0) this.currentHoldMs = 0;
-
-            // Warn if exceeding the target zone
-            // The too-hard feedback state owns its own throttled cue.
           }
 
           if (!this.isReleasing) {
+            this.voice.trackTooHard(!this.inTargetZone && force >= this.targetMin, 50);
             // Calculate view progress
             const newProgress = (this.currentHoldMs / this.requiredHoldTimeMs) * 100;
 
@@ -830,7 +836,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
 
   private updateFeedback() {
     if (this.sessionComplete) {
-      this.feedbackMessage = this.i18n.t('game.sessionComplete');
+      this.feedbackMessage = this.i18n.t(this.spokenTextKey ?? 'game.sessionComplete');
       return;
     }
     if (this.feedbackState === 'success' && Date.now() < this.successFeedbackUntil) return;
@@ -839,7 +845,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     let replacement: string | undefined;
 
     if (this.isReleasing) {
-      const restTimeSec = Math.max(0, Math.ceil((2000 - this.currentRestMs) / 1000));
+      const restTimeSec = Math.max(0, Math.ceil((REST_MS - this.currentRestMs) / 1000));
       if (this.currentForce() >= this.releaseThreshold) {
         state = 'release';
       } else {
@@ -856,10 +862,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       state = 'tooHard';
     }
 
-    this.applyFeedbackState(state, replacement, true);
+    this.applyFeedbackState(state, replacement);
   }
 
-  private applyFeedbackState(state: FeedbackState, replacement?: string, announce = false) {
+  private applyFeedbackState(state: FeedbackState, replacement?: string) {
     const now = Date.now();
     const stateChanged = state !== this.feedbackState;
     if (!stateChanged && now - this.feedbackLastChangedAt < FEEDBACK_ROTATE_MS) return;
@@ -876,9 +882,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.feedbackIndices[state] = nextIndex;
     this.feedbackState = state;
     this.feedbackLastChangedAt = now;
-    this.feedbackMessage = replacement ? nextMessage.replace('{0}', replacement) : nextMessage;
-
-    if (announce && stateChanged) this.playGameCue(state);
+    this.feedbackMessage = this.spokenTextKey
+      ? this.i18n.t(this.spokenTextKey)
+      : (replacement ? nextMessage.replace('{0}', replacement) : nextMessage);
   }
 
   public praise = signal<{ id: number; text: string } | null>(null);
@@ -894,17 +900,22 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private praiseSeq = 0;
   private praiseTimer: any;
 
-  public showPraise() {
-    const n = 1 + Math.floor(Math.random() * 4);
-    this.praise.set({ id: ++this.praiseSeq, text: this.i18n.t(`game.praise.${n}`) });
+  /** The star shows the short form of the praise being spoken. */
+  public showPraise(line: VoiceLine) {
+    this.praise.set({ id: ++this.praiseSeq, text: this.i18n.t(line.starKey ?? 'game.praise.1') });
     clearTimeout(this.praiseTimer);
     this.praiseTimer = setTimeout(() => this.ngZone.run(() => this.praise.set(null)), 1800);
   }
 
   private triggerSuccessAnimation() {
-    this.showPraise();
+    // Fanfare first: a voice clip ducks any effect scheduled after it starts.
+    this.biofeedback.playSuccess();
+    const line = this.voice.repCompleted();
+    this.showPraise(line);
     this.successFeedbackUntil = Date.now() + 1800;
-    this.applyFeedbackState('success', undefined, true);
+    this.feedbackState = 'success';
+    this.feedbackLastChangedAt = Date.now();
+    this.feedbackMessage = this.i18n.t(line.textKey);
     this.holdProgress = 100;
   }
 
@@ -1044,6 +1055,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.currentHoldMs = 0;
     this.feedbackState = null;
     this.sensorDataStale.set(!this.bleService.isSampleFresh());
+    this.voice.beginRep(this.currentRepVal === 0);
     this.updateFeedback();
     
     this.startGameLoop();
@@ -1058,6 +1070,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       clearInterval(this.countdownTimer);
     }
     if (this.voiceTimeout) clearTimeout(this.voiceTimeout);
+    if (this.celebrationTimer) clearTimeout(this.celebrationTimer);
     if (this.dialogFocusTimer) {
       clearTimeout(this.dialogFocusTimer);
     }

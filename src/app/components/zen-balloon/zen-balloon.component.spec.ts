@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { ZenBalloonComponent } from './zen-balloon.component';
+import { REST_MS, SILENT_CELEBRATION_MS, ZenBalloonComponent } from './zen-balloon.component';
+import { VOICE_LINES } from './zen-balloon-voice';
 import { BleService } from '../../services/ble.service';
 import { BiofeedbackService } from '../../services/biofeedback.service';
 
@@ -65,7 +66,10 @@ describe('ZenBalloonComponent target contact', () => {
       const stats = root.querySelector<HTMLElement>('.game-stats')!;
       const cue = root.querySelector<HTMLElement>('.feedback-container')!;
       const baseline = [scene.offsetTop, stats.offsetTop, scene.offsetHeight];
-      const keys = Object.values((component as any).feedbackMessageKeys).flat() as string[];
+      const keys = [
+        ...Object.values((component as any).feedbackMessageKeys).flat() as string[],
+        ...Object.values(VOICE_LINES).flat().map(line => line.textKey),
+      ];
       for (const key of [...keys, 'game.sessionComplete']) {
         component.feedbackMessage = component.i18n.t(key);
         fixture.detectChanges();
@@ -95,26 +99,24 @@ describe('ZenBalloonComponent target contact', () => {
     expect(fixture.nativeElement.querySelector('.praise-burst')).toBeNull();
   }));
 
-  describe('voice selection', () => {
+  describe('voice playback', () => {
     let clips: Array<{ src: string; play: jasmine.Spy; pause: jasmine.Spy; onerror?: () => void; onended?: () => void; onpause?: () => void }>;
     let rejectNext: boolean;
-    let nextPlay: Promise<void> | undefined;
-    const announce = (state: string) => (component as any).applyFeedbackState(state, undefined, true);
+    // The mock never fires media events; simulate the speaking clip ending naturally.
+    const finish = () => clips.at(-1)?.onended?.();
+    const coach = () => (component as any).voice;
 
     beforeEach(() => {
       clips = [];
       rejectNext = false;
-      nextPlay = undefined;
       component.isMuted = false;
       spyOn(component.i18n, 'voiceLanguage').and.returnValue('th');
       spyOn(window, 'Audio').and.callFake((function(src: string) {
         const fail = rejectNext;
-        const pending = nextPlay;
-        nextPlay = undefined;
         rejectNext = false;
         const clip = {
           src,
-          play: jasmine.createSpy('play').and.callFake(() => pending ?? (fail ? Promise.reject(new Error('missing')) : Promise.resolve())),
+          play: jasmine.createSpy('play').and.callFake(() => fail ? Promise.reject(new Error('missing')) : Promise.resolve()),
           pause: jasmine.createSpy('pause'),
         };
         clips.push(clip);
@@ -122,83 +124,109 @@ describe('ZenBalloonComponent target contact', () => {
       }) as any);
     });
 
-    it('plays all four real squeeze files before repeating, independently of rotating text', fakeAsync(() => {
-      for (let n = 0; n < 5; n++) {
-        announce('squeeze');
-        tick(5000);
-        announce('squeeze'); // Text changes, but no new voice within the same state.
-        tick(5000);
-        announce('release');
-        tick(5000);
+    it('starts the first rep with a squeeze instruction and shows the same sentence', fakeAsync(() => {
+      component.startGame(); tick(0);
+      expect(clips.map(clip => clip.src)).toEqual(['/assets/audio/th/game_squeeze_01.mp3']);
+      expect(component.feedbackMessage).toBe(component.i18n.t('game.feedback.squeeze1'));
+      component.ngOnDestroy();
+    }));
+
+    it('keeps the spoken sentence on screen until the clip ends', fakeAsync(() => {
+      component.startGame(); tick(0);
+      (component as any).applyFeedbackState('tooHard');
+      expect(component.feedbackMessage).toBe(component.i18n.t('game.feedback.squeeze1'));
+      finish();
+      expect(component.feedbackMessage).not.toBe(component.i18n.t('game.feedback.squeeze1'));
+      component.ngOnDestroy();
+    }));
+
+    it('shows the praise star, cue text and voice from the same line', fakeAsync(() => {
+      for (let n = 1; n <= 4; n++) {
+        (component as any).triggerSuccessAnimation(); tick(0);
+        expect(clips.at(-1)!.src).toBe(`/assets/audio/th/cue_rep_success_0${n}.mp3`);
+        expect(component.feedbackMessage).toBe(component.i18n.t(`game.feedback.success${n}`));
+        expect(component.praise()?.text).toBe(component.i18n.t(`game.praise.${n}`));
+        finish();
       }
-      expect(clips.filter(clip => clip.src.includes('game_squeeze')).map(clip => clip.src)).toEqual(
-        [1, 2, 3, 4, 1].map(n => `/assets/audio/th/game_squeeze_0${n}.mp3`));
-      expect(clips.length).toBe(10);
+      tick(1800);
     }));
 
-    it('does not consume a squeeze variant when muted, paused or throttled', fakeAsync(() => {
-      announce('squeeze'); tick(0);
-      component.isMuted = true;
-      announce('hold'); announce('squeeze');
-      component.isMuted = false;
-      (component as any).progressionPaused = true;
-      announce('hold'); announce('squeeze');
-      (component as any).progressionPaused = false;
-      announce('hold'); announce('squeeze');
-      expect(clips.length).toBe(1);
-      tick(5000);
-      announce('hold'); tick(5000);
-      announce('squeeze'); tick(0);
-      expect(clips.at(-1)!.src).toBe('/assets/audio/th/game_squeeze_02.mp3');
-    }));
-
-    it('uses existing single-file cues for every other training state', fakeAsync(() => {
-      for (const state of ['hold', 'holdAlmost', 'tooHard', 'release', 'success']) {
-        announce(state); tick(5000);
-      }
-      expect(clips.map(clip => clip.src)).toEqual([
-        'cue_hold.mp3', 'cue_hold.mp3', 'cue_too_hard.mp3', 'cue_release.mp3', 'cue_rep_success.mp3',
-      ].map(file => `/assets/audio/th/${file}`));
-    }));
-
-    it('falls back only once and retries the unplayed variant on the next opportunity', fakeAsync(() => {
+    it('falls back once and still releases the queue when the clip is missing', fakeAsync(() => {
+      component.beginSession(); tick(0);
+      finish();
       rejectNext = true;
-      announce('squeeze');
-      clips[0].onerror?.();
+      coach().beginRep(true);
+      clips.at(-1)!.onerror?.();
       tick(0); // Both the error event and play rejection may fire.
-      expect(clips.map(clip => clip.src)).toEqual(['/assets/audio/th/game_squeeze_01.mp3', '/assets/audio/th/cue_squeeze.mp3']);
-      tick(5000); announce('release'); tick(5000); announce('squeeze'); tick(0);
-      expect(clips.at(-1)!.src).toBe('/assets/audio/th/game_squeeze_01.mp3');
-    }));
-
-    it('does not advance a variant when an old play promise resolves after replacement', fakeAsync(() => {
-      let complete!: () => void;
-      nextPlay = new Promise<void>(resolve => { complete = resolve; });
-      announce('squeeze'); tick(5000);
-      announce('hold'); tick(0);
-      complete(); tick(5000);
-      announce('squeeze'); tick(0);
-      expect(clips.at(-1)!.src).toBe('/assets/audio/th/game_squeeze_01.mp3');
+      expect(clips.slice(1).map(clip => clip.src)).toEqual(['/assets/audio/th/game_squeeze_01.mp3', '/assets/audio/th/cue_squeeze.mp3']);
+      component.ngOnDestroy();
     }));
 
     it('loads the actual intro file and does not request an English voice pack', fakeAsync(() => {
       component.beginSession(); tick(0);
       expect(clips[0].src).toBe('/assets/audio/th/game_intro.mp3');
       (component.i18n.voiceLanguage as jasmine.Spy).and.returnValue(null);
-      tick(5000); announce('squeeze'); tick(0);
+      finish(); coach().beginRep(true); tick(0);
       expect(clips.length).toBe(1);
       component.ngOnDestroy();
     }));
 
     it('ignores a late failure from a replaced or stopped clip', fakeAsync(() => {
-      announce('squeeze'); tick(5000);
-      announce('hold'); tick(0);
+      coach().beginRep(true);
+      coach().enteredZone(); tick(0);
       const count = clips.length;
       clips[0].onerror?.(); tick(0);
       expect(clips.length).toBe(count);
       (component as any).stopActiveFeedback();
       clips.at(-1)!.onerror?.(); tick(0);
       expect(clips.length).toBe(count);
+    }));
+
+    it('plays the fanfare before the praise voice so the voice cannot duck it', fakeAsync(() => {
+      (component as any).triggerSuccessAnimation(); tick(0);
+      expect(feedback.playSuccess).toHaveBeenCalledBefore(window.Audio as unknown as jasmine.Spy);
+      tick(1800);
+    }));
+
+    it('reports the celebration done when the final praise finishes speaking', fakeAsync(() => {
+      const done = spyOn(component.celebrationDone, 'emit');
+      fixture.componentRef.setInput('targetReps', 1);
+      balloonRect = new DOMRect(20, 150, 60, 80);
+      component.startGame(); tick(2000);
+      force.set(0); fixture.detectChanges();
+      tick(REST_MS);
+      expect(component.sessionComplete).toBeTrue();
+      expect(clips.at(-1)!.src).toContain('cue_rep_success_');
+      tick(SILENT_CELEBRATION_MS * 2);
+      expect(done).not.toHaveBeenCalled();
+      finish();
+      expect(done).toHaveBeenCalledTimes(1);
+      component.ngOnDestroy();
+    }));
+
+    it('reports the celebration done after a short pause when muted', fakeAsync(() => {
+      const done = spyOn(component.celebrationDone, 'emit');
+      component.isMuted = true;
+      fixture.componentRef.setInput('targetReps', 1);
+      balloonRect = new DOMRect(20, 150, 60, 80);
+      component.startGame(); tick(2000);
+      force.set(0); fixture.detectChanges();
+      tick(REST_MS);
+      tick(SILENT_CELEBRATION_MS - 1);
+      expect(done).not.toHaveBeenCalled();
+      tick(1);
+      expect(done).toHaveBeenCalledTimes(1);
+      component.ngOnDestroy();
+    }));
+
+    it('stays silent when muted but still rotates the praise', fakeAsync(() => {
+      component.isMuted = true;
+      (component as any).triggerSuccessAnimation();
+      (component as any).triggerSuccessAnimation();
+      expect(clips.length).toBe(0);
+      expect(component.praise()?.text).toBe(component.i18n.t('game.praise.2'));
+      expect(component.feedbackMessage).toBe(component.i18n.t('game.feedback.success2'));
+      tick(1800);
     }));
   });
 
@@ -300,7 +328,7 @@ describe('ZenBalloonComponent target contact', () => {
     }
   });
 
-  it('requires two seconds of contact then two seconds of released force for a rep', fakeAsync(() => {
+  it('requires two seconds of contact then REST_MS of released force for a rep', fakeAsync(() => {
     const completed = spyOn(component.repCompleted, 'emit');
     balloonRect = new DOMRect(20, 150, 60, 80);
     component.startGame();
@@ -312,7 +340,7 @@ describe('ZenBalloonComponent target contact', () => {
     expect(component.isReleasing).toBeTrue();
     force.set(0);
     fixture.detectChanges();
-    tick(1950);
+    tick(REST_MS - 50);
     expect(completed).not.toHaveBeenCalled();
     tick(50);
     expect(completed).toHaveBeenCalledTimes(1);
@@ -329,7 +357,7 @@ describe('ZenBalloonComponent target contact', () => {
     tick(2000);
     force.set(0);
     fixture.detectChanges();
-    tick(1950);
+    tick(REST_MS - 50);
     expect(completed).not.toHaveBeenCalled();
     tick(50);
     fixture.detectChanges();
