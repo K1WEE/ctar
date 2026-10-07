@@ -49,6 +49,23 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "portal-prototype": {
+              "browser": "src/.portal-prototype.ts",
+              "tsConfig": "tsconfig.portal-prototype.json",
+              "outputPath": "dist/portal-prototype",
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "index": "src/portal-prototype.index.html"
+            },
+            "portal-preview": {
+              "browser": "src/.home-preview.ts",
+              "tsConfig": "tsconfig.home-preview.json",
+              "outputPath": "dist/portal-preview",
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
@@ -61,6 +78,12 @@
             },
             "development": {
               "buildTarget": "ctar-frontend:build:development"
+            },
+            "portal-prototype": {
+              "buildTarget": "ctar-frontend:build:portal-prototype"
+            },
+            "portal-preview": {
+              "buildTarget": "ctar-frontend:build:portal-preview"
             }
           },
           "defaultConfiguration": "development"

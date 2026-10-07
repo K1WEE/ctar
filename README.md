@@ -14,6 +14,18 @@ Run `ng generate component component-name` to generate a new component. You can 
 
 Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
 
+## Patient settings database migration
+
+If saving patient settings fails with `PGRST204` mentioning `hold_duration_ms`
+or `target_reps`, run `supabase/migration_20260907_patient_settings.sql` in the
+SQL Editor of the Supabase project configured in the frontend environment.
+This adds missing columns, preserves existing settings, and refreshes the REST
+schema cache. It can be run more than once. Restarting Angular alone does not
+update the hosted database.
+
+After running it, save settings as a staff user, reload the patient detail page,
+and verify that both values persist. The patient's game also reads these columns.
+
 ## Running unit tests
 
 Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).

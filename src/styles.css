@@ -53,3 +53,230 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+
+:root {
+  --layer-navbar: 60;
+  --app-navbar-height: 0px;
+}
+app-root { display: block; min-height: 100%; }
+html { scroll-padding-top: calc(var(--app-navbar-height) + 1rem); }
+.app-page { min-height: calc(100dvh - var(--app-navbar-height)); }
+.app-page .min-h-screen { min-height: calc(100dvh - var(--app-navbar-height)); }
+.app-page .fixed.inset-0 { top: var(--app-navbar-height); }
+
+/* Patient portal: White canvas with saturated blue, emerald, and golden rewards. Scope includes only its navbar. */
+.patient-palette, [data-home-navbar] {
+  --pp-canvas: #ffffff;
+  --pp-surface: #ffffff;
+  --pp-subtle: #f0f5ff;
+  --pp-ink: #172b4d;
+  --pp-muted: #506079;
+  --pp-border: #dbe3ef;
+  --pp-action: #1746c8;
+  --pp-action-soft: #edf3ff;
+  --pp-success: #138058;
+  --pp-success-soft: #e3f5ed;
+  --pp-success-border: #acd8c8;
+  --pp-reward: #70410d;
+  --pp-reward-soft: #ffe3a3;
+  --pp-track: #cde5da;
+  --pp-neutral: #778395;
+  --pp-focus: #1746c8;
+  --pp-hero: #246bd6;
+  --pp-hero-deep: #1958b8;
+  color: var(--pp-ink);
+  caret-color: var(--pp-action);
+  scrollbar-color: var(--pp-neutral) var(--pp-canvas);
+}
+.dark .patient-palette, .dark [data-home-navbar] {
+  --pp-canvas: #17202c;
+  --pp-surface: #222f3d;
+  --pp-subtle: #2c3947;
+  --pp-ink: #f4f1ea;
+  --pp-muted: #bcc8d5;
+  --pp-border: #485665;
+  --pp-action: #a9c9ff;
+  --pp-action-soft: #293f5d;
+  --pp-success: #98d8b4;
+  --pp-success-soft: #253e35;
+  --pp-success-border: #527864;
+  --pp-reward: #ffd2ae;
+  --pp-reward-soft: #49362b;
+  --pp-track: #40584b;
+  --pp-neutral: #a3afbe;
+  --pp-focus: #a9c9ff;
+}
+.patient-palette ::selection, [data-home-navbar] ::selection {
+  color: var(--pp-ink);
+  background: var(--pp-reward-soft);
+}
+.patient-palette .pp-surface { background: var(--pp-surface); }
+.patient-palette.pp-page { background: var(--pp-canvas); }
+.patient-palette .pp-subtle { background: var(--pp-subtle); }
+.patient-palette .pp-ink { color: var(--pp-ink); }
+.patient-palette .pp-muted { color: var(--pp-muted); }
+.patient-palette .pp-border { border-color: var(--pp-border); }
+.patient-palette .pp-action-text { color: var(--pp-action); }
+.patient-palette .pp-action-soft { background: var(--pp-action-soft); }
+.patient-palette .pp-action-border { border-color: var(--pp-action); }
+.patient-palette .pp-action-fill { background: var(--pp-action); }
+.patient-palette .pp-success-text { color: var(--pp-success); }
+.patient-palette .pp-success-soft { background: var(--pp-success-soft); }
+.patient-palette .pp-success-border { border-color: var(--pp-success-border); }
+.patient-palette .pp-success-fill { background: var(--pp-success); }
+.patient-palette .pp-success-solid { background: #138058; color: white; }
+.patient-palette .pp-reward-text { color: var(--pp-reward); }
+.patient-palette .pp-reward-soft { background: var(--pp-reward-soft); }
+.patient-palette .pp-track { background: var(--pp-track); }
+.patient-palette .pp-neutral-fill { background: var(--pp-neutral); }
+.patient-palette .pp-welcome { background: var(--pp-hero); }
+.patient-palette .pp-welcome p { color: #ffffff; }
+.patient-palette .pp-start i { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 50%; background: #e8f0ff; }
+.patient-palette .pp-device, .patient-palette .pp-secondary-action { background: var(--pp-hero-deep); }
+.patient-palette .pp-start { background: #ffffff; color: #1746c8; box-shadow: 0 5px 14px rgb(10 39 96 / 22%); }
+.patient-palette .pp-start:hover { background: #f0f6ff; box-shadow: 0 7px 18px rgb(10 39 96 / 28%); }
+.patient-palette .pp-secondary-action:hover { background: #15376d; }
+.patient-palette .pp-hover:hover { background: var(--pp-subtle); }
+.patient-palette .pp-reward-hover:hover { background: var(--pp-reward-soft); color: var(--pp-reward); border-color: var(--pp-reward); }
+.patient-palette :is(button, a):focus-visible, [data-home-navbar] :is(button, a):focus-visible {
+  outline: 3px solid var(--pp-focus);
+  outline-offset: 3px;
+}
+.patient-palette .pp-welcome a:focus-visible { outline-color: white; }
+.patient-palette .pp-task-dot::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  inset: 0;
+  margin: auto;
+  border-radius: 999px;
+  background: var(--pp-neutral);
+}
+.patient-palette .pp-task-dot-active::before { width: 22px; background: var(--pp-action); }
+.patient-palette .pp-task-dot:hover { background: var(--pp-action-soft); }
+.patient-palette .pp-leaderboard { max-height: calc(100dvh - var(--app-navbar-height, 80px) - 32px); overflow-y: auto; }
+.patient-palette :is(.pp-action-text, .pp-success-text, .pp-reward-text) { font-variant-numeric: tabular-nums; }
+/* Route-scoped selectors preserve the shared shell on other routes. */
+[data-app-navbar][data-home-navbar] { background: var(--pp-canvas); color: var(--pp-ink); border-color: var(--pp-border); }
+[data-app-navbar][data-home-navbar] .settings-panel { background: var(--pp-surface); color: var(--pp-ink); border-color: var(--pp-border); }
+[data-app-navbar][data-home-navbar] .settings-panel .border-slate-200 { border-color: var(--pp-border); }
+[data-app-navbar][data-home-navbar] .nav-action:hover { background: var(--pp-action-soft); }
+[data-app-navbar][data-home-navbar] .language-choice { border-color: var(--pp-neutral); }
+[data-app-navbar][data-home-navbar] .language-choice[aria-pressed="true"] { background: #1746c8; border-color: #1746c8; color: white; }
+[data-app-navbar][data-home-navbar] .settings-panel [aria-hidden="true"].rounded-full { background: var(--pp-reward-soft); color: var(--pp-reward); }
+
+.dark [data-app-navbar][data-home-navbar] { background: var(--pp-canvas); color: var(--pp-ink); border-color: var(--pp-border); }
+.dark [data-app-navbar][data-home-navbar] .nav-action:hover { background: var(--pp-action-soft); }
+[data-app-navbar][data-home-navbar] .font-scale-control button { background: var(--pp-subtle); color: var(--pp-ink); border-color: var(--pp-neutral); }
+[data-app-navbar][data-home-navbar] .font-scale-control button:hover { background: var(--pp-action-soft); }
+.patient-palette .pp-today { outline: 2px solid var(--pp-action); outline-offset: 2px; }
+@media (max-width: 480px) {
+  .patient-palette .pp-leaderboard-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 12px; }
+  .patient-palette .pp-ranking-avatar { display: none; }
+  .patient-palette .pp-leaderboard-row > :first-child { width: auto; text-align: left; }
+  .patient-palette .pp-leaderboard-row > .min-w-0 { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* Bright mint progress keeps its labels dark and readable. */
+.patient-palette .pp-progress-panel {
+  --pp-success-soft: #bdf1d7;
+  --pp-success-border: #8cd9b2;
+  --pp-success: #146c4b;
+  --pp-ink: #103f30;
+  --pp-muted: #24543f;
+  --pp-surface: #e8fff2;
+  --pp-border: #83bc9f;
+  --pp-track: #98cfb1;
+}
+.dark .patient-palette .pp-progress-panel {
+  --pp-success-soft: #17795b;
+  --pp-success-border: #4baf85;
+  --pp-success: #ddffe9;
+  --pp-ink: #ffffff;
+  --pp-muted: #ffffff;
+  --pp-surface: #105b44;
+  --pp-border: #7fc9a4;
+  --pp-track: #23664c;
+}
+
+/* 2026-10-07: original portal composition, richer blue/emerald/gold surfaces.
+   Scoped to the production portal; unrelated routes and prototype variants retain their palette. */
+.patient-palette.pp-page {
+  --pp-hero: #195dd8;
+  --pp-hero-deep: #1247ae;
+  --pp-action-soft: #d8e8ff;
+  --pp-subtle: #e8f0ff;
+  --pp-success: #08734f;
+  --pp-success-soft: #bff2da;
+  --pp-success-border: #5ebd98;
+  --pp-reward: #70410d;
+  --pp-reward-soft: #ffdb79;
+  --pp-border: #b8cce8;
+  --pp-neutral: #627591;
+  --pp-track: #e8fff2;
+}
+.patient-palette.pp-page .pp-training-card { background: #f5f9ff; }
+.patient-palette.pp-page .pp-stat {
+  --pp-subtle: #d9e8ff;
+  --pp-muted: #304d73;
+  --pp-action: #123f9d;
+  background: var(--pp-subtle);
+}
+.patient-palette.pp-page .pp-success-solid { background: #08734f; }
+.patient-palette.pp-page .pp-progress-panel {
+  --pp-success-soft: #8ee8bf;
+  --pp-success-border: #3b9f76;
+  --pp-success: #07583c;
+  --pp-ink: #083e2e;
+  --pp-muted: #164d37;
+  --pp-surface: #e5fff1;
+  --pp-border: #479c78;
+  --pp-track: #e5fff1;
+}
+.patient-palette.pp-page .pp-mission-card {
+  --pp-subtle: #fff0c7;
+  --pp-border: #d5ac50;
+  --pp-ink: #453212;
+  --pp-muted: #63502b;
+  --pp-track: #fffbef;
+}
+.patient-palette.pp-page .pp-track { outline: 1px solid var(--pp-success); outline-offset: -1px; }
+.dark .patient-palette.pp-page {
+  --pp-hero: #174fad;
+  --pp-hero-deep: #113b85;
+  --pp-action-soft: #294c7c;
+  --pp-subtle: #2a4263;
+  --pp-success: #98eac6;
+  --pp-success-soft: #154a3a;
+  --pp-success-border: #62b591;
+  --pp-reward: #ffe098;
+  --pp-reward-soft: #674719;
+  --pp-border: #526f95;
+  --pp-neutral: #b3c4dc;
+  --pp-track: #224637;
+}
+.dark .patient-palette.pp-page .pp-training-card { background: #20334d; }
+.dark .patient-palette.pp-page .pp-stat {
+  --pp-subtle: #2a4d7c;
+  --pp-muted: #d4e5ff;
+  --pp-action: #ffffff;
+}
+.dark .patient-palette.pp-page .pp-progress-panel {
+  --pp-success-soft: #105f47;
+  --pp-success-border: #64c69d;
+  --pp-success: #c0ffdf;
+  --pp-ink: #ffffff;
+  --pp-muted: #e0fff0;
+  --pp-surface: #134b3c;
+  --pp-border: #66b998;
+  --pp-track: #183f33;
+}
+.dark .patient-palette.pp-page .pp-mission-card {
+  --pp-subtle: #46391f;
+  --pp-border: #ad8d4d;
+  --pp-ink: #fff3d6;
+  --pp-muted: #ecdab0;
+  --pp-track: #2c291b;
+}

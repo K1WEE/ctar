@@ -1,10 +1,11 @@
+import { BatteryStatusComponent } from '../battery-status/battery-status.component';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-control-panel',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BatteryStatusComponent],
   template: `
     <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-6 flex flex-wrap justify-between items-center gap-4 transition-colors duration-300">
       <div class="flex items-center space-x-4 flex-1 min-w-[200px]">
@@ -17,6 +18,8 @@ import { CommonModule } from '@angular/common';
           <p class="text-sm text-slate-500 dark:text-slate-400 transition-colors duration-300">Connect your CTAR hardware via Bluetooth</p>
         </div>
       </div>
+
+      <app-battery-status></app-battery-status>
 
       <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
         <button *ngIf="!isConnected" (click)="onConnect.emit()" class="flex-1 md:flex-none px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-medium rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(29,78,216,0.3)] hover:shadow-[0_0_20px_rgba(30,64,175,0.5)]">

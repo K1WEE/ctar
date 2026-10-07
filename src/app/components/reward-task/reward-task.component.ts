@@ -29,25 +29,25 @@ interface LeaderboardEntry {
   standalone: true,
   imports: [CommonModule],
   template: `
-  <div class="bg-white dark:bg-brand-card border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm h-full flex flex-col justify-between">
+  <div class="pp-surface border pp-border rounded-3xl p-5 sm:p-7 h-full flex flex-col justify-between">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-white/5 pb-4">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5 border-b pp-border pb-4">
 
       <div>
-        <h2 class="text-3xl font-extrabold text-slate-800 dark:text-white">
-          ภารกิจประจำสัปดาห์
+        <h2 class="text-lg sm:text-xl font-extrabold pp-ink">
+          {{ i18n.currentLang() === 'th' ? 'ภารกิจประจำสัปดาห์' : 'Weekly Missions' }}
         </h2>
 
-        <p class="text-slate-600 dark:text-slate-300 text-base font-semibold mt-1">
-          ฝึกฝนอย่างต่อเนื่องเพื่อรับดาว ⭐
+        <p class="pp-muted text-sm font-medium mt-1">
+          {{ i18n.currentLang() === 'th' ? 'ฝึกฝนอย่างต่อเนื่องเพื่อรับดาว' : 'Keep training to earn stars' }}
         </p>
       </div>
 
       <div class="flex items-center gap-2">
 
         <!-- Stars badge -->
-        <div class="flex items-center gap-2 bg-amber-400/20 text-amber-700 dark:text-amber-400 px-4 py-2.5 rounded-2xl">
+        <div class="flex items-center gap-2 pp-reward-soft pp-reward-text px-3 py-2 rounded-2xl">
           <i class="fa-solid fa-star text-xl"></i>
           <span class="font-extrabold text-lg">{{ totalStars }}</span>
         </div>
@@ -55,11 +55,11 @@ interface LeaderboardEntry {
         <!-- Leaderboard button -->
         <button
           (click)="openLeaderboard()"
-          class="w-12 h-12 rounded-2xl border border-slate-200 dark:border-white/10
-                 bg-white/50 dark:bg-white/5 flex items-center justify-center
-                 text-slate-600 dark:text-slate-300 hover:text-yellow-400 hover:border-yellow-400/30
+          class="w-12 h-12 rounded-2xl border pp-border
+                 pp-surface  flex items-center justify-center
+                 pp-muted  pp-reward-hover
                  transition-all duration-200 text-lg"
-          aria-label="ดูอันดับผู้เล่น">
+          [attr.aria-label]="i18n.currentLang() === 'th' ? 'ดูอันดับผู้เล่น' : 'View leaderboard'">
           <i class="fa-solid fa-trophy"></i>
         </button>
 
@@ -68,33 +68,33 @@ interface LeaderboardEntry {
     </div>
 
     <!-- Weekly Overall Progress Card -->
-    <div class="mb-6 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-4 sm:p-5 relative overflow-hidden">
+    <div class="pp-progress-panel mb-5 pp-success-soft border pp-success-border rounded-2xl p-4 sm:p-5 relative overflow-hidden">
 
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 relative z-10">
         <div>
-          <span class="text-sm sm:text-base font-extrabold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block mb-0.5">
+          <span class="text-sm sm:text-base font-extrabold pp-success-text block mb-0.5">
             {{ i18n.currentLang() === 'th' ? 'ภาพรวมความก้าวหน้า' : 'Overall Progress' }}
           </span>
-          <h3 class="text-xl sm:text-2xl font-black text-slate-800 dark:text-white">
-            {{ i18n.currentLang() === 'th' ? 'พัฒนาการสัปดาห์นี้:' : 'Weekly Progress:' }} <span class="text-emerald-500">{{ weeklyCompletionRate }}%</span>
+          <h3 class="text-xl sm:text-2xl font-black pp-ink">
+            {{ i18n.currentLang() === 'th' ? 'พัฒนาการสัปดาห์นี้:' : 'Weekly Progress:' }} <span class="pp-success-text">{{ weeklyCompletionRate }}%</span>
           </h3>
         </div>
-        <div class="text-slate-600 dark:text-slate-300 text-base font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-full self-start sm:self-auto shadow-sm">
+        <div class="pp-muted text-base font-bold pp-surface border pp-border px-3.5 py-2 rounded-full self-start sm:self-auto">
           {{ tasks.length }} {{ i18n.currentLang() === 'th' ? 'ภารกิจที่ต้องทำ' : 'tasks active' }}
         </div>
       </div>
       
       <!-- Big Progress Bar -->
-      <div class="w-full h-3.5 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden relative z-10 shadow-inner">
+      <div class="w-full h-3.5 rounded-full pp-track overflow-hidden relative z-10">
         <div
-          class="h-full bg-emerald-500 transition-all duration-700 ease-out"
+          class="h-full pp-success-fill transition-all duration-700 ease-out"
           [style.width.%]="weeklyCompletionRate">
         </div>
       </div>
       
       <!-- Motivation Message -->
-      <p class="text-base sm:text-lg font-extrabold text-slate-700 dark:text-emerald-300/90 mt-3 sm:mt-4 flex items-center gap-2 relative z-10 text-pretty">
-        <i class="fa-solid fa-circle-check text-emerald-500 text-base sm:text-lg"></i>
+      <p class="text-base font-semibold pp-muted mt-3 sm:mt-4 flex items-center gap-2 relative z-10 text-pretty">
+        <i class="fa-solid fa-circle-check pp-success-text text-base sm:text-lg"></i>
         <span>{{ getWeeklyProgressMessage() }}</span>
       </p>
     </div>
@@ -104,7 +104,7 @@ interface LeaderboardEntry {
       <div *ngIf="tasks.length > 0; else noTasks"
            (touchstart)="onTouchStart($event)"
            (touchend)="onTouchEnd($event)"
-           class="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-white/5 transition-all duration-300 min-h-[145px] flex flex-col justify-between cursor-grab active:cursor-grabbing shadow-sm overflow-hidden">
+           class="pp-mission-card pp-subtle rounded-2xl p-4 sm:p-5 border pp-border transition-all duration-300 min-h-[145px] flex flex-col justify-between cursor-grab active:cursor-grabbing overflow-hidden">
         
         <div *ngFor="let task of tasks; let i = index">
           <div *ngIf="i === currentTaskIndex" class="animate-fade-in flex items-start gap-4">
@@ -112,36 +112,36 @@ interface LeaderboardEntry {
             <!-- Icon -->
             <div
               class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              [class]="task.completed ? 'bg-emerald-500/20 text-emerald-500' : 'bg-blue-500/20 text-blue-400'">
+              [class]="task.completed ? 'pp-success-soft pp-success-text' : 'pp-reward-soft pp-reward-text'">
               <i class="fa-solid text-xl" [class]="task.icon"></i>
             </div>
 
             <!-- Content -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
-                <h3 class="font-extrabold text-lg sm:text-xl text-slate-800 dark:text-white truncate">
+                <h3 class="font-extrabold text-lg sm:text-xl pp-ink break-words">
                   {{ task.title }}
                 </h3>
-                <span *ngIf="task.completed" class="text-emerald-500 text-sm">
+                <span *ngIf="task.completed" class="pp-success-text text-sm">
                   <i class="fa-solid fa-circle-check"></i>
                 </span>
               </div>
-              <p class="text-base sm:text-lg text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+              <p class="text-base sm:text-lg pp-muted mt-1 leading-relaxed">
                 {{ task.description }}
               </p>
 
               <!-- Progress Bar -->
               <div class="mt-4">
-                <div class="w-full h-2 rounded-full bg-slate-200/70 dark:bg-slate-700/50 overflow-hidden shadow-inner">
+                <div class="w-full h-2 rounded-full pp-track overflow-hidden">
                   <div
-                    class="h-full bg-emerald-500 transition-all duration-500"
+                    class="h-full pp-success-fill transition-all duration-500"
                     [style.width.%]="(task.progress / task.target) * 100">
                   </div>
                 </div>
-                <div class="flex justify-between text-base mt-2 text-slate-700 dark:text-slate-200 font-bold">
+                <div class="flex justify-between text-base mt-2 pp-muted font-bold">
                   <span>{{ task.progress }} / {{ task.target }}</span>
-                  <span class="text-amber-700 dark:text-amber-400 flex items-center gap-1">
-                    <span>⭐</span>
+                  <span class="pp-reward-text flex items-center gap-1">
+                    <i class="fa-solid fa-star" aria-hidden="true"></i>
                     <span>{{ task.reward }}</span>
                   </span>
                 </div>
@@ -154,9 +154,9 @@ interface LeaderboardEntry {
       </div>
 
       <ng-template #noTasks>
-        <div class="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-6 border border-slate-200 dark:border-white/5 text-center text-slate-500">
-          <i class="fa-solid fa-clipboard-list text-2xl mb-2 opacity-50"></i>
-          <p class="text-base font-semibold">{{ taskLoadMessage || 'ไม่มีภารกิจในขณะนี้' }}</p>
+        <div class="pp-subtle rounded-2xl p-6 border pp-border text-center pp-muted">
+          <i class="fa-solid fa-clipboard-list text-2xl mb-2"></i>
+          <p class="text-base font-semibold">{{ taskLoadMessage || (i18n.currentLang() === 'th' ? 'ไม่มีภารกิจในขณะนี้' : 'No missions right now') }}</p>
         </div>
       </ng-template>
 
@@ -165,9 +165,10 @@ interface LeaderboardEntry {
         <button
           *ngFor="let task of tasks; let i = index"
           (click)="setTaskIndex(i)"
-          class="w-2.5 h-2.5 rounded-full transition-all duration-300 hover:scale-125 focus:outline-none"
-          [class]="i === currentTaskIndex ? 'bg-emerald-500 w-5' : 'bg-slate-300 dark:bg-slate-600'"
-          [attr.aria-label]="'ไปยังภารกิจที่ ' + (i + 1)">
+          class="pp-task-dot relative h-11 w-11 rounded-full transition-colors"
+          [class]="i === currentTaskIndex ? 'pp-task-dot-active' : ''"
+          [attr.aria-current]="i === currentTaskIndex ? 'true' : null"
+          [attr.aria-label]="(i18n.currentLang() === 'th' ? 'ไปยังภารกิจที่ ' : 'Go to mission ') + (i + 1)">
         </button>
       </div>
 
@@ -183,15 +184,15 @@ interface LeaderboardEntry {
   (click)="showLeaderboard = false">
 
   <div
-    class="bg-white dark:bg-brand-card
-           rounded-[2rem]
+    class="pp-leaderboard pp-surface
+           rounded-3xl
            w-full max-w-md
            overflow-hidden
-           shadow-2xl"
+           "
     (click)="$event.stopPropagation()">
 
     <!-- ===================== Header ===================== -->
-    <div class="px-6 py-5 border-b border-slate-200 dark:border-white/10">
+    <div class="px-6 py-5 border-b pp-border">
 
       <div class="flex items-center justify-between">
 
@@ -200,8 +201,8 @@ interface LeaderboardEntry {
           <!-- Trophy Icon -->
           <div
             class="w-14 h-14 rounded-2xl
-                   bg-amber-400/20
-                   text-amber-700 dark:text-amber-400
+                   pp-reward-soft
+                   pp-reward-text
                    flex items-center justify-center
                    text-2xl shrink-0">
 
@@ -212,11 +213,11 @@ interface LeaderboardEntry {
           <!-- Title -->
           <div>
 
-            <h2 class="text-2xl font-extrabold text-slate-800 dark:text-white">
+            <h2 class="text-2xl font-extrabold pp-ink">
               อันดับผู้เล่น
             </h2>
 
-            <p class="text-base text-slate-600 dark:text-slate-300 mt-1 font-semibold">
+            <p class="text-base pp-muted mt-1 font-semibold">
               ผู้ที่สะสมดาวได้สูงสุด
             </p>
 
@@ -227,11 +228,12 @@ interface LeaderboardEntry {
         <!-- Close -->
         <button
           (click)="showLeaderboard = false"
-          class="w-10 h-10 rounded-2xl
+          [attr.aria-label]="i18n.currentLang() === 'th' ? 'ปิดอันดับผู้เล่น' : 'Close leaderboard'"
+          class="w-12 h-12 shrink-0 rounded-2xl
                  flex items-center justify-center
-                 text-slate-500
-                 hover:bg-slate-100
-                 dark:hover:bg-white/10
+                 pp-muted
+                 pp-hover
+
                  transition-all">
 
           <i class="fa-solid fa-xmark text-lg"></i>
@@ -247,9 +249,9 @@ interface LeaderboardEntry {
       *ngIf="leaderboardLoading"
       class="flex flex-col items-center justify-center py-16">
 
-      <i class="fa-solid fa-spinner fa-spin text-blue-400 text-3xl"></i>
+      <i class="fa-solid fa-spinner fa-spin pp-action-text text-3xl"></i>
 
-      <p class="mt-4 text-lg font-bold text-slate-600 dark:text-slate-300">
+      <p class="mt-4 text-lg font-bold pp-muted">
         กำลังโหลดข้อมูล...
       </p>
 
@@ -263,35 +265,27 @@ interface LeaderboardEntry {
       <!-- Row -->
       <div
         *ngFor="let entry of topLeaderboard"
-        class="flex items-center gap-4
+        class="pp-leaderboard-row flex items-center gap-4
                px-4 py-4 rounded-2xl
                border transition-all"
 
-        [class.bg-blue-50]="entry.isMe"
-        [class.border-blue-200]="entry.isMe"
-        [class.dark:bg-blue-500]="entry.isMe"
-        [class.dark:bg-opacity-10]="entry.isMe"
-        [class.dark:border-blue-500]="entry.isMe"
-        [class.dark:border-opacity-30]="entry.isMe"
+        [class.pp-action-soft]="entry.isMe"
+        [class.pp-action-border]="entry.isMe"
 
-        [class.bg-slate-50]="!entry.isMe"
-        [class.border-slate-200]="!entry.isMe"
-        [class.dark:bg-white]="!entry.isMe"
-        [class.dark:bg-opacity-5]="!entry.isMe"
-        [class.dark:border-white]="!entry.isMe"
-        [class.dark:border-opacity-5]="!entry.isMe">
+        [class.pp-subtle]="!entry.isMe"
+        [class.pp-border]="!entry.isMe">
 
         <!-- ===================== Rank ===================== -->
-        <div class="w-10 text-center shrink-0">
+        <div class="w-12 text-center shrink-0">
 
           <div
             class="text-xl font-extrabold"
 
-            [class.text-amber-600]="entry.rank === 1"
-            [class.text-slate-500]="entry.rank === 2"
-            [class.text-orange-400]="entry.rank === 3"
-            [class.text-slate-500]="entry.rank > 3 && !entry.isMe"
-            [class.text-blue-500]="entry.rank > 3 && entry.isMe">
+            [class.pp-reward-text]="entry.rank === 1 || entry.rank === 3"
+            [class.pp-muted]="entry.rank === 2 || (entry.rank > 3 && !entry.isMe)"
+
+
+            [class.pp-action-text]="entry.rank > 3 && entry.isMe">
 
             <ng-container [ngSwitch]="entry.rank">
 
@@ -311,19 +305,15 @@ interface LeaderboardEntry {
 
         <!-- ===================== Avatar ===================== -->
         <div
-          class="w-12 h-12 rounded-full
+          class="pp-ranking-avatar w-12 h-12 rounded-full
                  flex items-center justify-center
                  font-bold text-base shrink-0"
 
-          [class.bg-blue-500]="entry.isMe"
-          [class.bg-opacity-20]="entry.isMe"
-          [class.text-blue-500]="entry.isMe"
+          [class.pp-action-soft]="entry.isMe"
+          [class.pp-action-text]="entry.isMe"
 
-          [class.bg-slate-200]="!entry.isMe"
-          [class.dark:bg-white]="!entry.isMe"
-          [class.dark:bg-opacity-10]="!entry.isMe"
-          [class.text-slate-600]="!entry.isMe"
-          [class.dark:text-slate-300]="!entry.isMe">
+          [class.pp-track]="!entry.isMe"
+          [class.pp-muted]="!entry.isMe">
 
           {{ entry.first_name[0] }}{{ entry.last_name[0] }}
 
@@ -333,19 +323,17 @@ interface LeaderboardEntry {
         <div class="flex-1 min-w-0">
 
           <div
-            class="text-lg font-bold truncate"
+            class="text-lg font-bold break-words"
 
-            [class.text-blue-600]="entry.isMe"
-            [class.dark:text-blue-300]="entry.isMe"
+            [class.pp-action-text]="entry.isMe"
 
-            [class.text-slate-800]="!entry.isMe"
-            [class.dark:text-white]="!entry.isMe">
+            [class.pp-ink]="!entry.isMe">
 
             {{ entry.first_name }} {{ entry.last_name }}
 
             <span
               *ngIf="entry.isMe"
-              class="text-base font-semibold opacity-70 ml-1">
+              class="text-base font-semibold ml-1">
 
               (คุณ)
 
@@ -358,8 +346,8 @@ interface LeaderboardEntry {
         <!-- ===================== Stars ===================== -->
         <div class="shrink-0 text-right">
 
-          <div class="text-xl font-extrabold text-amber-700 dark:text-amber-400">
-            ⭐ {{ entry.stars }}
+          <div class="text-xl font-extrabold pp-reward-text">
+            <i class="fa-solid fa-star" aria-hidden="true"></i> {{ entry.stars }}
           </div>
 
         </div>
@@ -373,15 +361,15 @@ interface LeaderboardEntry {
 
         <div
           class="w-16 h-16 mx-auto rounded-full
-                 bg-slate-100 dark:bg-white/5
+                 pp-subtle
                  flex items-center justify-center
-                 text-slate-500 text-2xl">
+                 pp-muted text-2xl">
 
           <i class="fa-solid fa-users"></i>
 
         </div>
 
-        <p class="mt-4 text-lg font-bold text-slate-600 dark:text-slate-300">
+        <p class="mt-4 text-lg font-bold pp-muted">
           ยังไม่มีข้อมูลผู้เล่น
         </p>
 
@@ -393,27 +381,27 @@ interface LeaderboardEntry {
     <div
       *ngIf="!leaderboardLoading && myEntry"
       class="m-4 mt-0 rounded-2xl
-             border-2 border-blue-200
-             dark:border-blue-500/30
-             bg-blue-50 dark:bg-blue-500/10
+             border-2 pp-action-border
+
+             pp-action-soft
              px-5 py-4">
 
-      <div class="text-base font-bold text-blue-500 mb-3">
+      <div class="text-base font-bold pp-action-text mb-3">
         อันดับของคุณ
       </div>
 
       <div class="flex items-center gap-4">
 
         <!-- Rank -->
-        <div class="text-3xl font-extrabold text-blue-500 shrink-0">
+        <div class="text-3xl font-extrabold pp-action-text shrink-0">
           #{{ myEntry.rank }}
         </div>
 
         <!-- Avatar -->
         <div
           class="w-12 h-12 rounded-full
-                 bg-blue-500/20
-                 text-blue-500
+                 pp-action-soft
+                 pp-action-text
                  flex items-center justify-center
                  font-extrabold text-base shrink-0">
 
@@ -424,15 +412,15 @@ interface LeaderboardEntry {
         <!-- Name -->
         <div class="flex-1">
 
-          <div class="font-extrabold text-lg text-slate-800 dark:text-white">
+          <div class="font-extrabold text-lg pp-ink">
             {{ myEntry.first_name }} {{ myEntry.last_name }}
           </div>
 
         </div>
 
         <!-- Stars -->
-        <div class="text-2xl font-extrabold text-amber-700 dark:text-amber-400">
-          ⭐ {{ myEntry.stars }}
+        <div class="text-2xl font-extrabold pp-reward-text">
+          <i class="fa-solid fa-star" aria-hidden="true"></i> {{ myEntry.stars }}
         </div>
 
       </div>

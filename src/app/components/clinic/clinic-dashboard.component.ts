@@ -8,12 +8,11 @@ import { I18nService } from '../../services/i18n.service';
 import { ThemeService } from '../../services/theme.service';
 import { ClassicDashboardComponent } from '../classic-dashboard/classic-dashboard.component';
 import { AdminDashboardComponent } from '../admin-dashboard/admin-dashboard.component';
-import { FontScaleControlComponent } from '../font-scale-control/font-scale-control.component';
 
 @Component({
   selector: 'app-clinic-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ClassicDashboardComponent, AdminDashboardComponent, FontScaleControlComponent],
+  imports: [CommonModule, FormsModule, ClassicDashboardComponent, AdminDashboardComponent],
   template: `
     <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
@@ -34,7 +33,6 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
           </div>
 
           <div class="flex items-center space-x-3">
-            <app-font-scale-control [inline]="true"></app-font-scale-control>
             <!-- Language Toggle -->
             <button (click)="i18n.toggleLang()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:text-brand-accent border border-slate-200 dark:border-white/10 transition-all text-sm font-bold">
               {{ i18n.currentLang() === 'th' ? 'EN' : 'TH' }}

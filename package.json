@@ -8,7 +8,9 @@
     "prebuild": "node set-env.js",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "prototype:portal": "ng serve --configuration portal-prototype --host 127.0.0.1 --port 4317",
+    "preview:portal": "ng serve --configuration portal-preview --host 127.0.0.1 --port 4318"
   },
   "private": true,
   "overrides": {

@@ -34,10 +34,6 @@ import { TaskService } from '../../services/task.service';
             <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
               <div class="text-slate-600 dark:text-slate-300 text-base font-medium mb-1">{{ i18n.t('summary.duration') }}</div>
               <div class="text-3xl font-bold text-slate-800 dark:text-white">{{ currentStats.duration }}s</div>
-              <div class="text-sm mt-2" [ngClass]="getImprovementColor(improvement.duration)">
-                <i class="fa-solid" [ngClass]="getImprovementIcon(improvement.duration)"></i>
-                {{ formatImprovement(improvement.duration) }}
-              </div>
             </div>
             
             <div class="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-center">
@@ -93,7 +89,6 @@ export class SummaryComponent implements OnInit {
   };
 
   public improvement = {
-    duration: 0,
     reps: 0,
     maxForce: 0
   };
@@ -126,7 +121,6 @@ export class SummaryComponent implements OnInit {
       const prevSession = await this.dataSync.fetchUserPreviousSession(user.id);
       
       if (prevSession) {
-        this.improvement.duration = this.currentStats.duration - prevSession.duration_seconds;
         this.improvement.reps = this.currentStats.reps - prevSession.reps;
         this.improvement.maxForce = this.currentStats.maxForce - prevSession.max_force;
       }
@@ -182,8 +176,9 @@ export class SummaryComponent implements OnInit {
   }
 
   getImprovementColor(val: number) {
-    if (val > 0) return 'text-emerald-500';
-    if (val < 0) return 'text-rose-500';
+    const improvement = val;
+    if (improvement > 0) return 'text-emerald-700 dark:text-emerald-400';
+    if (improvement < 0) return 'text-rose-700 dark:text-rose-400';
     return 'text-slate-500 dark:text-slate-400';
   }
 

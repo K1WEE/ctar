@@ -1,23 +1,34 @@
 import { Component, Input, Output, EventEmitter, effect, Signal, NgZone, OnDestroy, OnInit, HostListener, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { NavbarService } from '../../services/navbar.service';
 import { BiofeedbackService } from '../../services/biofeedback.service';
 import { BleService } from '../../services/ble.service';
 import { I18nService } from '../../services/i18n.service';
 import { ChinTuckDemoComponent } from '../chin-tuck-demo/chin-tuck-demo.component';
 
-import { FontScaleControlComponent } from '../font-scale-control/font-scale-control.component';
 
 type FeedbackState = 'squeeze' | 'hold' | 'holdAlmost' | 'tooHard' | 'release' | 'success';
 
 const FEEDBACK_ROTATE_MS = 5000;
 const GAME_CUE_COOLDOWN_MS = 4000;
 
+type GameCue = FeedbackState | 'intro';
+// Only request files shipped with the Thai voice pack.
+const GAME_CUES: Record<GameCue, { files: readonly string[]; fallback?: string }> = {
+  intro: { files: ['game_intro.mp3'], fallback: 'intro.mp3' },
+  squeeze: { files: ['game_squeeze_01.mp3', 'game_squeeze_02.mp3', 'game_squeeze_03.mp3', 'game_squeeze_04.mp3'], fallback: 'cue_squeeze.mp3' },
+  hold: { files: ['cue_hold.mp3'] },
+  holdAlmost: { files: ['cue_hold.mp3'] },
+  tooHard: { files: ['cue_too_hard.mp3'] },
+  release: { files: ['cue_release.mp3'] },
+  success: { files: ['cue_rep_success.mp3'] },
+};
+
 @Component({
   selector: 'app-zen-balloon',
   standalone: true,
-  imports: [CommonModule, ChinTuckDemoComponent, FontScaleControlComponent],
+  imports: [CommonModule, ChinTuckDemoComponent],
   animations: [
     // Re-pops the countdown digit on every value change, then stays fully
     // visible — unlike animate-ping which fades the number out while it shows
@@ -29,48 +40,36 @@ const GAME_CUE_COOLDOWN_MS = 4000;
     ]),
   ],
   template: `
-    <div [@.disabled]="prefersReducedMotion" class="game-card bg-white dark:bg-brand-card rounded-3xl shadow-md p-4 sm:p-6 w-full flex flex-col items-center border border-slate-200 dark:border-slate-700 min-h-[450px] h-full relative overflow-hidden transition-colors duration-300">
+    <div [@.disabled]="prefersReducedMotion" class="game-card relative w-full">
 
-      <!-- Ready state: give the patient a calm, explicit starting point. -->
-      <div *ngIf="gameFlowState() === 'ready'" class="game-overlay absolute inset-0 bg-slate-950/55 z-30 flex items-center justify-center p-5 rounded-3xl animate-fade-in">
-        <div role="dialog" aria-modal="true" data-dialog="start" aria-labelledby="game-start-title" aria-describedby="game-start-description" class="game-dialog w-full max-w-[340px] bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl shadow-xl border border-slate-200 dark:border-white/10">
-          <div class="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 flex items-center justify-center">
-            <i class="fa-solid fa-parachute-box text-2xl" aria-hidden="true"></i>
+      <!-- Preparation shares the full-page layout of calibration. -->
+      <div *ngIf="activeOverlay === 'ready'" class="game-overlay start-screen">
+        <div role="dialog" aria-modal="false" data-dialog="start" aria-labelledby="game-start-title" aria-describedby="game-start-description" class="start-layout">
+          <header class="start-header">
+            <h2 id="game-start-title" tabindex="-1" class="focus:outline-none">{{ i18n.t('game.start.title') }}</h2>
+            <p id="game-start-description">{{ i18n.t('game.start.instructions') }}</p>
+          </header>
+          <div class="start-content">
+            <div class="start-demo" role="img" [attr.aria-label]="i18n.t('game.start.step1')">
+              <app-chin-tuck-demo size="md" [showLabel]="false" aria-hidden="true" />
+            </div>
+            <div class="start-guide">
+            <p class="start-target">{{ i18n.t('game.targetReps') }} <strong>{{ targetReps }}</strong> {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}</p>
+            <ol class="start-steps" [attr.aria-label]="i18n.currentLang() === 'th' ? 'ขั้นตอนการฝึก' : 'Training steps'">
+              <li><span aria-hidden="true">1</span><p>{{ i18n.t('game.start.step1') }}</p></li>
+              <li><span aria-hidden="true">2</span><p>{{ i18n.t('game.start.step2') }}</p></li>
+              <li><span aria-hidden="true">3</span><p>{{ i18n.t('game.start.step3') }}</p></li>
+            </ol>
+            </div>
           </div>
-          <h2 id="game-start-title" class="text-xl sm:text-2xl font-black text-center text-slate-900 dark:text-white leading-tight">
-            {{ i18n.t('game.start.title') }}
-          </h2>
-          <p id="game-start-description" class="mt-2 text-center text-base font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
-            {{ i18n.t('game.start.instructions') }}
-          </p>
-          <div class="mt-4 rounded-2xl bg-amber-50/80 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3">
-            <p class="text-center text-base font-black text-amber-800 dark:text-amber-300">
-              {{ i18n.t('game.targetReps') }} {{ targetReps }} {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}
-            </p>
-          </div>
-          <ol class="mt-4 space-y-3 text-left" [attr.aria-label]="i18n.currentLang() === 'th' ? 'ขั้นตอนการฝึก' : 'Training steps'">
-            <li class="flex items-start gap-3 text-base font-bold text-slate-700 dark:text-slate-200">
-              <span class="w-7 h-7 shrink-0 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-black" aria-hidden="true">1</span>
-              <span>{{ i18n.t('game.start.step1') }}</span>
-            </li>
-            <li class="flex items-start gap-3 text-base font-bold text-slate-700 dark:text-slate-200">
-              <span class="w-7 h-7 shrink-0 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-black" aria-hidden="true">2</span>
-              <span>{{ i18n.t('game.start.step2') }}</span>
-            </li>
-            <li class="flex items-start gap-3 text-base font-bold text-slate-700 dark:text-slate-200">
-              <span class="w-7 h-7 shrink-0 rounded-full bg-cyan-600 text-white flex items-center justify-center text-sm font-black" aria-hidden="true">3</span>
-              <span>{{ i18n.t('game.start.step3') }}</span>
-            </li>
-          </ol>
-          <button type="button" (click)="beginSession()"
-            class="mt-5 w-full min-h-[56px] px-5 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-lg rounded-2xl shadow-md transition-all duration-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            {{ i18n.t('game.start.button') }}
-          </button>
+          <footer class="start-actions">
+            <button type="button" (click)="beginSession()">{{ i18n.t('game.start.button') }}</button>
+          </footer>
         </div>
       </div>
-      
+
       <!-- Countdown State Overlay -->
-      <div *ngIf="gameFlowState() === 'countdown'" class="game-overlay absolute inset-0 bg-slate-950/55 z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in text-center">
+      <div *ngIf="activeOverlay === 'countdown'" class="game-overlay absolute inset-0 bg-slate-950/55 z-30 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in text-center">
         <span class="text-white font-bold uppercase tracking-widest text-sm xs:text-base sm:text-lg mb-4 drop-shadow-md">
           {{ countdownInstruction() }}
         </span>
@@ -81,8 +80,9 @@ const GAME_CUE_COOLDOWN_MS = 4000;
       </div>
 
       <!-- Disconnected State Overlay -->
-      <div *ngIf="gameFlowState() === 'disconnected'" class="game-overlay absolute inset-0 bg-slate-950/65 z-40 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
+      <div *ngIf="activeOverlay === 'disconnected'" class="game-overlay absolute inset-0 bg-slate-950/65 z-40 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
         <div role="alert" class="game-dialog bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-4 animate-scale-up">
+          <div class="dialog-body w-full flex flex-col items-center space-y-3">
           <div class="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
             <i class="fa-brands fa-bluetooth-b text-2xl text-red-500" aria-hidden="true"></i>
           </div>
@@ -97,12 +97,14 @@ const GAME_CUE_COOLDOWN_MS = 4000;
             <i class="fa-solid fa-link mr-2" aria-hidden="true"></i>{{ i18n.currentLang() === 'th' ? 'เชื่อมต่อใหม่' : 'Reconnect' }}
           </button>
         </div>
+        </div>
       </div>
 
       <!-- Stale sensor data overlay: keep the last force from being mistaken
            for a live reading while notifications are temporarily paused. -->
-      <div *ngIf="sensorDataStale() && gameFlowState() === 'playing'" class="game-overlay absolute inset-0 bg-slate-950/65 z-40 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
+      <div *ngIf="activeOverlay === 'stale'" class="game-overlay absolute inset-0 bg-slate-950/65 z-40 flex flex-col items-center justify-center p-6 rounded-3xl animate-fade-in">
         <div role="alert" class="game-dialog bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-4 animate-scale-up">
+          <div class="dialog-body w-full flex flex-col items-center space-y-3">
           <div class="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
             <i class="fa-solid fa-wave-square text-2xl text-amber-600 dark:text-amber-400" aria-hidden="true"></i>
           </div>
@@ -113,126 +115,51 @@ const GAME_CUE_COOLDOWN_MS = 4000;
             {{ i18n.currentLang() === 'th' ? 'ระบบหยุดนับชั่วคราว กรุณารอสัญญาณใหม่จากอุปกรณ์' : 'Training is paused until a new reading arrives from the device.' }}
           </p>
         </div>
-      </div>
-
-      <!-- Exit Confirmation Overlay -->
-      <div *ngIf="showExitConfirm()" class="game-overlay absolute inset-0 bg-slate-950/65 z-40 flex items-center justify-center p-6 rounded-3xl animate-fade-in">
-        <div role="alertdialog" aria-modal="true" data-dialog="exit" aria-labelledby="exit-dialog-title" aria-describedby="exit-dialog-description" class="game-dialog bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-3 animate-scale-up">
-          <h2 id="exit-dialog-title" class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
-            {{ i18n.currentLang() === 'th' ? 'ออกจากการฝึก?' : 'Leave training?' }}
-          </h2>
-          <p id="exit-dialog-description" class="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
-            {{ i18n.currentLang() === 'th'
-              ? (currentRepVal > 0
-                  ? 'ฝึกไปแล้ว ' + currentRepVal + ' ครั้ง ถ้าออกตอนนี้ความคืบหน้าจะไม่ถูกบันทึก'
-                  : 'ต้องการออกจากการฝึกใช่หรือไม่?')
-              : (currentRepVal > 0
-                  ? 'You completed ' + currentRepVal + ' reps. Leaving now will not save your progress.'
-                  : 'Are you sure you want to leave training?') }}
-          </p>
-          <button type="button" (click)="cancelExit()"
-            class="px-6 min-h-[52px] w-full bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 text-base cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            {{ i18n.currentLang() === 'th' ? 'ฝึกต่อ' : 'Keep training' }}
-          </button>
-          <button type="button" (click)="confirmExit()"
-            class="px-6 min-h-[44px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 text-sm cursor-pointer border border-slate-200 dark:border-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            {{ i18n.currentLang() === 'th' ? 'ออกจากการฝึก' : 'Leave' }}
-          </button>
         </div>
       </div>
 
-      <!-- Finish-Early Confirmation Overlay -->
-      <div *ngIf="showFinishConfirm()" class="game-overlay absolute inset-0 bg-slate-950/65 z-40 flex items-center justify-center p-6 rounded-3xl animate-fade-in">
-        <div role="alertdialog" aria-modal="true" data-dialog="finish" aria-labelledby="finish-dialog-title" aria-describedby="finish-dialog-description" class="game-dialog bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-xl w-full max-w-[320px] border border-slate-200 dark:border-white/10 text-center flex flex-col items-center space-y-3 animate-scale-up">
-          <h2 id="finish-dialog-title" class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
-            {{ i18n.currentLang() === 'th' ? 'จบการฝึกตอนนี้?' : 'Finish now?' }}
-          </h2>
-          <p id="finish-dialog-description" class="text-sm sm:text-base font-bold text-slate-600 dark:text-slate-300 leading-relaxed">
-            {{ i18n.currentLang() === 'th'
-              ? 'ฝึกไปแล้ว ' + currentRepVal + ' จาก ' + targetReps + ' ครั้ง ระบบจะบันทึกผลเท่าที่ทำได้'
-              : 'You completed ' + currentRepVal + ' of ' + targetReps + ' reps. We will save your progress so far.' }}
-          </p>
-          <button type="button" (click)="cancelFinish()"
-            class="px-6 min-h-[52px] w-full bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold rounded-2xl shadow-md transition-all duration-300 text-base cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            {{ i18n.currentLang() === 'th' ? 'ฝึกต่อ' : 'Keep training' }}
-          </button>
-          <button type="button" (click)="confirmFinish()"
-            class="px-6 min-h-[44px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-2xl transition-all duration-300 text-sm cursor-pointer border border-slate-200 dark:border-slate-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            {{ i18n.currentLang() === 'th' ? 'จบและดูผล' : 'Finish and view results' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Integrated Top Header Bar -->
-      <div class="game-header w-full flex items-center justify-between pb-4 mb-4 border-b border-slate-200 dark:border-white/10 relative z-10">
-        <div class="game-header-main flex items-center space-x-3 min-w-0">
-          <button (click)="goBack()"
-            [attr.aria-label]="i18n.currentLang() === 'th' ? 'ออกจากการฝึก' : 'Leave training'"
-            class="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            <i class="fa-solid fa-arrow-left text-lg" aria-hidden="true"></i>
-          </button>
-          <div class="text-left min-w-0">
-            <h3 class="font-black text-base sm:text-xl text-slate-800 dark:text-white leading-tight whitespace-nowrap overflow-hidden text-ellipsis">{{ i18n.t('game.activeSession') }}</h3>
-            <!-- Rep count lives only in the centered pill below to avoid two competing counters -->
-            <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-tight font-semibold">
-              {{ i18n.t('game.targetReps') }} {{ targetReps }}
+      <!-- Navigation pauses training until the patient chooses how to leave. -->
+      <div *ngIf="activeOverlay === 'exit'" class="game-overlay bg-slate-950/65 flex items-center justify-center p-4">
+        <div role="dialog" aria-modal="false" data-dialog="exit" aria-labelledby="exit-dialog-title" aria-describedby="exit-dialog-description" class="game-dialog w-full max-w-sm rounded-2xl bg-white p-4 sm:p-6 text-slate-900 dark:bg-slate-900 dark:text-white">
+          <div class="dialog-body w-full space-y-2">
+            <h2 id="exit-dialog-title" tabindex="-1" class="text-xl font-bold focus:outline-none">{{ i18n.currentLang() === 'th' ? 'บันทึกผลก่อนออก?' : 'Save before leaving?' }}</h2>
+            <p id="exit-dialog-description" class="text-base leading-relaxed text-slate-700 dark:text-slate-200">
+              <span class="block">{{ i18n.currentLang() === 'th' ? 'ฝึกแล้ว ' + currentRepVal + ' จาก ' + targetReps + ' ครั้ง' : 'Completed ' + currentRepVal + ' of ' + targetReps + ' reps.' }}</span>
+              <span class="block">{{ i18n.currentLang() === 'th' ? 'การฝึกหยุดชั่วคราว' : 'Training is paused.' }}</span>
             </p>
+            <div class="flex flex-col gap-2">
+              <button type="button" data-exit-save (click)="confirmFinish()" class="min-h-12 w-full rounded-xl bg-emerald-700 px-3 py-2 text-base font-bold text-white hover:bg-emerald-800">
+                {{ i18n.currentLang() === 'th' ? 'บันทึกและจบการฝึก' : 'Save and finish training' }}
+              </button>
+              <button type="button" data-exit-discard (click)="confirmExit()" class="min-h-12 w-full rounded-xl border border-red-700 bg-red-50 px-3 py-2 text-base font-bold text-red-800 hover:bg-red-100 dark:border-red-400 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900">
+                {{ i18n.currentLang() === 'th' ? 'ออกโดยไม่บันทึก' : 'Leave without saving' }}
+              </button>
+              <button type="button" data-exit-continue (click)="cancelExit()" class="min-h-12 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-base font-bold text-slate-800 hover:bg-slate-100 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
+                {{ i18n.currentLang() === 'th' ? 'ฝึกต่อ' : 'Keep training' }}
+              </button>
+            </div>
           </div>
         </div>
-        <div class="game-header-actions flex flex-wrap items-center gap-2">
-          <app-font-scale-control class="mr-auto" [inline]="true"></app-font-scale-control>
-          <button 
-            (click)="toggleMute()" 
-            class="w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 border bg-white dark:bg-slate-800"
-            [ngClass]="isMuted ? 'border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400' : 'border-amber-300 text-amber-700 dark:border-amber-500/30 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-500/5'"
-            [title]="isMuted ? (i18n.currentLang() === 'th' ? 'เปิดเสียงพากย์' : 'Unmute Voice') : (i18n.currentLang() === 'th' ? 'ปิดเสียงพากย์' : 'Mute Voice')"
-            [attr.aria-label]="isMuted ? (i18n.currentLang() === 'th' ? 'เปิดเสียงพากย์' : 'Unmute Voice') : (i18n.currentLang() === 'th' ? 'ปิดเสียงพากย์' : 'Mute Voice')"
-            [attr.aria-pressed]="isMuted">
-            <i class="fa-solid" [ngClass]="isMuted ? 'fa-volume-xmark' : 'fa-volume-high'"></i>
-          </button>
-          
-          <button 
-            (click)="finishSession()"
-            class="px-5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/25 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 font-black text-sm sm:text-base rounded-xl transition-all duration-300 flex items-center space-x-1.5 shadow-sm">
-            <i class="fa-solid fa-flag-checkered"></i>
-            <span>{{ i18n.t('game.finish') }}</span>
-          </button>
-        </div>
       </div>
 
-      <div class="game-title-container flex flex-col items-center mb-6 relative z-10 mt-1 w-full text-center">
-         <div class="flex items-center space-x-3 mb-3">
-            <div class="w-10 h-10 xs:w-12 xs:h-12 rounded-lg bg-amber-50 dark:bg-amber-500/20 flex items-center justify-center text-amber-500 dark:text-amber-400 border border-amber-100 dark:border-transparent transition-colors duration-300">
-               <i class="fa-solid fa-parachute-box text-lg xs:text-xl"></i>
-            </div>
-            <h2 class="text-2xl xs:text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-wide transition-colors duration-300">{{ i18n.t('game.title') }}</h2>
-         </div>
-         
-         <!-- Reps Pill Badge (Centered) -->
-         <div class="flex items-center gap-2 px-4 py-1.5 bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20 rounded-full text-amber-800 dark:text-amber-400 font-extrabold text-sm sm:text-base shadow-sm">
-            <i class="fa-solid fa-dumbbell text-amber-600 dark:text-amber-500"></i>
-            <span>{{ i18n.t('game.hud.reps') }}:</span>
-            <span class="text-lg sm:text-xl font-black tabular-nums">{{ currentRepVal }}</span>
-            <span class="text-sm sm:text-base text-amber-700 dark:text-amber-500">/ {{ targetReps }}</span>
-         </div>
-      </div>
-
-      <!-- Main Game Area (Centered Single Column) -->
-      <div class="game-main-area w-full flex-1 relative flex justify-center items-center z-20 min-h-0">
-
-        <!-- Live force readout: a large, glanceable % of the patient's calibrated
-             max. Turns amber in-zone to reinforce the balloon's own colour cue.
-             Anchored to the side so it never shifts the centred tube. -->
-        <div *ngIf="gameFlowState() === 'playing'"
-             class="force-readout absolute right-1 xs:right-3 top-1/2 -translate-y-1/2 flex flex-col items-center text-center select-none pointer-events-none transition-colors duration-200"
-             aria-hidden="true">
-          <span class="text-xs xs:text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{{ i18n.currentLang() === 'th' ? 'แรงกด' : 'Force' }}</span>
-          <span class="text-4xl xs:text-5xl font-black tabular-nums leading-none"
-                [ngClass]="inTargetZone ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-200'">
-            {{ forcePercent() }}<span class="text-lg xs:text-2xl align-top">%</span>
-          </span>
+      <div class="game-play-content w-full flex flex-col items-center" [attr.inert]="activeOverlay ? '' : null" [attr.aria-hidden]="activeOverlay ? 'true' : null">
+      <h2 class="game-title-container">{{ i18n.t('game.title') }}</h2>
+      <dl class="game-stats">
+        <div class="flex-1 rounded-xl px-4 py-3 bg-orange-50 text-orange-800 dark:bg-orange-950 dark:text-orange-200">
+          <dt>{{ i18n.t('game.hud.reps') }}</dt>
+          <dd><strong>{{ currentRepVal }}</strong><span> / {{ targetReps }}</span></dd>
         </div>
+        <div class="force-readout flex-1 rounded-xl px-4 py-3 bg-blue-50 text-blue-800 dark:bg-blue-950 dark:text-blue-200" *ngIf="gameFlowState() === 'playing'">
+          <dt>{{ i18n.currentLang() === 'th' ? 'แรงกด' : 'Force' }}</dt>
+          <dd>{{ forcePercent() }}<span>%</span></dd>
+        </div>
+      </dl>
 
+      <div class="game-main-area" [class.session-complete]="sessionComplete">
+        <div class="sky-cloud cloud-left" aria-hidden="true"></div>
+        <div class="sky-cloud cloud-right" aria-hidden="true"></div>
+        <!-- Scale the entire track together: target contact depends on rendered
+             rectangles, so changing only the balloon would change the exercise. -->
         <!-- The Balloon Track (Centered & Dynamically Sized to fill parent container height) -->
         <div class="game-track relative w-24 xs:w-28 h-[85%] xs:h-[90%] bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 overflow-hidden shadow-inner flex flex-col justify-end z-10 transition-colors duration-300">
           
@@ -274,136 +201,87 @@ const GAME_CUE_COOLDOWN_MS = 4000;
 
       </div>
 
+
       <!-- Hold/Release Progress Indicator -->
-      <div class="mt-8 w-full max-w-xs xs:max-w-sm relative z-10 progress-container">
+      <div class="progress-container">
         <div class="flex justify-between text-sm xs:text-base font-bold text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wider transition-colors duration-300">
-          <span>{{ isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer') }}</span>
-          <span class="text-brand-accent">{{ holdProgress | number:'1.0-0' }}%</span>
+          <span>{{ sessionComplete ? i18n.t('game.sessionComplete') : (isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer')) }}</span>
+          <span class="text-blue-700 dark:text-blue-300">{{ holdProgress | number:'1.0-0' }}%</span>
         </div>
-        <div class="h-3 xs:h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-slate-200 dark:border-white/5 transition-colors duration-300" role="progressbar" [attr.aria-valuenow]="holdProgress" aria-valuemin="0" aria-valuemax="100">
+        <div class="h-3 xs:h-4 bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner border border-slate-200 dark:border-white/5 transition-colors duration-300" role="progressbar" [attr.aria-label]="isReleasing ? i18n.t('game.hud.releaseStatus') : i18n.t('game.hud.holdTimer')" [attr.aria-valuenow]="holdProgress" aria-valuemin="0" aria-valuemax="100">
           <div class="h-full transition-all duration-100 relative"
                [ngClass]="isReleasing ? 'bg-sky-500' : 'bg-amber-500'"
                [style.width.%]="holdProgress">
           </div>
         </div>
       </div>
-      
-      <!-- Feedback Text -->
-      <div class="mt-4 text-center font-bold text-xl xs:text-2xl h-8 xs:h-10 transition-colors duration-300 relative z-10 feedback-container"
-           [ngClass]="isReleasing ? 'text-sky-600 dark:text-sky-400' : (inTargetZone ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300')"
-           role="status" aria-live="polite">
+      <div class="feedback-container" role="status" aria-live="polite"
+           [ngClass]="isReleasing ? 'text-sky-800 dark:text-sky-200' : (inTargetZone ? 'text-amber-800 dark:text-amber-200' : 'text-slate-800 dark:text-slate-100')">
         {{ feedbackMessage }}
+      </div>
+      
       </div>
     </div>
   `,
   styles: [`
-    .game-card {
-      box-sizing: border-box;
+    .game-overlay { position:fixed; inset:var(--app-navbar-height, 0px) 0 0; overflow-y:auto; z-index:40; }
+    .game-dialog { max-height:calc(100dvh - var(--app-navbar-height, 0px) - 2rem); display:flex; flex-direction:column; overflow:hidden; }
+    .dialog-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+    .start-screen { background:#fff; }
+    .start-layout { max-width:960px; margin:auto; padding:24px 20px max(20px, env(safe-area-inset-bottom)); display:grid; gap:24px; }
+    .start-header h2 { font-size:clamp(1.5rem,3vw,2.5rem); line-height:1.35; font-weight:700; text-wrap:balance; }
+    .start-header p { margin-top:8px; color:#475569; line-height:1.6; }
+    .start-content { display:grid; gap:20px; }
+    .start-demo { display:flex; justify-content:center; padding:8px; background:#f0f9ff; border-radius:16px; }
+    .start-guide { display:grid; align-content:center; gap:20px; }
+    .start-target { color:#475569; font-size:1.125rem; }
+    .start-target strong { color:#1d4ed8; font-size:1.75rem; font-weight:700; margin-inline:4px; }
+    .start-steps { display:grid; gap:16px; }
+    .start-steps li { display:flex; align-items:baseline; gap:12px; font-size:1.125rem; line-height:1.6; }
+    .start-steps li > span { color:#1d4ed8; font-weight:700; }
+    .start-actions button { width:100%; min-height:52px; padding:12px 20px; border-radius:12px; background:#1d4ed8; color:#fff; font-size:1.125rem; font-weight:700; }
+    .start-actions button:hover { background:#1e40af; }
+    .game-play-content { display:grid; grid-template-areas:'title' 'stats' 'scene' 'progress' 'cue'; gap:16px; }
+    .game-title-container { grid-area:title; font-size:1rem; font-weight:600; color:#475569; }
+    .feedback-container { grid-area:cue; min-height:4.35em; text-align:center; font-size:clamp(1.375rem,2.5vw,2rem); line-height:1.45; font-weight:700; text-wrap:balance; }
+    .game-main-area { grid-area:scene; display:flex; align-items:center; justify-content:center; position:relative; isolation:isolate; padding:16px; border-radius:16px; background:#e8f4fc; overflow:hidden; }
+    /* Keep the original dimensions and force-to-position mapping. A common
+       transform preserves intersection at every force, including edge contact. */
+    .game-track { height:clamp(16rem,45dvh,32rem); min-height:16rem; flex-shrink:0; box-shadow:none; background:#f8fcff; }
+    .sky-cloud { position:absolute; width:100px; height:28px; border-radius:50px; background:#fff; opacity:0.8; }
+    .sky-cloud::before { content:''; position:absolute; width:44px; height:44px; bottom:0; left:18px; border-radius:50%; background:inherit; }
+    .cloud-left { left:-24px; top:24%; }
+    .cloud-right { right:-32px; top:65%; transform:scale(0.8); }
+    .progress-container { grid-area:progress; min-width:0; }
+    .progress-container > div:first-child { gap:12px; letter-spacing:normal; }
+    .game-stats { grid-area:stats; display:flex; gap:12px; }
+    .game-stats dt { font-size:1rem; }
+    .game-stats dd { font-size:2rem; font-weight:700; font-variant-numeric:tabular-nums; }
+    .game-stats dd span { font-size:1rem; font-weight:500; }
+    .session-complete { animation:celebrate 600ms ease-out; }
+    @keyframes celebrate { 50% { background:#d1fae5; } }
+    :host-context(.dark) .start-screen { background:#0f172a; }
+    :host-context(.dark) .start-demo, :host-context(.dark) .game-main-area { background:#142e43; }
+    :host-context(.dark) .game-track { background:#1e293b; }
+    :host-context(.dark) .sky-cloud { background:#304c62; }
+    :host-context(.dark) .start-header p, :host-context(.dark) .start-target,
+    :host-context(.dark) .game-title-container { color:#cbd5e1; }
+    :host-context(.dark) .start-target strong, :host-context(.dark) .start-steps li > span { color:#93c5fd; }
+    @media(min-width:768px) {
+      .start-layout { padding:32px; gap:32px; }
+      .start-content { grid-template-columns:1fr 1.3fr; gap:40px; }
+      .start-demo { padding:32px; }
+      .start-actions { width:100%; max-width:480px; justify-self:center; }
+      .game-play-content { grid-template-columns:minmax(0,1fr) minmax(160px,0.4fr); grid-template-areas:'title title' 'scene stats' 'progress stats' 'cue stats'; gap:20px 32px; align-items:start; }
+      .game-main-area { padding-block:calc(clamp(16rem,45dvh,32rem) * 0.1 + 24px); }
+      .game-track { transform:scale(1.2); }
+      .game-stats { flex-direction:column; }
+      .cloud-left { left:8%; }
+      .cloud-right { right:6%; }
     }
-
-    .game-header {
-      flex-wrap: wrap;
-      row-gap: 0.75rem;
-    }
-
-    .game-header-main,
-    .game-header-actions {
-      width: 100%;
-    }
-
-    .game-header-actions {
-      justify-content: flex-end;
-    }
-
-    @media (max-height: 800px) {
-      .game-card {
-        padding: 0.75rem 1rem !important;
-        min-height: 0 !important;
-      }
-      .game-header {
-        padding-bottom: 0.5rem !important;
-        margin-bottom: 0.5rem !important;
-      }
-      .game-title-container {
-        margin-bottom: 0.5rem !important;
-        margin-top: 0 !important;
-      }
-      .game-title-container h2 {
-        font-size: 1.25rem !important;
-      }
-      .game-title-container .w-10 {
-        width: 1.75rem !important;
-        height: 1.75rem !important;
-      }
-      .game-title-container i {
-        font-size: 0.875rem !important;
-      }
-      .progress-container {
-        margin-top: 0.75rem !important;
-      }
-      .feedback-container {
-        margin-top: 0.25rem !important;
-        font-size: 1.125rem !important;
-        height: auto !important;
-      }
-    }
-
-    /* Landscape phones have too little vertical space for the instructional
-       and confirmation content to remain centered inside the game card. Keep
-       the overlay reachable and scroll only its dialog when it is taller than
-       the viewport. */
-    @media (orientation: landscape) and (max-height: 600px) {
-      .game-overlay {
-        align-items: center !important;
-        justify-content: flex-start !important;
-        overflow-y: auto;
-        padding: 0.5rem !important;
-      }
-
-      .game-dialog {
-        max-height: calc(100dvh - 2rem);
-        overflow-y: auto;
-        margin-block: auto;
-      }
-    }
-
-    @media (max-height: 680px) {
-      .game-title-container {
-        margin-bottom: 0.25rem !important;
-      }
-      .game-title-container h2 {
-        font-size: 1.125rem !important;
-      }
-      .game-title-container .w-10 {
-        width: 1.5rem !important;
-        height: 1.5rem !important;
-      }
-      .progress-container {
-        margin-top: 0.5rem !important;
-      }
-      .feedback-container {
-        font-size: 1rem !important;
-      }
-    }
-
-    .game-card {
-      height: auto !important;
-      min-height: calc(100dvh - 1rem) !important;
-    }
-
-    .game-main-area {
-      min-height: 18rem;
-    }
-
-    .game-track {
-      height: clamp(16rem, 45dvh, 32rem);
-      min-height: 16rem;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      :host ::ng-deep .animate-pulse { animation: none !important; }
-      :host ::ng-deep [class*="transition"] { transition-duration: 0.01ms !important; }
-      :host ::ng-deep .animate-\\[slide_1s_linear_infinite\\] { animation: none !important; }
+    @media(max-height:600px) and (orientation:landscape) {
+      .game-overlay:not(.start-screen) { justify-content:flex-start !important; overflow-y:auto; padding:8px !important; }
+      .game-dialog { margin-block:auto; }
     }
   `]
 })
@@ -411,14 +289,24 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   public i18n = inject(I18nService);
   public bleService = inject(BleService);
   public gameFlowState = signal<'ready' | 'countdown' | 'playing' | 'disconnected'>('ready');
+  get activeOverlay(): 'ready' | 'countdown' | 'disconnected' | 'stale' | 'exit' | null {
+    if (this.showExitConfirm()) return 'exit';
+    const flow = this.gameFlowState();
+    if (flow !== 'playing') return flow;
+    return this.sensorDataStale() ? 'stale' : null;
+  }
   public countdownValue = signal<number>(3);
   public showExitConfirm = signal<boolean>(false);
-  public showFinishConfirm = signal<boolean>(false);
   private countdownTimer: any;
   private voiceTimeout: any;
   private progressionPaused = false;
   private pausedFlow: 'countdown' | 'playing' | null = null;
-  private router = inject(Router);
+  private navbar = inject(NavbarService);
+  private unregisterNavbar?: () => void;
+  private destroyed = false;
+  private hasStarted = false;
+  @Output() sessionExit = new EventEmitter<'save' | 'discard'>();
+  @Output() exitDialogChange = new EventEmitter<boolean>();
   private dialogReturnFocus: HTMLElement | null = null;
   private dialogFocusTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -426,6 +314,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private lastVoicePlayTime = 0;
   private activeAudio: HTMLAudioElement | null = null;
   private lastGameCueAt = 0;
+  private readonly cueIndices: Partial<Record<GameCue, number>> = {};
   private feedbackState: FeedbackState | null = null;
   private feedbackLastChangedAt = 0;
   private successFeedbackUntil = 0;
@@ -464,12 +353,13 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     if (rep !== this.currentRepVal) {
       this.currentRepVal = rep;
       // Re-randomize target zone and increase time when rep completes
-      if (rep > 0) {
+      if (rep > 0 && !this.sessionComplete) {
         this.updateDifficulty();
       }
     }
   }
   public currentRepVal = 0;
+  public sessionComplete = false;
 
   // Emitted safely upwards to the logic service so we avoid mutating service internals here
   @Output() repCompleted = new EventEmitter<void>();
@@ -603,7 +493,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       const flow = this.gameFlowState();
       if (connection !== 'Connected' && (flow === 'playing' || flow === 'countdown')) {
         this.ngZone.run(() => this.handleDisconnect());
-      } else if (connection === 'Connected' && flow === 'disconnected') {
+      } else if (connection === 'Connected' && flow === 'disconnected' && !this.showExitConfirm()) {
         this.ngZone.run(() => this.startCountdown());
       }
     }, { allowSignalWrites: true });
@@ -643,11 +533,8 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       clearInterval(this.countdownTimer);
       this.countdownTimer = null;
     }
-    this.progressionPaused = false;
+    this.progressionPaused = this.showExitConfirm();
     this.pausedFlow = null;
-    this.showExitConfirm.set(false);
-    this.showFinishConfirm.set(false);
-    this.restoreDialogFocus();
     this.stopActiveFeedback();
     this.biofeedback.stopVibrationLoop();
     this.inTargetZone = false;
@@ -663,6 +550,12 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.isMuted = localStorage.getItem('zen_balloon_muted') === 'true';
+    // Register after the parent's first check so the shared navbar can update safely.
+    queueMicrotask(() => {
+      if (!this.destroyed) this.unregisterNavbar = this.navbar.registerGame({
+        back: () => this.goBack(), toggleMute: () => this.toggleMute(), isMuted: () => this.isMuted,
+      });
+    });
     // Initialize visuals for rep 0
     this.isReleasing = false;
     this.feedbackState = null;
@@ -673,8 +566,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   beginSession() {
+    this.hasStarted = true;
     // This click is the user gesture that safely unlocks audio on mobile browsers.
-    this.playGameCue('game_intro', 'intro.mp3', true);
+    this.playGameCue('intro', true);
     this.startCountdown();
   }
 
@@ -688,11 +582,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   toggleMute() {
     this.isMuted = !this.isMuted;
     localStorage.setItem('zen_balloon_muted', String(this.isMuted));
-    if (this.isMuted && this.activeAudio) {
-      this.activeAudio.pause();
-      this.activeAudio = null;
-      this.biofeedback.feedbackVolumeMultiplier = 1.0;
-    }
+    if (this.isMuted) this.stopVoice();
   }
 
   private setVoiceTimeout(callback: () => void, delay: number) {
@@ -714,11 +604,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       clearTimeout(this.voiceTimeout);
       this.voiceTimeout = null;
     }
-    if (this.activeAudio) {
-      this.activeAudio.pause();
-      this.activeAudio = null;
-    }
-    this.biofeedback.feedbackVolumeMultiplier = 1.0;
+    this.stopVoice();
   }
 
   private pauseProgressionForDialog() {
@@ -754,95 +640,57 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Plays a new game-specific cue when available, then falls back to the existing cue pack. */
-  private playGameCue(cueKey: string, fallbackFilename?: string, bypassCooldown = false) {
-    if (this.isMuted || this.progressionPaused || !this.i18n.voiceLanguage()) return;
-
-    const now = Date.now();
-    if (!bypassCooldown && now - this.lastGameCueAt < GAME_CUE_COOLDOWN_MS) return;
-    this.lastGameCueAt = now;
-
-    if (this.activeAudio) {
-      this.activeAudio.pause();
-      this.activeAudio = null;
-    }
-
-    const lang = this.i18n.voiceLanguage();
-    if (!lang) return;
-    const path = `/assets/audio/${lang}/game/${cueKey}.mp3`;
-    const audio = new Audio(path);
-    this.activeAudio = audio;
-    let fallbackUsed = false;
-
-    const cleanup = () => {
-      if (this.activeAudio === audio) {
-        this.biofeedback.feedbackVolumeMultiplier = 1.0;
-        this.activeAudio = null;
-      }
-    };
-
-    const fallback = () => {
-      if (!fallbackUsed && fallbackFilename) {
-        fallbackUsed = true;
-        this.playVoice(fallbackFilename, true);
-      }
-    };
-
-    audio.onended = cleanup;
-    audio.onpause = cleanup;
-    audio.onerror = () => {
-      cleanup();
-      fallback();
-    };
-    this.biofeedback.feedbackVolumeMultiplier = 0.2;
-    audio.play().then(() => {
+  private playGameCue(key: GameCue, bypassCooldown = false) {
+    if (this.destroyed || this.isMuted || this.progressionPaused || !this.i18n.voiceLanguage()) return;
+    if (!bypassCooldown && Date.now() - this.lastGameCueAt < GAME_CUE_COOLDOWN_MS) return;
+    this.lastGameCueAt = Date.now();
+    const cue = GAME_CUES[key];
+    const index = this.cueIndices[key] ?? 0;
+    this.playAudioFile(cue.files[index], () => {
+      // Text can rotate without a voice. Consume a variant only when it plays.
+      this.cueIndices[key] = (index + 1) % cue.files.length;
       this.lastGameCueAt = Date.now();
-    }).catch(() => {
-      cleanup();
-      fallback();
-    });
+    }, cue.fallback);
   }
 
   private playVoice(filename: string, bypassThrottle = false) {
-    if (this.isMuted || this.progressionPaused) return;
+    if (!bypassThrottle && Date.now() - this.lastVoicePlayTime < 3000) return;
+    this.playAudioFile(filename, () => { this.lastVoicePlayTime = Date.now(); });
+  }
 
-    if (!bypassThrottle && Date.now() - this.lastVoicePlayTime < 3000) {
-      return;
-    }
+  private stopVoice() {
+    const previous = this.activeAudio;
+    this.activeAudio = null;
+    previous?.pause();
+    this.biofeedback.feedbackVolumeMultiplier = 1.0;
+  }
 
-    if (this.activeAudio) {
-      this.activeAudio.pause();
-      this.activeAudio = null;
-    }
-
+  private playAudioFile(filename: string, onStarted: () => void, fallbackFilename?: string) {
     const lang = this.i18n.voiceLanguage();
-    if (!lang) return;
-    const path = `/assets/audio/${lang}/${filename}`;
-    const audio = new Audio(path);
+    if (this.destroyed || this.isMuted || this.progressionPaused || !lang) return;
+    this.stopVoice();
+    const audio = new Audio(`/assets/audio/${lang}/${filename}`);
     this.activeAudio = audio;
-
-    // Duck the tone feedback volume
-    this.biofeedback.feedbackVolumeMultiplier = 0.2;
-
     const cleanup = () => {
-      if (this.activeAudio === audio) {
-        this.biofeedback.feedbackVolumeMultiplier = 1.0;
-        this.activeAudio = null;
+      if (this.activeAudio !== audio) return;
+      this.activeAudio = null;
+      this.biofeedback.feedbackVolumeMultiplier = 1.0;
+    };
+    const failed = () => {
+      // A replaced, paused or already-failed clip must never launch a fallback.
+      if (this.activeAudio !== audio) return;
+      cleanup();
+      if (fallbackFilename) {
+        this.playAudioFile(fallbackFilename, () => { this.lastGameCueAt = Date.now(); });
       }
     };
-
     audio.onended = cleanup;
-    audio.onerror = cleanup;
     audio.onpause = cleanup;
-
+    audio.onerror = failed;
+    this.biofeedback.feedbackVolumeMultiplier = 0.2;
     audio.play().then(() => {
-      // Consume the throttle window only when playback actually starts —
-      // a missing/failed file must not silence the next 3s of real cues
-      this.lastVoicePlayTime = Date.now();
-    }).catch(err => {
-      console.warn(`Voice playback failed for ${path}:`, err);
-      cleanup();
-    });
+      if (this.activeAudio === audio) onStarted();
+    }).catch(failed);
   }
 
   /**
@@ -853,6 +701,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.stopGameLoop();
     this.ngZone.runOutsideAngular(() => {
       this.gameloop = setInterval(() => {
+        if (this.sessionComplete) return;
         if (this.progressionPaused || this.gameFlowState() !== 'playing') return;
         if (!this.bleService.isSampleFresh()) {
           this.stopGameLoop();
@@ -889,6 +738,17 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
               this.updateFeedback();
 
               if (this.currentRestMs >= 2000) {
+                // Keep the final completed bar visible throughout the summary delay.
+                if (this.currentRepVal + 1 >= this.targetReps) {
+                  this.sessionComplete = true;
+                  this.holdProgress = 100;
+                  clearInterval(this.gameloop);
+                  this.biofeedback.stopVibrationLoop();
+                  this.biofeedback.playSuccess();
+                  this.updateFeedback();
+                  this.repCompleted.emit();
+                  return;
+                }
                 this.isReleasing = false;
                 this.repCompleted.emit();
                 this.triggerSuccessAnimation();
@@ -984,6 +844,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   private updateFeedback() {
+    if (this.sessionComplete) {
+      this.feedbackMessage = this.i18n.t('game.sessionComplete');
+      return;
+    }
     if (this.feedbackState === 'success' && Date.now() < this.successFeedbackUntil) return;
 
     let state: FeedbackState;
@@ -1029,19 +893,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     this.feedbackLastChangedAt = now;
     this.feedbackMessage = replacement ? nextMessage.replace('{0}', replacement) : nextMessage;
 
-    if (announce && stateChanged) {
-      const cueMap: Record<FeedbackState, { prefix: string; fallback?: string }> = {
-        squeeze: { prefix: 'game_squeeze', fallback: 'cue_squeeze.mp3' },
-        hold: { prefix: 'game_hold', fallback: 'cue_hold.mp3' },
-        holdAlmost: { prefix: 'game_hold', fallback: 'cue_hold.mp3' },
-        tooHard: { prefix: 'game_too_hard', fallback: 'cue_too_hard.mp3' },
-        release: { prefix: 'game_release', fallback: 'cue_release.mp3' },
-        success: { prefix: 'game_success', fallback: 'cue_rep_success.mp3' },
-      };
-      const cue = cueMap[state];
-      const cueNumber = String(this.feedbackIndices[state] + 1).padStart(2, '0');
-      this.playGameCue(`${cue.prefix}_${cueNumber}`, cue.fallback);
-    }
+    if (announce && stateChanged) this.playGameCue(state);
   }
 
   private triggerSuccessAnimation() {
@@ -1051,46 +903,33 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   goBack() {
-    // Leaving abandons the current training session, so always confirm first.
+    if (this.showExitConfirm()) return;
+    if (!this.hasStarted && this.gameFlowState() === 'ready') {
+      this.sessionExit.emit('discard');
+      return;
+    }
     this.pauseProgressionForDialog();
     this.rememberDialogFocus();
     this.showExitConfirm.set(true);
+    this.exitDialogChange.emit(true);
     this.focusDialog('exit');
   }
 
   confirmExit() {
-    this.router.navigate(['/dashboard']);
+    this.pauseProgressionForDialog();
+    this.sessionExit.emit('discard');
   }
 
   cancelExit() {
     this.showExitConfirm.set(false);
     this.resumeProgressionAfterDialog();
+    this.exitDialogChange.emit(false);
     this.restoreDialogFocus();
-  }
-
-  finishSession() {
-    // Mid-session early-finish discards nothing (it saves to /summary), but a
-    // stray tap before reaching the target still surprises the patient — so
-    // confirm whenever they finish short.
-    if (this.gameFlowState() === 'playing' && this.currentRepVal < this.targetReps) {
-      this.pauseProgressionForDialog();
-      this.rememberDialogFocus();
-      this.showFinishConfirm.set(true);
-      this.focusDialog('finish');
-      return;
-    }
-    this.router.navigate(['/summary']);
   }
 
   confirmFinish() {
-    this.showFinishConfirm.set(false);
-    this.router.navigate(['/summary']);
-  }
-
-  cancelFinish() {
-    this.showFinishConfirm.set(false);
-    this.resumeProgressionAfterDialog();
-    this.restoreDialogFocus();
+    this.pauseProgressionForDialog();
+    this.sessionExit.emit('save');
   }
 
   /** Keep keyboard and switch-control users inside the active confirmation dialog. */
@@ -1102,14 +941,16 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     if (event.key === 'Escape') {
       event.preventDefault();
       if (this.showExitConfirm()) this.cancelExit();
-      else if (this.showFinishConfirm()) this.cancelFinish();
       return;
     }
 
     if (event.key !== 'Tab') return;
-    const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+    // The navbar remains available even when a training dialog is open.
+    const navbar = document.querySelector<HTMLElement>('[data-app-navbar]');
+    const selector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusable = [...(navbar ? Array.from(navbar.querySelectorAll<HTMLElement>(selector)) : []), ...Array.from(dialog.querySelectorAll<HTMLElement>(
       'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )).filter(element => element.offsetParent !== null);
+    ))].filter(element => element.offsetParent !== null);
     if (focusable.length === 0) return;
 
     const first = focusable[0];
@@ -1126,7 +967,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private getActiveDialog(): HTMLElement | null {
     const dialogType = this.showExitConfirm()
       ? 'exit'
-      : (this.showFinishConfirm() ? 'finish' : (this.gameFlowState() === 'ready' ? 'start' : null));
+      : (this.gameFlowState() === 'ready' ? 'start' : null);
     return dialogType ? this.host.nativeElement.querySelector(`[data-dialog="${dialogType}"]`) : null;
   }
 
@@ -1136,12 +977,12 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     }
   }
 
-  private focusDialog(dialogType: 'exit' | 'finish' | 'start') {
+  private focusDialog(dialogType: 'exit' | 'start') {
     if (this.dialogFocusTimer) clearTimeout(this.dialogFocusTimer);
     this.dialogFocusTimer = setTimeout(() => {
       const dialog = this.host.nativeElement.querySelector<HTMLElement>(`[data-dialog="${dialogType}"]`);
-      const firstButton = dialog?.querySelector<HTMLElement>('button:not([disabled])');
-      firstButton?.focus();
+      const title = dialog?.querySelector<HTMLElement>('h2[tabindex]');
+      title?.focus({ preventScroll: true });
       this.dialogFocusTimer = null;
     });
   }
@@ -1153,7 +994,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       clearTimeout(this.dialogFocusTimer);
       this.dialogFocusTimer = null;
     }
-    setTimeout(() => returnFocus?.focus());
+    this.dialogFocusTimer = setTimeout(() => {
+      returnFocus?.focus();
+      this.dialogFocusTimer = null;
+    });
   }
 
   startCountdown(resetCountdown = true) {
@@ -1185,6 +1029,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   startGame() {
+    this.hasStarted = true;
     this.progressionPaused = false;
     this.pausedFlow = null;
     this.gameFlowState.set('playing');
@@ -1199,6 +1044,8 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.destroyed = true;
+    this.unregisterNavbar?.();
     this.stopGameLoop();
     if (this.countdownTimer) {
       clearInterval(this.countdownTimer);

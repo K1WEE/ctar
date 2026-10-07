@@ -1,4 +1,6 @@
-import { Injectable, signal, NgZone } from '@angular/core';
+import { Injectable, signal, computed, NgZone } from '@angular/core';
+
+export type BatteryLevel = 'unknown' | 'normal' | 'low' | 'critical' | 'empty';
 
 export type ConnectionState = 'Disconnected' | 'Scanning' | 'Connected';
 
@@ -15,6 +17,50 @@ export class BleService {
   public connectionState = signal<ConnectionState>('Disconnected');
   public deviceName = signal<string>('No Device');
   public error = signal<string | null>(null);
+  public batteryPercent = signal<number | null>(null);
+  public batteryLevel = computed<BatteryLevel>(() => {
+    const percent = this.batteryPercent();
+    if (percent === null) return 'unknown';
+    if (percent === 0) return 'empty';
+    if (percent <= 10) return 'critical';
+    if (percent <= 20) return 'low';
+    return 'normal';
+  });
+  public batteryNotice = signal<BatteryLevel | null>(null);
+  public isSimulated = signal(false);
+  private warnedBatteryLevels = new Set<BatteryLevel>();
+
+  private resetBattery(): void {
+    this.batteryPercent.set(null);
+    this.batteryNotice.set(null);
+    this.warnedBatteryLevels.clear();
+    this.isSimulated.set(false);
+  }
+
+  private updateBattery(percent: number | null): void {
+    this.batteryPercent.set(percent);
+    const level = this.batteryLevel();
+    if (level === 'unknown' || level === 'normal') {
+      this.batteryNotice.set(null);
+    } else if (!this.warnedBatteryLevels.has(level)) {
+      this.warnedBatteryLevels.add(level);
+      this.batteryNotice.set(level);
+    } else if (this.batteryNotice() !== level) {
+      this.batteryNotice.set(null);
+    }
+  }
+
+  public dismissBatteryNotice(): void {
+    this.batteryNotice.set(null);
+  }
+
+  /** Change battery levels in the existing mock session without touching hardware. */
+  public setMockBatteryPercent(percent: number): void {
+    if (this.isSimulated() && Number.isInteger(percent) && percent >= 0 && percent <= 100) {
+      this.updateBattery(percent);
+    }
+  }
+
   /** Timestamp of the most recent valid force sample, or null until one arrives. */
   public lastSampleAt = signal<number | null>(null);
 
@@ -141,7 +187,11 @@ export class BleService {
    * Listens to keyboard/touch to smoothly simulate pressure.
    */
   simulateDevice() {
+    if (this.simInterval) clearInterval(this.simInterval);
     this.ngZone.run(() => {
+      this.resetBattery();
+      this.isSimulated.set(true);
+      this.updateBattery(100);
       this.connectionState.set('Connected');
       this.deviceName.set('Mock CTAR Device');
       this.error.set(null);
@@ -187,6 +237,7 @@ export class BleService {
       return;
     }
 
+    this.resetBattery();
     this.error.set(null);
     this.connectionState.set('Scanning');
     this.lastSampleAt.set(null);
@@ -216,6 +267,7 @@ export class BleService {
     } catch (err: any) {
       this.ngZone.run(() => {
         this.error.set(err.message || 'GATT Connection failed.');
+        this.resetBattery();
         this.connectionState.set('Disconnected');
         console.error('BLE Connect Error:', err);
       });
@@ -246,6 +298,7 @@ export class BleService {
   private onDisconnected(): void {
     this.removeSimulationListeners();
     this.ngZone.run(() => {
+      this.resetBattery();
       this.connectionState.set('Disconnected');
       this.deviceName.set('No Device');
       this.lastSampleAt.set(null);
@@ -265,13 +318,19 @@ export class BleService {
   }
 
   /**
-   * Extracts raw bytes from ESP32 characteristic buffer stream, parsing it strictly 
-   * as a 32-bit Little Endian Unsigned Integer (Uint32), scaling it appropriately.
+   * Decode little-endian float32 force, followed by an optional uint8 battery.
+   * Ignore struct padding; legacy four-byte force packets remain supported.
    */
   private handleCharacteristicValueChanged(event: any): void {
     const value: DataView = event.target.value;
     
     if (value.byteLength >= 4) {
+      const battery = value.byteLength >= 5 ? value.getUint8(4) : null;
+      // Battery validity does not affect the force pipeline or its freshness.
+      const percent = battery !== null && battery <= 100 ? battery : null;
+      if (percent !== this.batteryPercent()) {
+        this.ngZone.run(() => this.updateBattery(percent));
+      }
       let forceValue: number;
       try {
         forceValue = value.getFloat32(0, true);

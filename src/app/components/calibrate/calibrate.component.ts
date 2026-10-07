@@ -29,263 +29,140 @@ import { calibrationStepForState } from './calibrate-flow';
     ]),
   ],
   template: `
-    <div class="min-h-screen flex flex-col items-center justify-start sm:justify-center p-3 sm:p-6 bg-slate-50 dark:bg-slate-950 transition-colors duration-300 overflow-y-auto">
-      <!-- Keep the instructions available on short phones; the page may scroll instead of clipping the flow. -->
-      <div [@.disabled]="prefersReducedMotion" class="calibrate-card my-3 sm:my-0 w-full max-w-md min-h-[82vh] sm:min-h-0 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-md border border-slate-200 dark:border-slate-700 text-center relative transition-colors duration-300 flex flex-col justify-between scrollbar-thin">
-        
-        <!-- Header Actions -->
-        <div class="flex items-center justify-between mb-4 shrink-0 relative z-10">
-          <button (click)="goBack()"
-            [attr.aria-label]="backButtonLabel()"
-            [title]="backButtonLabel()"
-            class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors shrink-0 cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-            <i class="fa-solid text-lg" [ngClass]="state() === 'intro' ? 'fa-arrow-left' : 'fa-rotate-left'" aria-hidden="true"></i>
-          </button>
-          
-          <!-- Connection Icon status tracker -->
-          <div class="w-14 h-14 rounded-full flex items-center justify-center shadow-inner border absolute left-1/2 -translate-x-1/2 transition-colors duration-300"
-               [ngClass]="bleService.connectionState() === 'Connected' 
-                 ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
-                 : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border-slate-200 dark:border-slate-700'">
-            <i class="text-2xl" 
-               [ngClass]="bleService.connectionState() === 'Connected' 
-                 ? 'fa-solid fa-check text-emerald-600 dark:text-emerald-400'
-                 : 'fa-brands fa-bluetooth-b text-blue-600 dark:text-blue-400'"></i>
-          </div>
-          <div class="w-12 h-12"></div>
-        </div>
-
-        <nav aria-label="Calibration progress" class="mb-3 w-full">
-          <ol class="grid grid-cols-3 gap-2 text-caption font-extrabold text-center">
-            <li *ngFor="let step of [1, 2, 3]"
-                class="rounded-xl border px-2 py-2 transition-colors"
-                [ngClass]="step <= currentStep
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-300'
-                  : 'border-slate-200 bg-slate-50 text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'"
-                [attr.aria-current]="step === currentStep ? 'step' : null">
-              <span class="block text-label">{{ step }}</span>
-              <span>{{ stepLabel(step) }}</span>
+    <section class="calibration" [@.disabled]="prefersReducedMotion" [attr.data-state]="state()" aria-labelledby="calibration-title">
+      <header class="flow-header">
+        <nav [attr.aria-label]="i18n.currentLang() === 'th' ? 'ขั้นตอนการเตรียมฝึก' : 'Training preparation'">
+          <ol class="progress-steps">
+            <li *ngFor="let step of [1, 2, 3]" [class.reached]="step <= currentStep" [attr.aria-current]="step === currentStep ? 'step' : null">
+              <span class="step-number">{{ step }}</span><span>{{ stepLabel(step) }}</span>
             </li>
           </ol>
         </nav>
-        
-        <!-- Main content area that expands vertically to push footer to the bottom -->
-        <div class="flex-1 flex flex-col justify-center py-2">
-          <h2 class="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white mb-2 leading-tight" role="status" aria-live="polite">{{ getPageStateTitle() }}</h2>
-          
-          <!-- Subtitle help text in active testing to remove bottom help cards -->
-          <p *ngIf="state() === 'pulling'" @panelSwap class="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400 mb-3">
-            {{ i18n.currentLang() === 'th' ? 'ก้มคางกดลงค้างไว้ให้แรงที่สุด!' : 'Press and hold your chin down as hard as you can!' }}
+        <button *ngIf="state() !== 'intro'" type="button" class="restart" (click)="goBack()" [attr.aria-label]="backButtonLabel()" [title]="backButtonLabel()">
+          <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="workspace">
+        <h1 id="calibration-title" role="status" aria-live="polite">{{ getPageStateTitle() }}</h1>
+        <div *ngIf="state() !== 'finished'" class="device-guide" aria-hidden="true">
+          <app-chin-tuck-demo size="lg" [showLabel]="false"></app-chin-tuck-demo>
+        </div>
+        <div class="guidance">
+          <ol *ngIf="state() === 'intro' || state() === 'waiting'" class="instructions">
+            <li><span>1</span><p>{{ i18n.t('onboarding.step1') }}</p></li>
+            <li><span>2</span><p>{{ i18n.t('onboarding.step2') }}</p></li>
+            <li><span>3</span><p>{{ i18n.t('onboarding.step3') }}</p></li>
+          </ol>
+          <div *ngIf="state() === 'pulling'" class="measurement">
+            <p class="press-instruction">{{ i18n.currentLang() === 'th' ? 'ก้มคางกดลงค้างไว้ให้แรงที่สุด!' : 'Press and hold your chin down as hard as you can!' }}</p>
+            <p>{{ i18n.currentLang() === 'th' ? 'แรงกดขณะนี้' : 'Current Force' }}</p>
+            <p class="force">{{ ctar.currentForce() | number:'1.0-1' }}<span>N</span></p>
+            <p class="timer"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ i18n.currentLang() === 'th' ? 'เวลาบันทึกแรง:' : 'Testing time:' }} {{ timeLeft() }}s</p>
+          </div>
+          <div *ngIf="state() === 'finished'" class="measurement result">
+            <p>{{ i18n.currentLang() === 'th' ? 'แรงกดสูงสุดที่ทดสอบได้' : 'Peak Force Measured' }}</p>
+            <p class="force">{{ averagePeak | number:'1.0-1' }}<span>N</span></p>
+            <p class="success"><i class="fa-solid fa-check" aria-hidden="true"></i> {{ i18n.currentLang() === 'th' ? 'บันทึกแรงกดสำเร็จ พร้อมเริ่มเล่นเกม' : 'Force calibrated successfully' }}</p>
+          </div>
+          <p *ngIf="state() === 'waiting' && showWaitingHint()" role="alert" class="notice">
+            {{ i18n.currentLang() === 'th' ? 'ยังไม่พบแรงกดจากอุปกรณ์ ลองตรวจสอบว่าสวมอุปกรณ์ถูกต้อง หรือกดคางลงอีกครั้ง' : 'No force detected yet. Check the device is positioned correctly, then press your chin down again.' }}
           </p>
-
-          <!-- Persistent demo anchor: stays in place across intro/waiting/pulling so the
-               panel swap below it doesn't yank the user's main visual reference.
-               Grows to lg once the device is connected to emphasize "press as hard as you can" -->
-          <div *ngIf="state() !== 'finished'" class="flex justify-center mb-3">
-            <app-chin-tuck-demo [size]="state() === 'waiting' ? 'lg' : 'md'" [showLabel]="false" class="demo-animation"></app-chin-tuck-demo>
-          </div>
-
-          <!-- UNIFIED DISPLAY: Steps during both Intro (Connecting) and Waiting (Ready) states -->
-          <div *ngIf="state() === 'intro' || state() === 'waiting'" @panelSwap class="flex flex-col items-center w-full mb-3">
-            <!-- Steps block for seniors (larger text and badges) -->
-            <div class="steps-block space-y-3 text-left w-full bg-slate-100/50 dark:bg-slate-800/30 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800/50">
-              <div class="flex items-center gap-3 text-lg sm:text-xl text-slate-700 dark:text-slate-300 font-extrabold">
-                <span class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-base font-black shrink-0 shadow-sm">1</span>
-                <span>{{ i18n.t('onboarding.step1') }}</span>
-              </div>
-              <div class="flex items-center gap-3 text-lg sm:text-xl text-slate-700 dark:text-slate-300 font-extrabold">
-                <span class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-base font-black shrink-0 shadow-sm">2</span>
-                <span>{{ i18n.t('onboarding.step2') }}</span>
-              </div>
-              <div class="flex items-center gap-3 text-lg sm:text-xl text-slate-700 dark:text-slate-300 font-extrabold">
-                <span class="w-8 h-8 rounded-full bg-cyan-600 text-white flex items-center justify-center text-base font-black shrink-0 shadow-sm">3</span>
-                <span>{{ i18n.t('onboarding.step3') }}</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- WAITING state: the device is connected and the start-press is detected
-               silently in the background. The steps block, demo animation, and the
-               spoken cue already tell the user to press, so no progress box is shown.
-               Only this safety hint surfaces, and only after a stall with no force. -->
-          <div *ngIf="state() === 'waiting' && showWaitingHint()" @panelSwap role="alert"
-               class="mt-1 mb-2 bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 p-4 rounded-xl text-left text-base font-extrabold w-full flex items-start gap-2">
-            <i class="fa-solid fa-circle-info text-lg mt-0.5 shrink-0" aria-hidden="true"></i>
-            <span>{{ i18n.currentLang() === 'th' ? 'ยังไม่พบแรงกดจากอุปกรณ์ ลองตรวจสอบว่าสวมอุปกรณ์ถูกต้อง หรือกดคางลงอีกครั้ง' : 'No force detected yet. Check the device is positioned correctly, then press your chin down again.' }}</span>
-          </div>
-
-          <div *ngIf="calibrationError()" @panelSwap role="alert"
-               class="mt-1 mb-2 bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 p-3 rounded-xl text-left text-sm font-bold w-full flex items-start gap-2">
-            <i class="fa-solid fa-triangle-exclamation text-base mt-0.5 shrink-0" aria-hidden="true"></i>
-            <span>{{ i18n.currentLang() === 'th' ? 'ยังวัดแรงกดไม่ได้ กรุณากดค้างให้แรงขึ้น แล้วลองปรับตั้งค่าใหม่' : 'No usable press was measured. Press and hold harder, then try calibration again.' }}</span>
-          </div>
-
-          <!-- PULLING PANEL: Active Strength Test (demo SVG lives in the persistent anchor above) -->
-          <div *ngIf="state() === 'pulling'" @panelSwap class="flex flex-col items-center w-full">
-
-            <!-- Highly Compact Inner Card (Without pink background color) -->
-            <div class="w-full rounded-2xl p-5 mb-3 border-2 transition-all duration-300 shadow-sm flex flex-col items-center border-rose-200 dark:border-rose-900/30">
-
-              <p class="text-base sm:text-lg font-black text-slate-600 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-                {{ i18n.currentLang() === 'th' ? 'แรงกดขณะนี้' : 'Current Force' }}
-              </p>
-              
-              <!-- Live force value -->
-              <div class="text-6xl sm:text-7xl font-black text-rose-600 dark:text-rose-400 tabular-nums tracking-tight mb-3">
-                {{ ctar.currentForce() | number:'1.0-1' }}<span class="text-xl sm:text-2xl font-bold ml-1">N</span>
-              </div>
-              
-              <!-- Timer Badge -->
-              <div class="px-5 py-2 bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 rounded-full font-black text-base flex items-center gap-1.5 shadow-sm">
-                <i class="fa-regular fa-clock"></i>
-                <span>{{ i18n.currentLang() === 'th' ? 'เวลาบันทึกแรง:' : 'Testing time:' }} {{ timeLeft() }}s</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- FINISHED PANEL: Result + Auto Navigate (Highly Compact) -->
-          <div *ngIf="state() === 'finished'" @panelSwap class="space-y-4 w-full pt-2 flex flex-col items-center justify-center">
-            
-            <div class="text-slate-600 dark:text-slate-300 font-black text-base uppercase tracking-wider">
-              {{ i18n.currentLang() === 'th' ? 'แรงกดสูงสุดที่ทดสอบได้' : 'Peak Force Measured' }}
-            </div>
-            
-            <!-- Result value -->
-            <div class="text-6xl sm:text-7xl font-black text-emerald-500 dark:text-emerald-400 tabular-nums tracking-tight mb-2">
-              {{ averagePeak | number:'1.0-1' }}<span class="text-xl sm:text-2xl font-bold ml-1">N</span>
-            </div>
-
-            <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 max-w-sm mx-auto text-emerald-700 dark:text-emerald-400 text-base font-extrabold flex items-center justify-center gap-2">
-              <i class="fa-solid fa-circle-check text-lg text-emerald-500"></i>
-              <span>{{ i18n.currentLang() === 'th' ? 'บันทึกแรงกดสำเร็จ พร้อมเริ่มเล่นเกม' : 'Force calibrated successfully' }}</span>
-            </div>
+          <p *ngIf="calibrationError()" role="alert" class="notice error">
+            {{ i18n.currentLang() === 'th' ? 'ยังวัดแรงกดไม่ได้ กรุณากดค้างให้แรงขึ้น แล้วลองปรับตั้งค่าใหม่' : 'No usable press was measured. Press and hold harder, then try calibration again.' }}
+          </p>
+          <p *ngIf="state() === 'intro' && disconnectWarning" role="alert" class="notice error">
+            {{ i18n.currentLang() === 'th' ? 'การเชื่อมต่ออุปกรณ์ขาดหาย! กรุณาเชื่อมต่อใหม่อีกครั้ง' : 'Device disconnected! Please connect again.' }}
+          </p>
+          <div *ngIf="state() === 'intro' && bleService.error()" role="alert" class="notice error">
+            <p class="font-bold">{{ i18n.t('error.title') }}</p><p>{{ friendlyError(bleService.error()) }}</p>
           </div>
         </div>
-
-        <!-- Footer Actions area -->
-        <div class="mt-3 w-full shrink-0">
-          <!-- INTRO PANEL: Connect Buttons -->
-          <div *ngIf="state() === 'intro'" @panelSwap class="space-y-2.5 w-full">
-            <button 
-              (click)="connect()"
-              class="px-6 min-h-[58px] w-full bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-xl flex items-center justify-center cursor-pointer border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-              <i class="fa-solid fa-link mr-2.5 text-lg"></i> {{ i18n.t('connect.btnConnect') }}
-            </button>
-            
-            <button *ngIf="supabase.userRole() === 'admin' || isDevMode()"
-              (click)="simulate()"
-              class="px-6 min-h-[48px] w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-extrabold rounded-2xl transition-all duration-300 flex items-center justify-center text-base border border-slate-200 dark:border-slate-700 mt-2 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-              <i class="fa-solid fa-flask mr-1.5"></i> {{ i18n.t('connect.btnSimulate') }}
-            </button>
-            
-            <!-- Disconnection warning -->
-            <div *ngIf="disconnectWarning" role="alert" class="mt-2.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-xl text-left text-base font-extrabold w-full flex items-start gap-2">
-              <i class="fa-solid fa-circle-exclamation text-lg mt-0.5 shrink-0 text-red-500"></i>
-              <span>{{ i18n.currentLang() === 'th' ? 'การเชื่อมต่ออุปกรณ์ขาดหาย! กรุณาเชื่อมต่อใหม่อีกครั้ง' : 'Device disconnected! Please connect again.' }}</span>
-            </div>
-            
-            <div *ngIf="bleService.error()" role="alert" class="mt-2.5 bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl text-left text-base">
-              <p class="font-black flex items-center"><i class="fa-solid fa-circle-exclamation mr-1.5 text-lg"></i> {{ i18n.t('error.title') }}</p>
-              <p class="mt-0.5 text-base">{{ friendlyError(bleService.error()) }}</p>
-            </div>
-          </div>
-
-          <!-- Mock Squeeze Button (waiting + pulling): a single persistent element so the
-               waiting->pulling swap never removes the button mid-press; only color/text shift -->
-          <div *ngIf="(state() === 'waiting' || state() === 'pulling') && bleService.deviceName() === 'Mock CTAR Device'" @panelSwap class="w-full">
-            <button
-              (mousedown)="setMockSqueezing(true)"
-              (mouseup)="setMockSqueezing(false)"
-              (touchstart)="setMockSqueezing(true)"
-              (touchend)="setMockSqueezing(false)"
-              class="px-6 min-h-[58px] w-full bg-gradient-to-r text-white font-black rounded-2xl shadow-md transition-all duration-300 select-none cursor-pointer flex items-center justify-center text-lg border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
-              [ngClass]="state() === 'pulling'
-                ? 'from-rose-700 to-orange-700 hover:from-rose-800 hover:to-orange-800 focus-visible:ring-rose-300'
-                : 'from-amber-700 to-orange-700 hover:from-amber-800 hover:to-orange-800 focus-visible:ring-amber-300'">
-              <i class="fa-solid fa-circle-chevron-down mr-2 text-lg"></i>
-              {{ state() === 'pulling'
-                ? (i18n.currentLang() === 'th' ? 'กดค้างไว้ต่อเนื่อง...' : 'Keep holding...')
-                : (i18n.currentLang() === 'th' ? 'กดค้างตรงนี้เพื่อกดจำลองแรง' : 'Hold here to simulate force') }}
-            </button>
-          </div>
-
-          <!-- FINISHED PANEL: Result + Explicit Start -->
-          <div *ngIf="state() === 'finished'" @panelSwap class="w-full pt-1.5 flex flex-col gap-2.5">
-            <button
-              (click)="goToGame()"
-              class="px-6 min-h-[58px] w-full bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-800 hover:to-teal-800 text-white font-black rounded-2xl shadow-md transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] text-xl border-0 cursor-pointer focus:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900">
-              {{ i18n.currentLang() === 'th' ? 'เริ่มเล่นเกม →' : 'Start Game →' }}
-            </button>
-            <div *ngIf="autoNavCountdown() !== null" class="flex items-center justify-center gap-3" role="status" aria-live="polite">
-              <span class="text-base text-slate-600 dark:text-slate-300 font-extrabold tabular-nums">
-                {{ i18n.currentLang() === 'th' ? 'เริ่มเกมอัตโนมัติใน' : 'Starting automatically in' }} {{ autoNavCountdown() }} {{ i18n.currentLang() === 'th' ? 'วินาที' : 's' }}
-              </span>
-              <button (click)="cancelAutoNav()"
-                class="min-h-[48px] px-4 text-base font-bold text-slate-600 dark:text-slate-300 underline underline-offset-4 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer bg-transparent border-0 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/70 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 rounded-xl">
-                {{ i18n.currentLang() === 'th' ? 'ยกเลิก' : 'Cancel' }}
-              </button>
-            </div>
-          </div>
-        </div>
-
       </div>
-    </div>
+
+      <footer class="actions">
+        <ng-container *ngIf="state() === 'intro'">
+          <button type="button" class="primary" (click)="connect()"><i class="fa-solid fa-link" aria-hidden="true"></i> {{ i18n.t('connect.btnConnect') }}</button>
+          <button *ngIf="supabase.userRole() === 'admin' || isDevMode()" type="button" class="secondary" (click)="simulate()"><i class="fa-solid fa-flask" aria-hidden="true"></i> {{ i18n.t('connect.btnSimulate') }}</button>
+        </ng-container>
+        <button *ngIf="(state() === 'waiting' || state() === 'pulling') && bleService.deviceName() === 'Mock CTAR Device'" type="button" class="primary simulate"
+          (mousedown)="setMockSqueezing(true)" (mouseup)="setMockSqueezing(false)" (mouseleave)="setMockSqueezing(false)"
+          (touchstart)="setMockSqueezing(true)" (touchend)="setMockSqueezing(false)" (touchcancel)="setMockSqueezing(false)"
+          (keydown.space)="$event.preventDefault(); setMockSqueezing(true)" (keyup.space)="setMockSqueezing(false)"
+          (keydown.enter)="setMockSqueezing(true)" (keyup.enter)="setMockSqueezing(false)" (blur)="setMockSqueezing(false)">
+          {{ state() === 'pulling' ? (i18n.currentLang() === 'th' ? 'กดค้างไว้ต่อเนื่อง...' : 'Keep holding...') : (i18n.currentLang() === 'th' ? 'กดค้างตรงนี้เพื่อกดจำลองแรง' : 'Hold here to simulate force') }}
+        </button>
+        <ng-container *ngIf="state() === 'finished'">
+          <button type="button" class="primary" (click)="goToGame()">{{ i18n.currentLang() === 'th' ? 'เริ่มเล่นเกม →' : 'Start Game →' }}</button>
+          <div *ngIf="autoNavCountdown() !== null" class="auto-start" role="status" aria-live="polite">
+            <span>{{ i18n.currentLang() === 'th' ? 'เริ่มเกมอัตโนมัติใน' : 'Starting automatically in' }} {{ autoNavCountdown() }} {{ i18n.currentLang() === 'th' ? 'วินาที' : 's' }}</span>
+            <button type="button" class="secondary" (click)="cancelAutoNav()">{{ i18n.currentLang() === 'th' ? 'ยกเลิก' : 'Cancel' }}</button>
+          </div>
+        </ng-container>
+      </footer>
+    </section>
   `,
   styles: [`
-    /* Desktop layout optimization for short height screens to prevent vertical overflow */
-    @media (min-width: 640px) and (max-height: 850px) {
-      .min-h-screen {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-      }
-      .calibrate-card {
-        padding: 1.5rem !important;
-        max-width: 384px !important;
-      }
-      .calibrate-card h2 {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.25rem !important;
-        margin-top: 0.25rem !important;
-      }
-      ::ng-deep .chin-tuck-svg {
-        max-width: 125px !important;
-      }
-      .steps-block {
-        padding: 0.75rem !important;
-        gap: 0.25rem !important;
-      }
-      .steps-block span.rounded-full {
-        width: 1.5rem !important;
-        height: 1.5rem !important;
-        font-size: 0.8rem !important;
-      }
-      .text-7xl {
-        font-size: 4rem !important;
-      }
+    :host { display:block; background:#fff; color:#1e293b; }
+    .calibration { min-height:calc(100dvh - var(--app-navbar-height, 0px)); max-width:1200px; margin:auto; padding:20px 32px max(16px, env(safe-area-inset-bottom)); display:grid; grid-template-rows:auto 1fr auto; gap:16px; }
+    .flow-header { display:flex; align-items:center; gap:16px; border-bottom:1px solid #e2e8f0; padding-bottom:12px; }
+    nav { flex:1; }
+    .progress-steps { display:flex; justify-content:space-between; gap:12px; max-width:560px; margin:auto; }
+    .progress-steps li { display:flex; align-items:center; gap:8px; color:#64748b; font-size:.875rem; }
+    .step-number { width:28px; height:28px; display:grid; place-items:center; border:1px solid #cbd5e1; border-radius:50%; flex-shrink:0; }
+    .reached { color:#1d4ed8 !important; font-weight:700; }
+    .reached .step-number { color:white; background:#1d4ed8; border-color:#1d4ed8; }
+    .restart { width:44px; height:44px; flex-shrink:0; border-radius:8px; }
+    .workspace { display:grid; grid-template-columns:1fr 1.2fr; grid-template-rows:auto 1fr; column-gap:48px; align-items:center; align-content:center; padding:16px 0; }
+    h1 { grid-column:1 / -1; font-size:clamp(1.5rem, 3vw, 2.5rem); line-height:1.3; font-weight:700; margin-bottom:20px; }
+    .device-guide { display:flex; align-items:center; justify-content:center; align-self:stretch; background:#f8fafc; border-radius:16px; }
+    .instructions { display:grid; gap:24px; }
+    .instructions li { display:flex; align-items:baseline; gap:16px; font-size:1.25rem; line-height:1.5; }
+    .instructions li > span { color:#1d4ed8; font-weight:700; font-variant-numeric:tabular-nums; }
+    .notice { margin-top:16px; padding:12px; background:#eff6ff; color:#1e40af; border-radius:8px; font-size:1rem; line-height:1.45; }
+    .error { background:#fff7ed; color:#9a3412; }
+    .measurement { text-align:center; }
+    .press-instruction { margin-bottom:16px; font-size:1.25rem; font-weight:600; }
+    .force { font-size:clamp(3rem, 8vw, 5rem); line-height:1.2; font-weight:700; font-variant-numeric:tabular-nums; color:#1d4ed8; margin:12px 0; }
+    .force span { font-size:1.25rem; margin-left:8px; }
+    .success { color:#047857; }
+    [data-state="finished"] .guidance { grid-column:1 / -1; }
+    .actions { display:flex; flex-direction:column; align-items:center; gap:4px; padding-top:16px; border-top:1px solid #e2e8f0; }
+    .primary { width:100%; max-width:480px; min-height:52px; padding:12px 20px; border-radius:10px; background:#1d4ed8; color:white; font-size:1.125rem; font-weight:700; }
+    .primary:hover { background:#1e40af; }
+    .secondary { min-height:44px; padding:8px 12px; color:#475569; font-size:.875rem; text-decoration:underline; text-underline-offset:4px; }
+    .secondary:hover, .restart:hover { background:#f1f5f9; }
+    .simulate { touch-action:none; user-select:none; }
+    .auto-start { display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:8px; }
+    :host-context(.dark) { background:#0f172a; color:#e2e8f0; }
+    :host-context(.dark) .device-guide { background:#1e293b; }
+    :host-context(.dark) .flow-header, :host-context(.dark) .actions { border-color:#334155; }
+    :host-context(.dark) .secondary, :host-context(.dark) .progress-steps li { color:#cbd5e1; }
+    :host-context(.dark) .reached, :host-context(.dark) .force, :host-context(.dark) .instructions li > span { color:#93c5fd !important; }
+    :host-context(.dark) .success { color:#6ee7b7; }
+    :host-context(.dark) .secondary:hover, :host-context(.dark) .restart:hover { background:#334155; }
+    @media(max-width:639px) {
+      .calibration { padding:12px 20px max(12px, env(safe-area-inset-bottom)); gap:12px; }
+      .flow-header { gap:8px; padding-bottom:8px; }
+      .progress-steps { gap:8px; }
+      .progress-steps li { gap:4px; font-size:.8rem; }
+      .step-number { width:24px; height:24px; }
+      .workspace { grid-template-columns:1fr; grid-template-rows:auto minmax(80px, 1fr) auto; gap:12px; padding:0; }
+      h1 { margin:0; }
+      .device-guide { background:transparent; min-height:80px; }
+      .device-guide ::ng-deep .chin-tuck-svg { width:auto; height:clamp(80px, 18dvh, 170px); }
+      .instructions { gap:12px; }
+      .instructions li { font-size:1rem; gap:12px; }
+      .actions { padding-top:12px; }
+      .notice { margin-top:12px; }
+      [data-state="finished"] .workspace { grid-template-rows:auto 1fr; }
     }
-    
-    @media (max-height: 720px) {
-      .calibrate-card {
-        padding: 1.25rem !important;
-      }
-      .calibrate-card h2 {
-        font-size: 1.25rem !important;
-      }
-      ::ng-deep .chin-tuck-svg {
-        max-width: 110px !important;
-      }
-      .steps-block {
-        padding: 0.5rem 0.75rem !important;
-      }
-      .text-7xl {
-        font-size: 3.5rem !important;
-      }
-    }
-
-    @media (max-height: 640px) {
-      ::ng-deep .chin-tuck-svg {
-        max-width: 90px !important;
-      }
+    @media(max-height:700px) and (max-width:639px) {
+      .calibration { gap:8px; padding-top:8px; }
+      .workspace { grid-template-rows:auto auto; gap:8px; }
+      .device-guide { display:none; }
+      .instructions { gap:8px; }
+      .notice { padding:8px; margin-top:4px; font-size:.875rem; }
     }
   `]
 })

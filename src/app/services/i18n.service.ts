@@ -124,6 +124,7 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'summary.title': { th: 'ฝึกเสร็จแล้ว!', en: 'Session Complete!' },
   'summary.subtitle': { th: 'เก่งมาก! คุณฝึกเสร็จเรียบร้อยแล้ว', en: 'Great job completing your therapy session.' },
   'summary.saving': { th: 'กำลังบันทึกผลอย่างปลอดภัย...', en: 'Saving your progress securely...' },
+  'game.sessionComplete': { th: 'ฝึกครบแล้ว พักได้เลย', en: 'Training complete. You can relax.' },
   'summary.duration': { th: 'ระยะเวลา', en: 'Duration' },
   'summary.reps': { th: 'จำนวนครั้ง', en: 'Total Reps' },
   'summary.peakForce': { th: 'แรงกดสูงสุด', en: 'Peak Force' },
@@ -269,6 +270,10 @@ export class I18nService {
 
   toggleLang() {
     this.currentLang.update(lang => lang === 'th' ? 'en' : 'th');
+  }
+
+  setLang(lang: Lang) {
+    this.currentLang.set(lang);
   }
 
   /** The shipped voice pack is Thai; avoid requesting missing English files. */

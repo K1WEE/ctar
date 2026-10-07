@@ -35,13 +35,19 @@ public getDataHistory() {
   return [...this.dataHistory];
 }
 public getSessionDurationSeconds() {
-  if (this.dataHistory.length === 0) return 0;
-
-  const start = this.dataHistory[0].timestamp;
-  const end = this.dataHistory[this.dataHistory.length - 1].timestamp;
-
-  return Math.round((end - start) / 1000);
+  return Math.round(this.recordedDurationMs / 1000);
 }
+
+  /** Keep live force available, but exclude decision time from the training result. */
+  public setSessionPaused(paused: boolean): void {
+    if (this.sessionPaused === paused) return;
+    this.sessionPaused = paused;
+    this.lastRecordedAt = null;
+  }
+
+  private sessionPaused = false;
+  private lastRecordedAt: number | null = null;
+  private recordedDurationMs = 0;
 
   private dataHistory: DataPoint[] = [];
   private sessionStartTime: number = 0;
@@ -73,6 +79,9 @@ public getSessionDurationSeconds() {
   }
 
   public resetSession() {
+    this.sessionPaused = false;
+    this.lastRecordedAt = null;
+    this.recordedDurationMs = 0;
     this.sessionId = this.createSessionId();
     this.finalizedSnapshot = null;
     this.sessionSnapshotSaved = false;
@@ -167,6 +176,7 @@ public getSessionDurationSeconds() {
     }
 
     this.currentForce.set(force);
+    if (this.sessionPaused) return;
 
     // peak
     if (force > this.peakForce()) {
@@ -174,6 +184,8 @@ public getSessionDurationSeconds() {
     }
 
     const now = Date.now();
+    if (this.lastRecordedAt !== null) this.recordedDurationMs += now - this.lastRecordedAt;
+    this.lastRecordedAt = now;
 
     const elapsedTimeText =
       ((now - this.sessionStartTime) / 1000).toFixed(1) + 's';

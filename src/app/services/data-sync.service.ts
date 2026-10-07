@@ -493,7 +493,9 @@ export class DataSyncService {
           target_reps: targetReps,
           hold_duration_ms: holdDurationMs
         })
-        .eq('id', patientId);
+        .eq('id', patientId)
+        .select('id')
+        .single();
 
       if (error) throw error;
       return true;

@@ -6,27 +6,23 @@ import { DataSyncService, RawDataPoint } from '../../../services/data-sync.servi
 import { I18nService } from '../../../services/i18n.service';
 import { ThemeService } from '../../../services/theme.service';
 import { Chart } from 'chart.js/auto';
-import { FontScaleControlComponent } from '../../font-scale-control/font-scale-control.component';
 
 @Component({
   selector: 'app-patient-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, FontScaleControlComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
 
         <!-- Back + Title -->
         <div class="flex items-center space-x-4 mb-6">
-          <button (click)="goBack()" class="w-12 h-12 rounded-xl bg-white/70 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-brand-accent border border-slate-200 dark:border-white/10 transition-all shadow-sm">
-            <i class="fa-solid fa-arrow-left text-lg"></i>
-          </button>
+
           <div>
             <h1 class="text-2xl font-bold text-slate-900 dark:text-white">{{ i18n.t('detail.title') }}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400" *ngIf="patient()">{{ patient().first_name }} {{ patient().last_name }}</p>
           </div>
           <div class="flex-1"></div>
-          <app-font-scale-control [inline]="true"></app-font-scale-control>
           <!-- Language Toggle -->
           <button (click)="i18n.toggleLang()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-500 hover:text-brand-accent border border-slate-200 dark:border-white/10 text-sm font-bold transition-all">
             {{ i18n.currentLang() === 'th' ? 'EN' : 'TH' }}

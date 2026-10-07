@@ -1,13 +1,14 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { BatteryStatusComponent } from '../battery-status/battery-status.component';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { HeaderComponent } from '../header/header.component';
 import { SupabaseService } from '../../services/supabase.service';
 import { DataSyncService } from '../../services/data-sync.service';
 import { I18nService } from '../../services/i18n.service';
 import { BleService } from '../../services/ble.service';
 import { CtarLogicService } from '../../services/ctar-logic.service';
 import { RewardTasksComponent } from '../reward-task/reward-task.component';
+import { NavbarService } from '../../services/navbar.service';
 
 interface SessionRecord {
   session_date: string;
@@ -19,187 +20,11 @@ interface SessionRecord {
 @Component({
   selector: 'app-patient-portal',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, RouterLink, RewardTasksComponent],
-  template: `
-    <div class="min-h-screen pb-10 relative z-10 text-slate-800 dark:text-slate-200 transition-colors duration-300">
-      <div class="max-w-md md:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        
-        <div class="mb-6 block w-full">
-           <app-header [connectionState]="bleService.connectionState" (onLogout)="logout()"></app-header>
-        </div>
+  imports: [CommonModule, BatteryStatusComponent, RouterLink, RewardTasksComponent],
+  templateUrl: './patient-portal.component.html',
 
-        <main class="animate-fade-in space-y-6">
-          
-          <!-- Hero Welcome & Quick Start Combined Card -->
-          <!-- One solid clinical-blue surface (the single "committed" colour panel
-               in the patient flow). No gradient, glow, or watermark: the brief asks
-               for solid backgrounds that keep cognitive load low. -->
-          <div class="bg-blue-700 rounded-3xl p-8 shadow-sm text-white relative overflow-hidden">
-
-            <!-- Layout Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 items-center">
-              <!-- Welcome Text (spans 3 columns on large screens) -->
-              <div class="lg:col-span-3 space-y-2.5">
-                <h2 class="text-3xl sm:text-4xl font-extrabold tracking-tight">
-                  {{ i18n.currentLang() === 'th' ? 'สวัสดี' : 'Hello' }}{{ patientName() ? ', ' + patientName() : '' }}
-                </h2>
-                <p class="text-blue-100 text-lg sm:text-xl font-semibold max-w-lg leading-relaxed">
-                  {{ i18n.currentLang() === 'th' ? 'พร้อมที่จะเริ่มฝึกกล้ามเนื้อการกลืนของคุณหรือยัง?' : 'Ready to train your swallowing muscles today?' }}
-                </p>
-                
-                <!-- Device connection status badge -->
-                <div class="pt-1.5">
-                  <span
-                    [class]="bleService.connectionState() === 'Connected'
-                      ? 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-bold bg-emerald-500/25 border border-emerald-300/40 text-emerald-100'
-                      : 'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-base font-bold bg-white/15 border border-white/25 text-blue-100'"
-                  >
-                    <span class="relative flex h-2.5 w-2.5">
-                      <span class="relative inline-flex rounded-full h-2.5 w-2.5" [class.bg-emerald-300]="bleService.connectionState() === 'Connected'" [class.bg-white]="bleService.connectionState() !== 'Connected'"></span>
-                    </span>
-                    {{ bleService.connectionState() === 'Connected' 
-                      ? (i18n.currentLang() === 'th' ? 'เชื่อมต่ออุปกรณ์แล้ว' : 'Device Connected') 
-                      : (i18n.currentLang() === 'th' ? 'ยังไม่ได้เชื่อมต่ออุปกรณ์' : 'Device Disconnected') }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Action Button Container (spans 2 columns on large screens) -->
-              <div class="lg:col-span-2 flex flex-col w-full">
-                <button
-                  [routerLink]="getPlayButtonLink()"
-                  class="relative w-full min-h-[60px] bg-white text-blue-700 hover:bg-blue-50 font-black text-xl rounded-2xl transition-colors duration-200 shadow-sm flex items-center justify-center active:scale-[0.99]">
-                  <i class="fa-solid mr-2 text-2xl" [ngClass]="getPlayButtonIcon()" aria-hidden="true"></i>
-                  {{ getPlayButtonText() }}
-                </button>
-
-                <button
-                  *ngIf="isCalibrated()"
-                  routerLink="/calibrate"
-                  class="mt-3 w-full min-h-[48px] bg-white/15 hover:bg-white/25 text-white font-bold text-base sm:text-lg rounded-xl border border-white/25 transition-colors duration-200 flex items-center justify-center active:scale-[0.99]">
-                  <i class="fa-solid fa-gauge-high mr-2"></i>
-                  {{ i18n.currentLang() === 'th' ? 'ปรับค่าแรงกดใหม่ (Recalibrate)' : 'Recalibrate Force' }}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Pending Offline Sessions Badge -->
-          <div *ngIf="dataSync.pendingSyncCount() > 0" role="status" class="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 p-4 rounded-2xl font-bold text-sm flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-cloud-arrow-up text-amber-500 text-base" aria-hidden="true"></i>
-              <span>{{ i18n.t('portal.pendingSync').replace('{0}', dataSync.pendingSyncCount().toString()) }}</span>
-            </div>
-            <button (click)="dataSync.syncPendingSessions()" class="px-3 py-1.5 bg-amber-700 text-white rounded-xl text-xs font-extrabold shadow-sm hover:bg-amber-800 transition-colors">
-              {{ i18n.currentLang() === 'th' ? 'ซิงค์ทันที' : 'Sync Now' }}
-            </button>
-          </div>
-
-          <!-- Loading placeholder: keeps the layout calm instead of empty widgets popping in -->
-          <div *ngIf="isLoading()" role="status" class="bg-white dark:bg-brand-card border border-slate-200 dark:border-slate-700 rounded-3xl p-10 shadow-sm text-center">
-            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-blue-500 mb-3" aria-hidden="true"></i>
-            <p class="font-extrabold text-lg text-slate-600 dark:text-slate-300">
-              {{ i18n.currentLang() === 'th' ? 'กำลังโหลดข้อมูลการฝึกของคุณ...' : 'Loading your training data...' }}
-            </p>
-          </div>
-
-          <!-- Fetch failure: an empty streak would wrongly read as "you never trained" -->
-          <div *ngIf="!isLoading() && loadError()" role="alert" class="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-2xl font-bold text-base flex items-start gap-2">
-            <i class="fa-solid fa-circle-exclamation text-lg mt-0.5 shrink-0" aria-hidden="true"></i>
-            <span>{{ i18n.currentLang() === 'th' ? 'โหลดข้อมูลการฝึกไม่สำเร็จ กรุณารีเฟรชหน้าอีกครั้ง' : 'Failed to load your training data. Please refresh the page.' }}</span>
-          </div>
-
-          <!-- Bottom Grid: Streak Tracker and Weekly Tasks side by side -->
-          <div *ngIf="!isLoading()" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            <!-- Weekly Streak / Consistency Tracker -->
-            <div class="bg-white dark:bg-brand-card border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm relative overflow-hidden flex flex-col justify-between h-full">
-              <div>
-                <h3 class="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center">
-                  <i class="fa-solid fa-calendar-check text-emerald-500 mr-2.5 text-2xl"></i>
-                  {{ i18n.currentLang() === 'th' ? 'การฝึกซ้อมในสัปดาห์นี้' : 'Your Training This Week' }}
-                </h3>
-                
-                <div class="flex justify-between items-center gap-2 py-2 relative z-10">
-                  <div *ngFor="let day of weekDays()" class="flex flex-col items-center flex-1">
-                    <!-- Circular Indicator: date number inside, weekday letter below (no duplication) -->
-                    <div role="img" [attr.aria-label]="getDayAria(day)"
-                      [class]="day.completed
-                        ? 'w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-emerald-700 text-white flex items-center justify-center shadow-sm font-bold border-2 border-emerald-800 relative transition-transform duration-200 hover:scale-105'
-                        : 'w-11 h-11 sm:w-12 sm:h-12 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-semibold transition-colors'"
-                    >
-                      <i *ngIf="day.completed" class="fa-solid fa-check text-base sm:text-lg" aria-hidden="true"></i>
-                      <span *ngIf="!day.completed" class="text-base font-bold">{{ day.date.getDate() }}</span>
-                    </div>
-
-                    <!-- Day label bottom -->
-                    <span
-                      class="text-sm sm:text-base mt-2 font-extrabold text-slate-600 dark:text-slate-300 transition-colors"
-                      [class.text-emerald-500]="day.dayName !== ''" 
-                    >
-                      {{ day.dayName || day.label }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Stats Row -->
-              <div *ngIf="lastSession() as last" class="mt-6 pt-5 border-t border-slate-200 dark:border-white/5 relative z-10">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl text-center">
-                    <span class="text-slate-600 dark:text-slate-300 font-bold text-base block mb-1">
-                      {{ i18n.currentLang() === 'th' ? 'แรงกดล่าสุด' : 'Latest Force' }}
-                    </span>
-                    <span class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 block">
-                      {{ last.max_force | number:'1.0-1' }}N
-                    </span>
-                  </div>
-                  <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl text-center">
-                    <span class="text-slate-600 dark:text-slate-300 font-bold text-base block mb-1">
-                      {{ i18n.currentLang() === 'th' ? 'รอบล่าสุด' : 'Latest Reps' }}
-                    </span>
-                    <span class="text-lg sm:text-xl font-black text-amber-600 dark:text-amber-400 block">
-                      {{ last.reps }} {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}
-                    </span>
-                  </div>
-                  <div class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-2xl text-center">
-                    <span class="text-slate-600 dark:text-slate-300 font-bold text-base block mb-1">
-                      {{ i18n.currentLang() === 'th' ? 'เวลารวม' : 'Duration' }}
-                    </span>
-                    <span class="text-lg sm:text-xl font-black text-sky-600 dark:text-sky-400 block">
-                      {{ formatDuration(last.duration_seconds) }}
-                    </span>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Motivating message at the bottom -->
-              <p class="text-base sm:text-lg text-slate-700 dark:text-slate-200 mt-4 text-center relative z-10 font-bold text-pretty">
-                {{ getWeeklyStreakMessage() }}
-              </p>
-
-              <!-- Mobile scroll navigation helper -->
-              <div class="md:hidden mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex justify-center relative z-10">
-                <button
-                  (click)="scrollToTasks()"
-                  class="inline-flex min-h-12 items-center gap-2 px-5 py-3 rounded-xl text-base font-extrabold bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-95 transition-all duration-200"
-                >
-                  <span>{{ i18n.currentLang() === 'th' ? 'ดูภารกิจประจำสัปดาห์ของคุณ' : 'View your weekly tasks' }}</span>
-                  <i class="fa-solid fa-arrow-down text-base"></i>
-                </button>
-              </div>
-            </div>
-
-            <!-- Weekly Tasks Component in the right column -->
-            <app-reward-tasks id="weekly-tasks-card" class="h-full block"></app-reward-tasks>
-
-          </div>
-        </main>
-      </div>
-    </div>
-  `
 })
-export class PatientPortalComponent implements OnInit {
+export class PatientPortalComponent implements OnInit, OnDestroy {
   public patientName = signal<string>('');
   public lastSession = signal<SessionRecord | null>(null);
   public isLoading = signal(true);
@@ -212,6 +37,8 @@ export class PatientPortalComponent implements OnInit {
   private supabase = inject(SupabaseService);
   private router = inject(Router);
   public dataSync = inject(DataSyncService);
+  private navbar = inject(NavbarService);
+  private releaseHomeLogout = this.navbar.registerHomeLogout(() => void this.logout());
 
   // Compute weekly streak days (Monday to Sunday) based on language and user sessions
   public weekDays = computed(() => {
@@ -220,7 +47,7 @@ export class PatientPortalComponent implements OnInit {
     const today = new Date();
     const currentDay = today.getDay(); // 0 is Sunday, 1 is Monday, etc.
     const dayIndex = currentDay === 0 ? 7 : currentDay;
-    
+
     const monday = new Date(today);
     monday.setDate(today.getDate() - (dayIndex - 1));
     monday.setHours(0, 0, 0, 0);
@@ -232,19 +59,19 @@ export class PatientPortalComponent implements OnInit {
     for (let i = 0; i < 7; i++) {
       const dayDate = new Date(monday);
       dayDate.setDate(monday.getDate() + i);
-      
+
       const completed = sessions.some(s => {
         const sDate = new Date(s.session_date);
         return sDate.getFullYear() === dayDate.getFullYear() &&
-               sDate.getMonth() === dayDate.getMonth() &&
-               sDate.getDate() === dayDate.getDate();
+          sDate.getMonth() === dayDate.getMonth() &&
+          sDate.getDate() === dayDate.getDate();
       });
 
       const label = lang === 'th' ? dayLabelsTH[i] : dayLabelsEN[i];
 
       const isToday = dayDate.getFullYear() === today.getFullYear() &&
-                      dayDate.getMonth() === today.getMonth() &&
-                      dayDate.getDate() === today.getDate();
+        dayDate.getMonth() === today.getMonth() &&
+        dayDate.getDate() === today.getDate();
 
       weekDaysList.push({
         date: dayDate,
@@ -322,15 +149,15 @@ export class PatientPortalComponent implements OnInit {
     const completedCount = this.weekDays().filter(d => d.completed).length;
 
     if (completedCount === 0) {
-      return lang === 'th' 
+      return lang === 'th'
         ? 'เริ่มต้นการฝึกซ้อมครั้งแรกในสัปดาห์นี้เลย! ทุกก้าวเล็กๆ มีความหมาย'
         : 'Start your first training session of the week! Every small step counts';
     }
 
     if (completedCount >= 7) {
       return lang === 'th'
-      ? 'มหัศจรรย์มาก! คุณฝึกครบถ้วนในสัปดาห์นี้ รักษาสุขภาพกล้ามเนื้ออย่างสมบูรณ์แบบ!'
-      : 'Amazing! You trained every single day this week. Perfect dedication!';
+        ? 'มหัศจรรย์มาก! คุณฝึกครบถ้วนในสัปดาห์นี้ รักษาสุขภาพกล้ามเนื้ออย่างสมบูรณ์แบบ!'
+        : 'Amazing! You trained every single day this week. Perfect dedication!';
     }
 
     return lang === 'th'
@@ -354,7 +181,7 @@ export class PatientPortalComponent implements OnInit {
         } else {
           this.lastSession.set(null);
         }
-      } catch(e) {
+      } catch (e) {
         console.error(e);
         this.loadError.set(true);
         this.sessionsList.set([]);
@@ -377,5 +204,9 @@ export class PatientPortalComponent implements OnInit {
 
     await this.supabase.client.auth.signOut();
     this.router.navigate(['/login']);
+  }
+
+  ngOnDestroy(): void {
+    this.releaseHomeLogout();
   }
 }

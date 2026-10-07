@@ -3,25 +3,26 @@ import { CommonModule } from '@angular/common';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
 import { SupabaseService } from './services/supabase.service';
-import { FontScaleControlComponent } from './components/font-scale-control/font-scale-control.component';
+import { AppNavbarComponent } from './components/app-navbar/app-navbar.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, FontScaleControlComponent],
+  imports: [CommonModule, RouterOutlet, AppNavbarComponent],
   template: `
-    <app-font-scale-control *ngIf="showGlobalFontControl()"></app-font-scale-control>
-    <router-outlet></router-outlet>
+    <app-navbar *ngIf="showNavbar()" [path]="currentPath()"></app-navbar>
+    <main class="app-page"><router-outlet></router-outlet></main>
   `
 })
 export class AppComponent {
-  public readonly showGlobalFontControl = signal(true);
+  public readonly showNavbar = signal(false);
+  public readonly currentPath = signal('');
 
   constructor(private supabase: SupabaseService, private router: Router) {
-    this.updateGlobalFontControl(this.router.url);
+    this.updateNavbar(this.router.url);
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
-      .subscribe(event => this.updateGlobalFontControl(event.urlAfterRedirects));
+      .subscribe(event => this.updateNavbar(event.urlAfterRedirects));
 
     effect(() => {
       // Only execute redirection once Supabase initialization has completed
@@ -45,10 +46,9 @@ export class AppComponent {
     });
   }
 
-  private updateGlobalFontControl(url: string): void {
-    // Pages with a visible header render the control beside the language toggle.
-    const hasInlineControl = ['/patient-portal', '/clinic', '/login', '/register', '/game']
-      .some(path => url.startsWith(path));
-    this.showGlobalFontControl.set(!hasInlineControl);
+  private updateNavbar(url: string): void {
+    const path = url.split('?')[0].split('#')[0];
+    this.currentPath.set(path);
+    this.showNavbar.set(!['/login', '/register'].includes(path));
   }
 }

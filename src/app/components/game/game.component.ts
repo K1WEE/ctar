@@ -12,8 +12,8 @@ import { DataSyncService } from '../../services/data-sync.service';
   standalone: true,
   imports: [CommonModule, ZenBalloonComponent],
   template: `
-    <div class="game-layout-root h-screen max-h-screen overflow-hidden flex flex-col relative z-10 text-slate-800 dark:text-slate-200 p-3 sm:p-4 md:p-6 lg:p-8 bg-slate-50 dark:bg-slate-950">
-      <div class="game-content max-w-[460px] mx-auto w-full h-full flex flex-col min-h-0 justify-center">
+    <div class="game-layout-root text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-950">
+      <div class="game-content">
         <app-zen-balloon 
           class="w-full h-full block min-h-0"
           [currentForce]="ctar.currentForce" 
@@ -22,30 +22,20 @@ import { DataSyncService } from '../../services/data-sync.service';
           [currentRep]="ctar.repCount()"
           [targetReps]="targetReps()"
           [requiredHoldTimeMs]="holdDurationMs()"
-          (repCompleted)="onGameRep()">
+          (repCompleted)="onGameRep()"
+          (sessionExit)="onSessionExit($event)"
+          (exitDialogChange)="onExitDialogChange($event)">
         </app-zen-balloon>
       </div>
     </div>
   `,
   styles: [`
-    @media (max-height: 800px) {
-      .game-layout-root {
-        padding: 0.5rem !important;
-      }
-    }
-
-    /* Keep the track usable at every font size; short screens can scroll. */
     .game-layout-root {
-      height: auto;
-      min-height: 100dvh;
-      max-height: none;
-      overflow-y: auto;
+      min-height: calc(100dvh - var(--app-navbar-height, 0px));
+      padding: 1rem;
     }
-
-    .game-content {
-      height: auto;
-      min-height: calc(100dvh - 1rem);
-    }
+    .game-content { width: 100%; max-width: 1120px; margin-inline: auto; }
+    @media (min-width: 768px) { .game-layout-root { padding: 2rem; } }
   `]
 })
 export class GameComponent implements OnInit, OnDestroy {
@@ -54,6 +44,8 @@ export class GameComponent implements OnInit, OnDestroy {
   public i18n = inject(I18nService);
 
   private sessionEnding = false;
+  private exitDialogOpen = false;
+  private exitCommitted = false;
   private endTimer: any;
   private supabase = inject(SupabaseService);
   private dataSync = inject(DataSyncService);
@@ -64,7 +56,7 @@ export class GameComponent implements OnInit, OnDestroy {
         this.sessionEnding = true;
         // Let the final rep's success chime + voice cue and the celebration
         // message play out before yanking the user to the summary page
-        this.endTimer = setTimeout(() => this.finishSession(), 2500);
+        this.scheduleFinish();
       }
     });
   }
@@ -105,7 +97,33 @@ export class GameComponent implements OnInit, OnDestroy {
     this.ctar.repCount.update((count: number) => Math.min(count + 1, this.targetReps()));
   }
 
+  onExitDialogChange(open: boolean): void {
+    this.exitDialogOpen = open;
+    this.ctar.setSessionPaused(open);
+    clearTimeout(this.endTimer);
+    if (!open && this.sessionEnding) this.scheduleFinish();
+  }
+
+  onSessionExit(choice: 'save' | 'discard'): void {
+    if (this.exitCommitted) return;
+    this.exitCommitted = true;
+    clearTimeout(this.endTimer);
+    this.sessionEnding = true;
+    if (choice === 'save') {
+      this.finishSession();
+    } else {
+      this.ctar.resetSession();
+      void this.router.navigate(['/calibrate']);
+    }
+  }
+
+  private scheduleFinish(): void {
+    if (!this.exitDialogOpen) this.endTimer = setTimeout(() => this.finishSession(), 3500);
+  }
+
   finishSession() {
-    this.router.navigate(['/summary']);
+    // Capture before navigation so later BLE samples cannot change the saved result.
+    this.ctar.getSessionSnapshot();
+    void this.router.navigate(['/summary']);
   }
 }

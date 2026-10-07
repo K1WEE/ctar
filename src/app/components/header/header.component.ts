@@ -2,12 +2,11 @@ import { Component, Input, Output, EventEmitter, inject, Signal, signal } from '
 import { CommonModule } from '@angular/common';
 import { ThemeService } from '../../services/theme.service';
 import { I18nService } from '../../services/i18n.service';
-import { FontScaleControlComponent } from '../font-scale-control/font-scale-control.component';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FontScaleControlComponent],
+  imports: [CommonModule],
   template: `
     <header class="relative z-40 bg-white dark:bg-brand-card border border-slate-200 dark:border-slate-700 px-4 md:px-6 py-4 flex flex-col md:flex-row justify-between items-center rounded-2xl shadow-sm transition-colors duration-300 gap-4 w-full">
       <div class="flex items-center space-x-4 w-full md:w-auto justify-center md:justify-start">
@@ -27,7 +26,6 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
       
       <div class="relative flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-center md:justify-end">
         <!-- Keep language and font size visible on every screen size. -->
-        <app-font-scale-control [inline]="true"></app-font-scale-control>
 
         <!-- Language Toggle -->
         <button (click)="i18n.toggleLang()" class="flex-shrink-0 min-h-12 px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-brand-accent dark:hover:text-white border border-slate-200 dark:border-white/10 transition-all duration-300 shadow-sm text-base font-bold">
@@ -52,7 +50,7 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
           </button>
 
           <!-- Status Indicator -->
-          <div class="flex-shrink-0 flex items-center px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 transition-colors duration-300">
+          <div *ngIf="showConnectionStatus" class="flex-shrink-0 flex items-center px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 transition-colors duration-300">
             <div class="relative flex h-3 w-3 mr-2 md:mr-3">
               <span class="relative inline-flex rounded-full h-3 w-3"
                     [ngClass]="{
@@ -84,7 +82,7 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
             <i class="fa-solid mr-2" [ngClass]="themeService.isDarkMode() ? 'fa-sun' : 'fa-moon'" aria-hidden="true"></i>
             {{ themeService.isDarkMode() ? i18n.t('header.lightMode') : i18n.t('header.darkMode') }}
           </button>
-          <div class="rounded-xl bg-slate-100 px-3 py-2 text-label font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
+          <div *ngIf="showConnectionStatus" class="rounded-xl bg-slate-100 px-3 py-2 text-label font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-100">
             <span class="mr-2 inline-block h-3 w-3 rounded-full"
                   [ngClass]="{
                     'bg-emerald-500': connectionState() === 'Connected',
@@ -111,6 +109,7 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
   `]
 })
 export class HeaderComponent {
+  @Input() showConnectionStatus = true;
   @Input({required: true}) connectionState!: Signal<string>;
   @Output() onLogout = new EventEmitter<void>();
   public themeService = inject(ThemeService);
