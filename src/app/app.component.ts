@@ -5,7 +5,7 @@ import { filter } from 'rxjs';
 import { SupabaseService } from './services/supabase.service';
 import { AppNavbarComponent } from './components/app-navbar/app-navbar.component';
 
-const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'];
+const AUTH_PAGES = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
 
 @Component({
   selector: 'app-root',
@@ -36,7 +36,7 @@ export class AppComponent {
 
       if (user) {
         // If logged in and on auth pages, redirect to dashboard
-        if (currentUrl === '/login' || currentUrl === '/register' || currentUrl === '/forgot-password') {
+        if (currentUrl === '/' || currentUrl === '/login' || currentUrl === '/register' || currentUrl === '/forgot-password') {
            this.router.navigate(['/dashboard']);
         }
       } else {
@@ -51,7 +51,7 @@ export class AppComponent {
   private updateNavbar(url: string): void {
     const path = url.split('?')[0].split('#')[0];
     this.currentPath.set(path);
-    // Auth pages carry their own language/font controls in AuthShellComponent.
+    // Home and auth pages carry their own language/font controls.
     this.showNavbar.set(!AUTH_PAGES.includes(path));
   }
 }

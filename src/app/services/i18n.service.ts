@@ -26,6 +26,23 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'reset.success': { th: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว! กำลังนำคุณไปที่หน้าหลัก...', en: 'Password updated successfully! Redirecting...' },
   'reset.error.match': { th: 'รหัสผ่านไม่ตรงกัน', en: 'Passwords do not match' },
 
+  // ─── Home (landing) ───
+  'home.eyebrow': { th: 'ฝึกกลืนที่บ้านด้วยท่า Chin Tuck', en: 'Swallowing exercise at home' },
+  'home.titleLine1': { th: 'ฝึกกล้ามเนื้อการกลืน', en: 'Strengthen swallowing' },
+  'home.titleLine2': { th: 'ง่าย ปลอดภัย ทุกวัน', en: 'safely, every day' },
+  'home.subtitle': { th: 'AeroChin CTAR วัดแรงกดคางแบบเรียลไทม์ และนำการฝึกผ่านเกมสนุก ๆ พร้อมส่งผลให้แพทย์ติดตามความก้าวหน้าได้', en: 'AeroChin CTAR measures chin-tuck force in real time, guides you through playful exercises, and shares progress with your care team.' },
+  'home.cta': { th: 'เข้าสู่ระบบเพื่อเริ่มฝึก', en: 'Sign in to start' },
+  'home.imageAlt': { th: 'ผู้ใช้วางอุปกรณ์ AeroChin ไว้ใต้คางและกดคางลง', en: 'A person pressing their chin down on the AeroChin device' },
+  'home.badge': { th: 'เชื่อมต่ออุปกรณ์ผ่านบลูทูธ', en: 'Connects over Bluetooth' },
+  'home.stepsTitle': { th: 'เริ่มต้นใน 3 ขั้นตอน', en: 'Get started in 3 steps' },
+  'home.step': { th: 'ขั้นตอนที่', en: 'Step' },
+  'home.step1.title': { th: 'เชื่อมต่ออุปกรณ์', en: 'Connect the device' },
+  'home.step1.body': { th: 'เปิดอุปกรณ์ AeroChin แล้วจับคู่กับเว็บผ่านบลูทูธ', en: 'Turn on AeroChin and pair it with the web app over Bluetooth.' },
+  'home.step2.title': { th: 'ปรับเทียบแรงกด', en: 'Calibrate your force' },
+  'home.step2.body': { th: 'กดคางเต็มแรงเพื่อให้ระบบตั้งเป้าหมายที่เหมาะกับคุณ', en: 'Press your hardest once so the system sets a target that suits you.' },
+  'home.step3.title': { th: 'ฝึกผ่านเกม', en: 'Exercise through games' },
+  'home.step3.body': { th: 'ทำตามจังหวะในเกม แล้วดูผลการฝึกและพัฒนาการของคุณ', en: 'Follow the rhythm in the game, then review your results and progress.' },
+
   // ─── Register ───
   'register.title': { th: 'สร้างบัญชี', en: 'Create Account' },
   'register.subtitle': { th: 'สมัครใช้งาน CTAR', en: 'Join CTAR platform' },

@@ -8,6 +8,7 @@ import { DashboardComponent } from './components/dashboard/dashboard.component';
 import { CalibrateComponent } from './components/calibrate/calibrate.component';
 import { SummaryComponent } from './components/summary/summary.component';
 import { GameComponent } from './components/game/game.component';
+import { HomeComponent } from './components/home/home.component';
 import { SupabaseService } from './services/supabase.service';
 
 const authGuard: CanActivateFn = async () => {
@@ -70,6 +71,6 @@ export const routes: Routes = [
     ]
   },
 
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: '', component: HomeComponent, pathMatch: 'full' },
   { path: '**', redirectTo: '/dashboard' }
 ];
