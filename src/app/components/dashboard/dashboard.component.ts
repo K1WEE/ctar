@@ -1,8 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
-import { SupabaseService } from '../../services/supabase.service';
 
+// Placeholder for the /dashboard route; roleRedirectGuard in app.routes.ts
+// always redirects before this renders.
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -16,24 +16,4 @@ import { SupabaseService } from '../../services/supabase.service';
     </div>
   `
 })
-export class DashboardComponent implements OnInit {
-  constructor(
-    private supabase: SupabaseService,
-    private router: Router
-  ) {}
-
-  async ngOnInit() {
-    const user = this.supabase.currentUser();
-    if (!user) {
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    const role = await this.supabase.getUserRole(user.id);
-    if (role === 'doctor' || role === 'admin') {
-      this.router.navigate(['/clinic/records']);
-    } else {
-      this.router.navigate(['/patient-portal']);
-    }
-  }
-}
+export class DashboardComponent {}

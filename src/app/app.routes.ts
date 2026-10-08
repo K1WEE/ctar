@@ -39,6 +39,25 @@ const doctorGuard: CanActivateFn = async () => {
   return router.parseUrl('/patient-portal');
 };
 
+// /dashboard is a pure redirect. Resolving it in a guard (instead of the
+// component's ngOnInit) means every navigation to /dashboard redirects, even
+// when a duplicate /dashboard navigation (login + auth-state effect) cancels
+// the first redirect and the router would otherwise reuse the component.
+const roleRedirectGuard: CanActivateFn = async () => {
+  const supabase = inject(SupabaseService);
+  const router = inject(Router);
+
+  await supabase.sessionReady;
+
+  const user = supabase.currentUser();
+  if (!user) return router.parseUrl('/login');
+
+  const role = await supabase.getUserRole(user.id);
+  if (role === 'doctor' || role === 'admin') return router.parseUrl('/clinic/records');
+
+  return router.parseUrl('/patient-portal');
+};
+
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
@@ -46,7 +65,7 @@ export const routes: Routes = [
   { path: 'reset-password', component: ResetPasswordComponent },
 
   // Role-based redirect
-  { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'dashboard', component: DashboardComponent, canActivate: [roleRedirectGuard] },
 
   // Patient flow
   { path: 'patient-portal', loadComponent: () => import('./components/patient-portal/patient-portal.component').then(m => m.PatientPortalComponent), canActivate: [authGuard] },

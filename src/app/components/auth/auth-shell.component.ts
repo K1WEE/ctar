@@ -1,5 +1,6 @@
 import { Component, Input, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { I18nService } from '../../services/i18n.service';
 import { FontScaleControlComponent } from '../font-scale-control/font-scale-control.component';
 
@@ -7,16 +8,21 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
 @Component({
   selector: 'app-auth-shell',
   standalone: true,
-  imports: [CommonModule, FontScaleControlComponent],
+  imports: [CommonModule, RouterLink, FontScaleControlComponent],
   template: `
     <main class="min-h-screen flex items-center justify-center p-4 relative z-10 text-slate-800 dark:text-slate-200">
       <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-md sm:p-8 dark:border-slate-700 dark:bg-brand-card">
-        <div class="relative z-30 mb-6 flex flex-wrap items-center justify-end gap-2">
-          <app-font-scale-control [inline]="true"></app-font-scale-control>
-          <div role="group" [attr.aria-label]="i18n.currentLang() === 'th' ? 'ภาษา' : 'Language'"
-            class="flex rounded-lg border border-slate-300 p-1 dark:border-slate-600">
-            <button type="button" lang="th" (click)="i18n.setLang('th')" [attr.aria-pressed]="i18n.currentLang() === 'th'" class="lang-choice">ไทย</button>
-            <button type="button" lang="en" (click)="i18n.setLang('en')" [attr.aria-pressed]="i18n.currentLang() === 'en'" class="lang-choice">English</button>
+        <div class="relative z-30 mb-6 flex flex-wrap items-center justify-between gap-2">
+          <a routerLink="/" class="auth-link -ml-2 inline-flex min-h-11 items-center gap-2 px-2 text-base">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>{{ i18n.t('auth.backHome') }}
+          </a>
+          <div class="flex flex-wrap items-center gap-2">
+            <app-font-scale-control [inline]="true"></app-font-scale-control>
+            <div role="group" [attr.aria-label]="i18n.currentLang() === 'th' ? 'ภาษา' : 'Language'"
+              class="flex rounded-lg border border-slate-300 p-1 dark:border-slate-600">
+              <button type="button" lang="th" (click)="i18n.setLang('th')" [attr.aria-pressed]="i18n.currentLang() === 'th'" class="lang-choice">ไทย</button>
+              <button type="button" lang="en" (click)="i18n.setLang('en')" [attr.aria-pressed]="i18n.currentLang() === 'en'" class="lang-choice">English</button>
+            </div>
           </div>
         </div>
 

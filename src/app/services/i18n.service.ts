@@ -4,6 +4,7 @@ export type Lang = 'th' | 'en';
 
 const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   // ─── Login ───
+  'auth.backHome': { th: 'กลับหน้าหลัก', en: 'Back to home' },
   'login.welcome': { th: 'ยินดีต้อนรับ', en: 'Welcome Back' },
   'login.subtitle': { th: 'เข้าสู่ระบบบัญชี CTAR ของคุณ', en: 'Sign in to your CTAR account' },
   'login.email': { th: 'อีเมล', en: 'Email Address' },
@@ -42,6 +43,13 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'home.step2.body': { th: 'กดคางเต็มแรงเพื่อให้ระบบตั้งเป้าหมายที่เหมาะกับคุณ', en: 'Press your hardest once so the system sets a target that suits you.' },
   'home.step3.title': { th: 'ฝึกผ่านเกม', en: 'Exercise through games' },
   'home.step3.body': { th: 'ทำตามจังหวะในเกม แล้วดูผลการฝึกและพัฒนาการของคุณ', en: 'Follow the rhythm in the game, then review your results and progress.' },
+
+  // ─── Footer ───
+  'footer.tagline': { th: 'ระบบฝึกกล้ามเนื้อการกลืนด้วยท่า Chin Tuck', en: 'Chin-tuck swallowing exercise system' },
+  'footer.contact': { th: 'ช่องทางติดต่อ', en: 'Contact' },
+  'footer.email': { th: 'อีเมล: ', en: 'Email: ' },
+  'footer.phone': { th: 'โทรศัพท์: ', en: 'Phone: ' },
+  'footer.copyright': { th: '© {0} มหาวิทยาลัยขอนแก่น', en: '© {0} Khon Kaen University' },
 
   // ─── Register ───
   'register.title': { th: 'สร้างบัญชี', en: 'Create Account' },
