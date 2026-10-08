@@ -36,7 +36,7 @@ export const FINISH_FALLBACK_MS = 3000;
   styles: [`
     .game-layout-root {
       min-height: calc(100dvh - var(--app-navbar-height, 0px));
-      padding: 1rem;
+      padding: 0.75rem;
     }
     .game-content { width: 100%; max-width: 1120px; margin-inline: auto; }
     @media (min-width: 768px) { .game-layout-root { padding: 2rem; } }

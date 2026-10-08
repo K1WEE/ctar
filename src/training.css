@@ -411,9 +411,22 @@ app-zen-balloon .sparkle.s4 { left:70px; top:-130px; width:16px; height:16px; an
   app-zen-balloon .feedback-container::before, app-zen-balloon .feedback-container::after { flex-basis:32px; }
 }
 @media(max-width:767px) {
-  app-zen-balloon .stat, app-zen-balloon .progress-container { padding:14px 16px; }
+  app-zen-balloon .stat, app-zen-balloon .progress-container { padding:10px 12px; border-radius:18px; }
+  app-zen-balloon .stat { gap:8px; }
+  app-zen-balloon .game-stats dt, app-zen-balloon .hold-label { min-width:0; gap:8px; font-size:1rem; }
+  app-zen-balloon .game-stats dt i { width:32px; height:32px; font-size:1rem; }
+  app-zen-balloon .hold-label i { font-size:1.25rem; }
+  app-zen-balloon .game-stats dd { font-size:1rem; }
+  app-zen-balloon .game-stats dd strong { font-size:1.75rem; }
+  app-zen-balloon .progress-container > div:first-child { gap:8px; margin-bottom:8px; font-size:1rem; }
+  app-zen-balloon .progress-container > div:first-child > span:last-child { font-size:1.25rem; }
+  app-zen-balloon .game-stats dd.stat-bar, app-zen-balloon .progress-container [role="progressbar"] { height:10px; }
   app-zen-balloon .feedback-container { gap:10px; }
   app-zen-balloon .feedback-container::before, app-zen-balloon .feedback-container::after { flex-basis:24px; }
+}
+/* Half-width cards: the decorative icons cost the room "เวลาค้างแรง" needs to stay on one line */
+@media(max-width:399px) {
+  app-zen-balloon :is(.game-stats dt i, .hold-label i) { display:none; }
 }
 @media (prefers-reduced-motion: reduce) {
   app-zen-balloon .stat-bar span { transition:none; }

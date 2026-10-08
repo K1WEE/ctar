@@ -248,6 +248,14 @@ export const SILENT_CELEBRATION_MS = 1200;
     .game-track { height:clamp(16rem,45dvh,32rem); min-height:16rem; flex-shrink:0; }
     .progress-container { grid-area:progress; min-width:0; }
     .game-stats { grid-area:stats; display:flex; gap:12px; }
+    /* Phone: reps and hold side by side, the track takes the remaining height so
+       the whole exercise fits one screen. The 16rem track minimum still wins on
+       very short screens. */
+    @media(max-width:767px) {
+      .game-play-content { grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto; grid-template-areas:'stats progress' 'scene scene' 'cue cue'; align-items:stretch; gap:8px; height:calc(100dvh - var(--app-navbar-height, 0px) - 1.5rem); padding-bottom:0; }
+      .game-main-area { min-height:0; padding:4px; }
+      .game-track { height:100%; max-height:32rem; }
+    }
     @media(min-width:768px) {
       .game-main-area { padding-block:calc(clamp(16rem,45dvh,32rem) * 0.1 + 24px); }
       .game-track { transform:scale(1.2); }
