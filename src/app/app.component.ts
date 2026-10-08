@@ -61,7 +61,9 @@ export class AppComponent {
     const path = url.split('?')[0].split('#')[0];
     this.currentPath.set(path);
     // Home and auth pages carry their own language/font controls.
-    this.showNavbar.set(!AUTH_PAGES.includes(path));
-    this.showFooter.set(!NO_FOOTER_PAGES.includes(path));
+    // Clinic pages carry their own sidebar shell instead of the shared chrome.
+    const isClinic = path.startsWith('/clinic');
+    this.showNavbar.set(!AUTH_PAGES.includes(path) && !isClinic);
+    this.showFooter.set(!NO_FOOTER_PAGES.includes(path) && !isClinic);
   }
 }

@@ -296,3 +296,64 @@ html { scroll-padding-top: calc(var(--app-navbar-height) + 1rem); }
     @apply flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4 text-base text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300;
   }
 }
+
+/* ─── Clinic console (admin / doctor) ───
+   Reuses the patient-portal --pp-* tokens so both audiences share one palette;
+   only the canvas is tinted so white cards separate from the page. */
+.patient-palette.clinic-page { --pp-canvas: #f4f7fc; background: var(--pp-canvas); }
+.dark .patient-palette.clinic-page { --pp-canvas: #131b26; }
+.clinic-page .cl-card {
+  background: var(--pp-surface);
+  border: 1px solid var(--pp-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 5%);
+}
+.clinic-page .cl-card-pad { padding: 20px; }
+@media (min-width: 640px) { .clinic-page .cl-card-pad { padding: 24px; } }
+.clinic-page .cl-kpi-value { font-size: 2rem; line-height: 1.15; font-weight: 700; color: var(--pp-ink); font-variant-numeric: tabular-nums; }
+.clinic-page .cl-icon-tile {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  background: var(--pp-action-soft); color: var(--pp-action);
+}
+.clinic-page .cl-icon-tile.is-success { background: var(--pp-success-soft); color: var(--pp-success); }
+.clinic-page .cl-icon-tile.is-reward { background: var(--pp-reward-soft); color: var(--pp-reward); }
+.clinic-page .cl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 16px; border-radius: 10px; font-weight: 600;
+  border: 1px solid var(--pp-border); background: var(--pp-surface); color: var(--pp-ink);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.clinic-page .cl-btn:hover:not(:disabled) { background: var(--pp-subtle); border-color: var(--pp-action); }
+.clinic-page .cl-btn:disabled { opacity: .55; cursor: not-allowed; }
+.clinic-page .cl-btn.is-primary { background: #1746c8; border-color: #1746c8; color: #fff; }
+.clinic-page .cl-btn.is-primary:hover:not(:disabled) { background: #1238a3; border-color: #1238a3; }
+.clinic-page .cl-btn.is-success { color: var(--pp-success); border-color: var(--pp-success-border); }
+.clinic-page .cl-btn.is-success:hover:not(:disabled) { background: var(--pp-success-soft); border-color: var(--pp-success); }
+.clinic-page .cl-input {
+  width: 100%; min-height: 48px; padding: 10px 14px 10px 44px; border-radius: 10px;
+  border: 1px solid var(--pp-border); background: var(--pp-surface); color: var(--pp-ink);
+}
+.clinic-page .cl-input::placeholder { color: var(--pp-neutral); }
+.clinic-page .cl-input:focus { outline: 3px solid var(--pp-focus); outline-offset: 1px; border-color: var(--pp-action); }
+.clinic-page .cl-chip {
+  min-height: 44px; padding: 6px 16px; border-radius: 999px; font-weight: 600;
+  border: 1px solid var(--pp-border); color: var(--pp-muted); background: var(--pp-surface);
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.clinic-page .cl-chip:hover { background: var(--pp-subtle); }
+.clinic-page .cl-chip[aria-pressed="true"] { background: var(--pp-ink); border-color: var(--pp-ink); color: var(--pp-surface); }
+.clinic-page .cl-badge {
+  display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px;
+  font-size: .875rem; font-weight: 700; line-height: 1.5;
+}
+.clinic-page .cl-row { transition: background-color 150ms ease; }
+.clinic-page .cl-row:hover { background: var(--pp-subtle); }
+.clinic-page .cl-avatar {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 40px; height: 40px; border-radius: 999px; font-weight: 700;
+  background: var(--pp-action-soft); color: var(--pp-action);
+}
+.clinic-page .cl-skeleton { background: var(--pp-subtle); border-radius: 8px; animation: cl-pulse 1.4s ease-in-out infinite; }
+@keyframes cl-pulse { 50% { opacity: .55; } }
+.clinic-page :is(button, a, input):focus-visible { outline: 3px solid var(--pp-focus); outline-offset: 2px; }

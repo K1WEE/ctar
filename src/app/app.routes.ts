@@ -39,6 +39,21 @@ const doctorGuard: CanActivateFn = async () => {
   return router.parseUrl('/patient-portal');
 };
 
+const adminGuard: CanActivateFn = async () => {
+  const supabase = inject(SupabaseService);
+  const router = inject(Router);
+
+  await supabase.sessionReady;
+
+  const user = supabase.currentUser();
+  if (!user) return router.parseUrl('/login');
+
+  const role = await supabase.getUserRole(user.id);
+  if (role === 'admin') return true;
+
+  return router.parseUrl('/clinic/records');
+};
+
 // /dashboard is a pure redirect. Resolving it in a guard (instead of the
 // component's ngOnInit) means every navigation to /dashboard redirects, even
 // when a duplicate /dashboard navigation (login + auth-state effect) cancels
@@ -53,7 +68,8 @@ const roleRedirectGuard: CanActivateFn = async () => {
   if (!user) return router.parseUrl('/login');
 
   const role = await supabase.getUserRole(user.id);
-  if (role === 'doctor' || role === 'admin') return router.parseUrl('/clinic/records');
+  if (role === 'admin') return router.parseUrl('/clinic/users');
+  if (role === 'doctor') return router.parseUrl('/clinic/records');
 
   return router.parseUrl('/patient-portal');
 };
@@ -73,17 +89,31 @@ export const routes: Routes = [
   { path: 'game', component: GameComponent, canActivate: [authGuard] },
   { path: 'summary', component: SummaryComponent, canActivate: [authGuard] },
 
-  // Clinic flow (doctor only)
+  // Clinic flow (doctor/admin) — one sidebar shell around every clinic page
   {
     path: 'clinic',
     canActivate: [authGuard, doctorGuard],
+    loadComponent: () => import('./components/clinic/clinic-shell.component').then(m => m.ClinicShellComponent),
     children: [
       {
+        path: 'users',
+        canActivate: [adminGuard],
+        data: { titleKey: 'clinic.nav.users' },
+        loadComponent: () => import('./components/admin-dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)
+      },
+      {
         path: 'records',
+        data: { titleKey: 'clinic.nav.records' },
         loadComponent: () => import('./components/clinic/clinic-dashboard.component').then(m => m.ClinicDashboardComponent)
       },
       {
+        path: 'live',
+        data: { titleKey: 'clinic.nav.live' },
+        loadComponent: () => import('./components/classic-dashboard/classic-dashboard.component').then(m => m.ClassicDashboardComponent)
+      },
+      {
         path: 'patient/:id',
+        data: { titleKey: 'detail.title', backTo: '/clinic/records' },
         loadComponent: () => import('./components/clinic/patient-detail/patient-detail.component').then(m => m.PatientDetailComponent)
       },
       { path: '', redirectTo: 'records', pathMatch: 'full' }

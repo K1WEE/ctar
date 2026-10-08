@@ -9,9 +9,8 @@ import { ThemeService } from '../../services/theme.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-6 w-full relative overflow-hidden group transition-colors duration-300">
+    <div class="cl-card cl-card-pad w-full relative overflow-hidden group transition-colors duration-300">
       <!-- subtle background glow -->
-      <div class="absolute -top-20 -right-20 w-40 h-40 bg-indigo-500 rounded-full blur-[50px] opacity-10 transition-all duration-700 group-hover:opacity-20"></div>
       
       <div class="flex items-center space-x-3 mb-6 relative z-10">
          <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-500 dark:text-indigo-400 border border-indigo-100 dark:border-transparent transition-colors duration-300">

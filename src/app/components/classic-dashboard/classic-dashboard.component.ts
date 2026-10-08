@@ -23,8 +23,8 @@ import { SupabaseService } from '../../services/supabase.service';
         (onExport)="exportData()">
       </app-control-panel>
 
-      <div *ngIf="bleService.error()" class="bg-red-500/10 border-l-4 border-red-500 text-red-400 p-4 rounded-xl shadow-lg backdrop-blur-md" role="alert">
-        <p class="font-bold flex items-center"><i class="fa-solid fa-circle-exclamation mr-2"></i> Error</p>
+      <div *ngIf="bleService.error()" class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300" role="alert">
+        <p class="font-bold flex items-center"><i class="fa-solid fa-circle-exclamation mr-2" aria-hidden="true"></i> Error</p>
         <p class="mt-1">{{ bleService.error() }}</p>
       </div>
 
@@ -34,8 +34,7 @@ import { SupabaseService } from '../../services/supabase.service';
           [value]="ctar.currentForce()" 
           unit="N" 
           iconClass="fa-bolt" 
-          colorClass="border-blue-500/50 bg-blue-500/10"
-          iconColorClass="text-blue-400">
+          colorClass="">
         </app-stat-card>
         
         <app-stat-card 
@@ -43,8 +42,7 @@ import { SupabaseService } from '../../services/supabase.service';
           [value]="ctar.peakForce()" 
           unit="N" 
           iconClass="fa-arrow-trend-up" 
-          colorClass="border-emerald-500/50 bg-emerald-500/10"
-          iconColorClass="text-emerald-400">
+          colorClass="is-success">
         </app-stat-card>
       </div>
 

@@ -34,6 +34,11 @@ import { BleService } from '../../services/ble.service';
             [attr.aria-pressed]="game.isMuted()" class="nav-action">
             <i class="fa-solid" [ngClass]="game.isMuted() ? 'fa-volume-xmark' : 'fa-volume-high'" aria-hidden="true"></i>
           </button>
+          <a *ngIf="isStaff" routerLink="/clinic" data-clinic-link class="nav-action gap-2 px-3"
+            [attr.aria-label]="text('กลับหน้าคลินิก', 'Back to clinic')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M16 13H8M16 17H8M10 9H8"/></svg>
+            <span class="hidden sm:inline">{{ text('หน้าคลินิก', 'Clinic') }}</span>
+          </a>
           <app-battery-status presentation="indicator" [iconOnly]="true"></app-battery-status>
 
           <button type="button" data-home-menu-toggle (click)="toggleHomeMenu()"
@@ -124,6 +129,12 @@ export class AppNavbarComponent implements OnInit, AfterViewInit, OnChanges, OnD
       case '/calibrate': case '/summary': return '/patient-portal';
       default: return null;
     }
+  }
+
+  /** Doctors and admins can jump back to the clinic console from patient pages. */
+  get isStaff(): boolean {
+    const role = this.supabase?.userRole?.();
+    return role === 'doctor' || role === 'admin';
   }
 
   get userInitial(): string {

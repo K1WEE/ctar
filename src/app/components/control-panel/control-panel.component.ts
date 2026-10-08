@@ -7,7 +7,7 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule, BatteryStatusComponent],
   template: `
-    <div class="bg-white/70 dark:bg-brand-card backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl p-6 flex flex-wrap justify-between items-center gap-4 transition-colors duration-300">
+    <div class="cl-card cl-card-pad flex flex-wrap justify-between items-center gap-4 transition-colors duration-300">
       <div class="flex items-center space-x-4 flex-1 min-w-[200px]">
         <div class="w-10 h-10 rounded-full flex items-center justify-center border transition-colors duration-300"
              [ngClass]="isConnected ? 'bg-emerald-50 dark:bg-emerald-500/20 border-emerald-200 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400'">
