@@ -118,7 +118,7 @@ export class GameComponent implements OnInit, OnDestroy {
     if (this.sessionEnding && !this.exitDialogOpen) this.leaveForSummary();
   }
 
-  onSessionExit(choice: 'save' | 'discard'): void {
+  onSessionExit(choice: 'save' | 'discard' | 'leave'): void {
     if (this.exitCommitted) return;
     this.exitCommitted = true;
     clearTimeout(this.endTimer);
@@ -127,7 +127,7 @@ export class GameComponent implements OnInit, OnDestroy {
       this.finishSession();
     } else {
       this.ctar.resetSession();
-      void this.router.navigate(['/calibrate']);
+      void this.router.navigate(['/patient-portal']);
     }
   }
 

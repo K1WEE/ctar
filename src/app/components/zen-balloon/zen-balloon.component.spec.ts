@@ -3,7 +3,7 @@ import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { REST_MS, SILENT_CELEBRATION_MS, ZenBalloonComponent } from './zen-balloon.component';
-import { VOICE_LINES } from './zen-balloon-voice';
+import { VOICE_LINES, ZenBalloonVoiceCoach } from './zen-balloon-voice';
 import { BleService } from '../../services/ble.service';
 import { BiofeedbackService } from '../../services/biofeedback.service';
 
@@ -48,6 +48,8 @@ describe('ZenBalloonComponent target contact', () => {
     balloonRect = new DOMRect(20, 151, 60, 80);
     spyOn(body, 'getBoundingClientRect').and.callFake(() => balloonRect);
     spyOn(target, 'getBoundingClientRect').and.returnValue(new DOMRect(0, 100, 100, 50));
+    // ngOnInit starts the practice round on a real timer; tests drive their own
+    (component as any).stopGameLoop();
   });
 
   afterEach(() => {
@@ -110,6 +112,9 @@ describe('ZenBalloonComponent target contact', () => {
       clips = [];
       rejectNext = false;
       component.isMuted = false;
+      // ngOnInit's practice round already advanced the line rotation; start fresh
+      (component as any).voice = new ZenBalloonVoiceCoach((line: any, cue: any) => (component as any).speakLine(line, cue));
+      (component as any).feedbackIndices.squeeze = -1;
       spyOn(component.i18n, 'voiceLanguage').and.returnValue('th');
       spyOn(window, 'Audio').and.callFake((function(src: string) {
         const fail = rejectNext;
@@ -233,13 +238,13 @@ describe('ZenBalloonComponent target contact', () => {
   it('leaves before starting without asking to save', () => {
     const exit = spyOn(component.sessionExit, 'emit');
     component.goBack();
-    expect(exit).toHaveBeenCalledOnceWith('discard');
+    expect(exit).toHaveBeenCalledOnceWith('leave');
     expect(component.showExitConfirm()).toBeFalse();
   });
 
   it('offers save, discard, and continue in one dialog without duplicate global controls', () => {
     const root: HTMLElement = fixture.nativeElement;
-    component.gameFlowState.set('playing');
+    component.startGame();
     component.goBack();
     fixture.detectChanges();
     expect(root.querySelectorAll('.game-overlay').length).toBe(1);
@@ -405,6 +410,36 @@ describe('ZenBalloonComponent target contact', () => {
     expect(component.inTargetZone).toBeFalse();
     tick(2500);
     expect(component.isReleasing).toBeFalse();
+    component.ngOnDestroy();
+  }));
+
+  it('plays one uncounted practice rep, then waits for the patient to start', fakeAsync(() => {
+    const reps = spyOn(component.repCompleted, 'emit');
+    component.enterPractice();
+    expect(component.practiceRound()).toBeTrue();
+    expect(component.activeOverlay).toBeNull();
+    balloonRect = new DOMRect(20, 120, 60, 80);
+    tick(component.requiredHoldTimeMs + 50);
+    expect(component.isReleasing).withContext('hold completed').toBeTrue();
+    force.set(0);
+    tick(REST_MS + 50);
+    expect(component.practiceRound()).toBeFalse();
+    expect(reps).not.toHaveBeenCalled();
+    expect(component.activeOverlay).withContext('waits on the ready screen').toBe('ready');
+    tick(5000);
+    expect(component.gameFlowState()).toBe('ready');
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.ready-start').click();
+    expect(component.gameFlowState()).toBe('countdown');
+    component.ngOnDestroy();
+  }));
+
+  it('lets the patient skip the practice', fakeAsync(() => {
+    component.enterPractice();
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('.practice-skip').click();
+    expect(component.practiceRound()).toBeFalse();
+    expect(component.gameFlowState()).toBe('countdown');
     component.ngOnDestroy();
   }));
 });

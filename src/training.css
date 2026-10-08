@@ -20,6 +20,11 @@ app-calibrate .reached .step-number { color:white; background:var(--brand); bord
 app-calibrate [aria-current="step"] .step-number { box-shadow:0 0 0 5px var(--brand-soft); }
 app-calibrate .restart { width:48px; height:48px; flex-shrink:0; display:grid; place-items:center; border:1px solid var(--line); border-radius:14px; background:var(--card); color:var(--muted); cursor:pointer; transition:background-color 150ms ease, color 150ms ease; }
 app-calibrate .restart:hover { background:var(--brand-soft); color:var(--brand-ink); }
+app-calibrate .restart-label { display:none; }
+@media(min-width:768px) {
+  app-calibrate .restart { width:auto; display:inline-flex; align-items:center; gap:8px; padding:0 16px; font-weight:600; }
+  app-calibrate .restart-label { display:inline; }
+}
 
 /* Main card */
 app-calibrate .workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); grid-template-areas:'guide eyebrow' 'guide head' 'guide body'; grid-template-rows:auto auto 1fr; column-gap:48px; align-content:center; align-self:center;
@@ -27,6 +32,45 @@ app-calibrate .workspace { display:grid; grid-template-columns:minmax(0,1fr) min
 app-calibrate .eyebrow { grid-area:eyebrow; align-self:end; color:var(--brand-ink); font-size:.9375rem; font-weight:700; letter-spacing:.02em; }
 app-calibrate h1 { grid-area:head; margin:6px 0 24px; font-size:clamp(1.625rem, 3vw, 2.5rem); line-height:1.3; font-weight:700; text-wrap:balance; }
 app-calibrate .device-guide { grid-area:guide; display:flex; align-items:center; justify-content:center; min-height:300px; border-radius:20px; background:radial-gradient(circle at 50% 40%, #fff 0%, var(--brand-soft) 70%); }
+app-calibrate .connect-guide { overflow:hidden; }
+app-calibrate .force-guide { --stage:280px; min-height:0; flex-direction:column; gap:12px; padding:24px 16px 20px; }
+app-calibrate .device-stage { position:relative; width:var(--stage); height:var(--stage); display:grid; place-items:center; border-radius:50%; }
+/* Sized so the illustration's wide base sits inside the ring, not across it */
+app-calibrate .force-guide .device-stage .chin-tuck-svg { width:auto; height:calc(var(--stage) * .55); }
+/* Inset so the ring stroke sits just outside the clip's edge */
+app-calibrate .press-video { width:calc(var(--stage) * .8); aspect-ratio:1; border-radius:50%; object-fit:cover; background:var(--brand-soft); }
+/* Faint track is always shown so the ring reads as an empty gauge before any press */
+app-calibrate .charge-ring { position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+app-calibrate .charge-track, app-calibrate .charge-fill { fill:none; stroke-width:7; }
+app-calibrate .charge-track { stroke:var(--line); }
+app-calibrate .charge-fill { stroke:var(--brand); stroke-linecap:round; stroke-dasharray:100; transition:stroke-dashoffset 120ms ease-out, opacity 150ms ease; }
+.dark app-calibrate .charge-fill { stroke:#93c5fd; }
+app-calibrate .readout { display:flex; flex-direction:column; align-items:center; gap:6px; min-height:112px; }
+app-calibrate .live-force { margin:0; color:var(--brand); font-size:clamp(2.5rem, 5vw, 3.25rem); line-height:1.1; font-weight:800; font-variant-numeric:tabular-nums; transition:opacity 200ms ease; }
+app-calibrate .live-force.idle { opacity:.3; color:var(--muted); }
+.dark app-calibrate .live-force { color:#93c5fd; }
+app-calibrate .live-force .unit { margin-left:6px; font-size:1.125rem; font-weight:600; }
+app-calibrate .force-level { margin:0; padding:6px 16px; border-radius:999px; background:var(--brand-soft); color:var(--brand-ink); font-size:clamp(1.125rem, 2.4vw, 1.5rem); font-weight:800; opacity:0; transition:opacity 200ms ease, background-color 200ms ease, color 200ms ease; }
+app-calibrate .force-level.visible { opacity:1; }
+app-calibrate .force-level[data-level="0"] { background:var(--warn-soft); color:var(--warn-ink); }
+app-calibrate .force-level[data-level="3"] { background:var(--ok-soft); color:var(--ok); }
+app-calibrate .force-level[data-level="4"] { background:#fef3c7; color:#92400e; }
+.dark app-calibrate .force-level[data-level="4"] { background:#3a2a06; color:#fcd34d; }
+app-calibrate .device-stage.max-level .charge-fill { filter:drop-shadow(0 0 6px rgb(245 158 11 / 70%)); }
+/* Idle nudge: nothing pressed yet — pulse + glow draws the eye back to the
+   device without filling the ring (a full ring would read as "done") */
+app-calibrate .device-stage.nudge { animation:stage-nudge 1.1s ease-in-out infinite; }
+@keyframes stage-nudge {
+  0%, 100% { transform:scale(1); box-shadow:0 0 0 0 rgb(29 78 216 / 0%); }
+  50% { transform:scale(1.05); box-shadow:0 0 0 10px var(--brand-soft), 0 0 32px rgb(29 78 216 / 35%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Global rule collapses the pulse, so keep a static highlight instead */
+  app-calibrate .device-stage.nudge { border-radius:50%; box-shadow:0 0 0 6px var(--brand-soft), 0 0 24px rgb(29 78 216 / 45%); }
+}
+app-calibrate .connect-guide video { width:100%; height:100%; max-height:420px; object-fit:contain; }
+app-calibrate .connect-guide-fallback { font-size:5rem; color:var(--brand); opacity:.7; }
+app-calibrate .copy-link { display:inline-flex; align-items:center; gap:8px; min-height:44px; margin-top:10px; padding:8px 14px; border-radius:10px; background:var(--card); color:inherit; font-weight:600; cursor:pointer; }
 .dark app-calibrate .device-guide { background:radial-gradient(circle at 50% 40%, #1e3a8a 0%, var(--brand-soft) 70%); }
 app-calibrate .guidance { grid-area:body; align-self:start; }
 app-calibrate .instructions { display:grid; gap:12px; }
@@ -37,18 +81,25 @@ app-calibrate .error { border-left-color:#ea580c; background:var(--warn-soft); c
 
 /* Live measurement and result */
 app-calibrate .measurement { padding:28px 24px; border-radius:22px; background:var(--brand-soft); color:var(--brand-ink); text-align:center; }
-app-calibrate .press-instruction { margin-bottom:12px; color:var(--ink); font-size:1.25rem; font-weight:700; }
 app-calibrate .force { margin:8px 0 12px; color:var(--brand); font-size:clamp(3.25rem, 8vw, 5.5rem); line-height:1.1; font-weight:800; font-variant-numeric:tabular-nums; }
 .dark app-calibrate .force { color:#93c5fd; }
 app-calibrate .force span { margin-left:8px; font-size:1.25rem; font-weight:600; }
-app-calibrate .timer { font-weight:600; font-variant-numeric:tabular-nums; }
-app-calibrate .timer-bar { height:10px; max-width:320px; margin:12px auto 0; overflow:hidden; border-radius:10px; background:var(--card); }
-app-calibrate .timer-bar span { display:block; height:100%; border-radius:inherit; background:var(--brand); transition:width 1s linear; }
+app-calibrate .timer-row { display:flex; align-items:center; gap:14px; max-width:420px; margin:0 auto; }
+app-calibrate .timer { flex-shrink:0; margin:0; color:var(--ink); font-size:1.125rem; font-weight:700; font-variant-numeric:tabular-nums; }
+app-calibrate :is(.timer-bar, .countdown-bar) { flex:1; height:10px; overflow:hidden; border-radius:10px; background:var(--line); }
+app-calibrate :is(.timer-bar, .countdown-bar) span { display:block; height:100%; border-radius:inherit; background:var(--brand); animation:bar-drain 3s linear forwards; }
+@keyframes bar-drain { from { width:100%; } to { width:0%; } }
 app-calibrate .result { background:var(--ok-soft); color:var(--ok); }
 app-calibrate .result .force { color:var(--ok); }
-app-calibrate .result-icon { width:56px; height:56px; margin:0 auto 12px; display:grid; place-items:center; border-radius:50%; background:#059669; color:white; font-size:1.5rem; }
-app-calibrate .success { font-size:1.125rem; font-weight:600; }
-app-calibrate [data-state="finished"] .workspace { grid-template-columns:minmax(0,1fr); grid-template-areas:'eyebrow' 'head' 'body'; max-width:640px; width:100%; justify-self:center; text-align:center; }
+app-calibrate .result-icon { width:56px; height:56px; margin:0 auto 10px; display:grid; place-items:center; border-radius:50%; background:#059669; color:white; font-size:1.5rem; }
+app-calibrate .result .force span { margin-left:.15em; font-size:.4em; font-weight:700; }
+app-calibrate .success { font-size:1.0625rem; font-weight:600; }
+/* Single centred column for measuring and result — the instruction, device
+   and reading stack in reading order instead of leaving an empty side column */
+app-calibrate :is([data-state="waiting"], [data-state="pulling"], [data-state="finished"]) .workspace { grid-template-columns:minmax(0,1fr); grid-template-areas:'eyebrow' 'head' 'guide' 'body'; grid-template-rows:auto; max-width:600px; width:100%; justify-self:center; text-align:center; }
+app-calibrate :is([data-state="waiting"], [data-state="pulling"]) .device-guide { margin-bottom:16px; }
+app-calibrate [data-state="finished"] .workspace { max-width:560px; }
+app-calibrate :is([data-state="waiting"], [data-state="pulling"], [data-state="finished"]) .notice { text-align:left; }
 
 /* Actions */
 app-calibrate .actions { display:flex; flex-direction:column; align-items:center; gap:6px; }
@@ -56,10 +107,22 @@ app-calibrate .primary { display:inline-flex; align-items:center; justify-conten
 app-calibrate .primary:hover { background:var(--brand-hover); box-shadow:0 10px 24px -8px rgb(29 78 216 / 70%); }
 app-calibrate .secondary { min-height:44px; padding:8px 14px; border-radius:10px; color:var(--muted); font-size:.9375rem; text-decoration:underline; text-underline-offset:4px; cursor:pointer; transition:background-color 150ms ease; }
 app-calibrate .secondary:hover { background:var(--brand-soft); }
-app-calibrate :is(.primary, app-calibrate .secondary, app-calibrate .restart):focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+app-calibrate .outline { display:inline-flex; align-items:center; justify-content:center; gap:10px; width:100%; max-width:480px; min-height:48px; padding:10px 20px; border:1.5px solid var(--line); border-radius:14px; background:var(--card); color:var(--ink); font-size:1.0625rem; font-weight:600; cursor:pointer; transition:background-color 150ms ease, border-color 150ms ease; }
+app-calibrate .outline:hover { background:var(--brand-soft); border-color:var(--brand); }
+app-calibrate :is(.primary, .secondary, .outline, .restart):focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
 app-calibrate .simulate { touch-action:none; user-select:none; }
 app-calibrate .simulate:active { background:var(--brand-hover); }
-app-calibrate .auto-start { display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:8px; color:var(--muted); font-variant-numeric:tabular-nums; }
+app-calibrate .auto-start { display:flex; flex-direction:column; align-items:stretch; gap:10px; width:100%; max-width:480px; margin-bottom:8px; color:var(--ink); font-size:1.125rem; font-weight:700; text-align:center; font-variant-numeric:tabular-nums; }
+app-calibrate .countdown-bar { flex:none; }
+@media (prefers-reduced-motion: reduce) {
+  /* The global rule would snap the bars empty; the text carries the time instead */
+  app-calibrate :is(.timer-bar, .countdown-bar) span { animation:none; width:100%; }
+}
+/* Desktop: keep the action right under the card instead of pinned to the viewport bottom */
+@media(min-width:768px) {
+  app-calibrate .calibration:not([data-state="intro"]) { grid-template-rows:auto auto 1fr; }
+  app-calibrate .calibration:not([data-state="intro"]) .workspace { margin-top:16px; }
+}
 
 @media(max-width:767px) {
   app-calibrate .calibration { padding:16px 16px max(12px, env(safe-area-inset-bottom)); gap:14px; }
@@ -71,15 +134,31 @@ app-calibrate .auto-start { display:flex; align-items:center; flex-wrap:wrap; ju
   app-calibrate .workspace { grid-template-columns:minmax(0,1fr); grid-template-areas:'eyebrow' 'head' 'guide' 'body'; grid-template-rows:auto; padding:20px; border-radius:22px; align-self:start; }
   app-calibrate h1 { margin:4px 0 14px; }
   app-calibrate .device-guide { min-height:0; margin-bottom:14px; padding:8px; border-radius:16px; }
+  app-calibrate .connect-guide video { max-height:clamp(140px, 28dvh, 260px); }
+  app-calibrate .connect-guide-fallback { font-size:3rem; }
+  app-calibrate .force-guide { --stage:clamp(160px, 30dvh, 240px); padding:16px 8px 12px; gap:8px; }
+  app-calibrate .readout { min-height:100px; }
   app-calibrate .device-guide .chin-tuck-svg { width:auto; height:clamp(80px, 18dvh, 170px); }
   app-calibrate .instructions { gap:8px; }
   app-calibrate .instructions li { padding:10px 12px; gap:12px; font-size:1.0625rem; }
   app-calibrate .instructions li > span { width:32px; height:32px; }
   app-calibrate .measurement { padding:20px 16px; }
+  /* Connect step: the portrait clip already walks through the steps, so it takes all the
+     height between the title and the pinned Connect button; the text list stays for screen readers */
+  app-calibrate .calibration[data-state="intro"] { height:calc(100dvh - var(--app-navbar-height, 0px)); min-height:0; }
+  app-calibrate [data-state="intro"] .workspace { display:flex; flex-direction:column; min-height:0; align-self:stretch; padding:16px; }
+  app-calibrate [data-state="intro"] .connect-guide { flex:1; min-height:0; margin-bottom:0; }
+  app-calibrate .connect-guide video { max-height:none; }
+  app-calibrate .workspace:has(.connect-guide video) .instructions { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 }
 @media(max-height:700px) and (max-width:767px) {
   app-calibrate .calibration { gap:10px; padding-top:10px; }
   app-calibrate .device-guide { display:none; }
+  /* The connect clip sizes itself to the leftover height, so it still fits */
+  app-calibrate .connect-guide { display:flex; }
+  /* Too short for the illustration, but the live force reading must stay */
+  app-calibrate .force-guide { display:flex; padding:4px; margin-bottom:8px; }
+  app-calibrate .force-guide .device-stage { display:none; }
   app-calibrate .notice { padding:10px 12px; margin-top:8px; font-size:.9375rem; }
 }
 
@@ -221,23 +300,39 @@ html.vt-slide app-sky-scene { view-transition-name:sky; }
 app-zen-balloon { --bg:#f5f7fb; --card:#fff; --line:#e2e8f0; --ink:#0f172a; --muted:#475569; --brand:#1d4ed8; --brand-hover:#1e40af; --brand-soft:#eff6ff; --brand-ink:#1e40af; --gold-soft:#fffbeb; --gold-ink:#92400e; --gold:#f59e0b; }
 .dark app-zen-balloon { --bg:#0b1220; --card:#111a2e; --line:#24324d; --ink:#e2e8f0; --muted:#cbd5e1; --brand:#2563eb; --brand-hover:#1d4ed8; --brand-soft:#172554; --brand-ink:#bfdbfe; --gold-soft:#2b1d07; --gold-ink:#fcd34d; }
 
-/* Preparation screen: one card matching the calibration page */
-app-zen-balloon .start-screen { display:flex; background:var(--bg); color:var(--ink); }
-app-zen-balloon .start-layout { width:calc(100% - 32px); max-width:1000px; margin:auto; padding:24px 20px; display:grid; gap:24px; border:1px solid var(--line); border-radius:28px; background:var(--card); box-shadow:0 1px 2px rgb(15 23 42 / 4%), 0 12px 32px -12px rgb(15 23 42 / 12%); }
-app-zen-balloon .start-header h2 { font-size:clamp(1.625rem,3vw,2.5rem); line-height:1.3; font-weight:700; text-wrap:balance; }
-app-zen-balloon .start-header p { margin-top:8px; color:var(--muted); font-size:1.0625rem; line-height:1.6; }
-app-zen-balloon .start-content { display:grid; gap:20px; }
-app-zen-balloon .start-demo { display:flex; align-items:center; justify-content:center; padding:12px; border-radius:20px; background:radial-gradient(circle at 50% 40%, #fff 0%, var(--brand-soft) 70%); }
-.dark app-zen-balloon .start-demo { background:radial-gradient(circle at 50% 40%, #1e3a8a 0%, var(--brand-soft) 70%); }
-app-zen-balloon .start-guide { display:grid; align-content:center; gap:16px; }
-app-zen-balloon .start-target { display:inline-flex; align-items:center; gap:8px; justify-self:start; padding:8px 18px; border-radius:999px; background:var(--gold-soft); color:var(--gold-ink); font-size:1.125rem; font-weight:600; }
-app-zen-balloon .start-target strong { font-size:1.75rem; font-weight:800; font-variant-numeric:tabular-nums; }
-app-zen-balloon .start-steps { display:grid; gap:10px; }
-app-zen-balloon .start-steps li { display:flex; align-items:center; gap:14px; padding:12px 16px; border:1px solid var(--line); border-radius:16px; font-size:1.125rem; line-height:1.5; }
-app-zen-balloon .start-steps li > span { width:34px; height:34px; flex-shrink:0; display:grid; place-items:center; border-radius:50%; background:var(--brand-soft); color:var(--brand-ink); font-weight:700; }
-app-zen-balloon .start-actions button { width:100%; min-height:56px; padding:12px 24px; border-radius:16px; background:var(--brand); color:#fff; font-size:1.1875rem; font-weight:700; cursor:pointer; box-shadow:0 8px 20px -8px rgb(29 78 216 / 60%); transition:background-color 150ms ease, box-shadow 150ms ease; }
-app-zen-balloon .start-actions button:hover { background:var(--brand-hover); box-shadow:0 10px 24px -8px rgb(29 78 216 / 70%); }
-app-zen-balloon .start-actions button:focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+/* Practice: a ghost balloon acts out "rise to touch the target, then come down" */
+app-zen-balloon .ghost-balloon { position:absolute; left:0; right:0; bottom:6%; z-index:1; display:flex; flex-direction:column; align-items:center; pointer-events:none; animation:ghost-rise 5s ease-in-out infinite; }
+app-zen-balloon .ghost-body { border:3px dashed #e11d48; border-radius:50%; background:rgb(244 63 94 / 18%); transition:opacity 200ms ease; animation:ghost-touch 5s ease-in-out infinite; }
+.dark app-zen-balloon .ghost-body { border-color:#fb7185; background:rgb(251 113 133 / 18%); }
+/* Fade the tip while the real balloon is moving so the two don't compete */
+app-zen-balloon .ghost-balloon.dim .ghost-body { opacity:.3; }
+app-zen-balloon .ghost-arrow { display:none; margin-top:6px; color:#e11d48; font-size:1.25rem; }
+/* Rise → stay in the target (the hold) → drift back down to rest */
+@keyframes ghost-rise {
+  0%, 6% { bottom:6%; opacity:0; }
+  12% { opacity:1; }
+  28%, 70% { bottom:var(--ghost-to); opacity:1; }
+  88% { bottom:6%; opacity:1; }
+  100% { bottom:6%; opacity:0; }
+}
+@keyframes ghost-touch { 0%, 28%, 70%, 100% { transform:scale(1); } 40%, 58% { transform:scale(1.08); } 49% { transform:scale(1); } }
+/* Ready screen after the practice rep: the scene stays visible behind a calm card */
+app-zen-balloon .ready-screen { display:flex; align-items:center; justify-content:center; padding:16px; background:rgb(15 23 42 / 45%); }
+app-zen-balloon .ready-card { width:100%; max-width:440px; display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 24px 20px; border:1px solid var(--line); border-radius:28px; background:var(--card); color:var(--ink); text-align:center; box-shadow:0 20px 48px -16px rgb(15 23 42 / 35%); }
+app-zen-balloon .ready-icon { width:56px; height:56px; display:grid; place-items:center; border-radius:50%; background:#059669; color:#fff; font-size:1.5rem; }
+app-zen-balloon .ready-card h2 { font-size:clamp(1.5rem,3vw,2rem); line-height:1.3; font-weight:700; text-wrap:balance; }
+app-zen-balloon .ready-card > p { color:var(--muted); font-size:1.125rem; line-height:1.6; }
+app-zen-balloon .ready-card > p.ready-target { display:inline-flex; align-items:center; gap:8px; padding:6px 16px; border-radius:999px; background:var(--gold-soft); color:var(--gold-ink); font-weight:600; }
+app-zen-balloon .ready-target strong { font-size:1.5rem; font-weight:800; font-variant-numeric:tabular-nums; }
+app-zen-balloon .ready-start { width:100%; min-height:56px; margin-top:8px; padding:12px 24px; border-radius:16px; background:var(--brand); color:#fff; font-size:1.1875rem; font-weight:700; cursor:pointer; box-shadow:0 8px 20px -8px rgb(29 78 216 / 60%); transition:background-color 150ms ease; }
+app-zen-balloon .ready-start:hover { background:var(--brand-hover); }
+app-zen-balloon .ready-again { min-height:44px; padding:8px 16px; border-radius:12px; color:var(--muted); font-size:1rem; font-weight:600; text-decoration:underline; text-underline-offset:4px; cursor:pointer; transition:background-color 150ms ease; }
+app-zen-balloon .ready-again:hover { background:var(--brand-soft); }
+app-zen-balloon :is(.ready-start, .ready-again):focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+app-zen-balloon .practice-badge { position:absolute; z-index:20; top:8px; left:50%; transform:translateX(-50%); padding:6px 14px; border-radius:999px; background:var(--gold-soft); color:var(--gold-ink); font-size:1rem; font-weight:700; white-space:nowrap; box-shadow:0 2px 8px rgb(15 23 42 / 10%); }
+app-zen-balloon .practice-skip { min-height:44px; padding:8px 16px; border-radius:12px; color:var(--muted); font-size:1rem; font-weight:600; text-decoration:underline; text-underline-offset:4px; cursor:pointer; transition:background-color 150ms ease; }
+app-zen-balloon .practice-skip:hover { background:var(--brand-soft); }
+app-zen-balloon .practice-skip:focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
 
 /* Play HUD */
 app-zen-balloon .game-play-content { color:var(--ink); }
@@ -306,10 +401,6 @@ app-zen-balloon .sparkle.s4 { left:70px; top:-130px; width:16px; height:16px; an
   app-zen-balloon .force-side { left:calc(50% + 72px); }
 }
 @media(min-width:768px) {
-  app-zen-balloon .start-layout { padding:36px; gap:32px; }
-  app-zen-balloon .start-content { grid-template-columns:1fr 1.3fr; gap:40px; }
-  app-zen-balloon .start-demo { padding:32px; }
-  app-zen-balloon .start-actions { width:100%; max-width:480px; justify-self:center; }
   app-zen-balloon .force-side { left:calc(50% + 100px); }
   app-zen-balloon .force-value { font-size:2.75rem; }
   app-zen-balloon .praise-burst { top:46%; }
@@ -320,8 +411,6 @@ app-zen-balloon .sparkle.s4 { left:70px; top:-130px; width:16px; height:16px; an
   app-zen-balloon .feedback-container::before, app-zen-balloon .feedback-container::after { flex-basis:32px; }
 }
 @media(max-width:767px) {
-  app-zen-balloon .start-layout { width:calc(100% - 24px); margin-block:12px; padding:20px 16px; border-radius:22px; }
-  app-zen-balloon .start-steps li { padding:10px 12px; font-size:1.0625rem; }
   app-zen-balloon .stat, app-zen-balloon .progress-container { padding:14px 16px; }
   app-zen-balloon .feedback-container { gap:10px; }
   app-zen-balloon .feedback-container::before, app-zen-balloon .feedback-container::after { flex-basis:24px; }
@@ -329,5 +418,9 @@ app-zen-balloon .sparkle.s4 { left:70px; top:-130px; width:16px; height:16px; an
 @media (prefers-reduced-motion: reduce) {
   app-zen-balloon .stat-bar span { transition:none; }
   app-zen-balloon :is(.praise-rays, .praise-star, .praise-text, .sparkle) { animation:none; }
+  /* Static tip: ghost waits at the target with an arrow pointing up to it */
+  app-zen-balloon .ghost-balloon, app-zen-balloon .ghost-body { animation:none; }
+  app-zen-balloon .ghost-balloon { bottom:calc(var(--ghost-to) - 2rem); }
+  app-zen-balloon .ghost-arrow { display:block; height:1.5rem; margin-top:.5rem; }
   app-zen-balloon .confetti { animation:none; opacity:1; transform:rotate(var(--a)) translateX(calc(var(--d) * .8)) rotate(var(--r)); }
 }

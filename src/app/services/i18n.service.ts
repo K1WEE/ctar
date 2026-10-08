@@ -60,6 +60,13 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'connect.title': { th: 'เชื่อมต่ออุปกรณ์', en: 'Connect Device' },
   'connect.subtitle': { th: 'กรุณาเชื่อมต่ออุปกรณ์ CTAR เพื่อเริ่มการฝึก', en: 'Please connect your CTAR hardware to begin your therapy session.' },
   'connect.btnConnect': { th: 'เชื่อมต่อผ่าน Bluetooth', en: 'Connect via Bluetooth' },
+  'connect.step1': { th: 'เปิดบลูทูธของโทรศัพท์หรืออุปกรณ์ของคุณ', en: 'Turn on Bluetooth on your phone or device' },
+  'connect.step2': { th: 'กดปุ่ม "เชื่อมต่อผ่าน Bluetooth" ด้านล่าง', en: 'Tap the "Connect via Bluetooth" button below' },
+  'connect.step3': { th: 'เลือกอุปกรณ์ที่ชื่อขึ้นต้นด้วย CTAR_', en: 'Select the device whose name starts with CTAR_' },
+  'connect.step4': { th: 'กด "เชื่อมต่อ" (Pair)', en: 'Tap "Pair" to connect' },
+  'connect.videoAlt': { th: 'วิดีโอสาธิตการเชื่อมต่อ', en: 'Connection walkthrough video' },
+  'connect.copyLink': { th: 'คัดลอกลิงก์ไปเปิดใน Chrome', en: 'Copy link to open in Chrome' },
+  'connect.linkCopied': { th: 'คัดลอกลิงก์แล้ว', en: 'Link copied' },
   'connect.btnSimulate': { th: 'จำลองอุปกรณ์ (สำหรับทดสอบ)', en: 'Simulate Device (Dev Mode)' },
   'connect.connected': { th: 'เชื่อมต่อแล้ว!', en: 'Connected!' },
 
@@ -84,12 +91,12 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'game.activeSession': { th: 'กำลังฝึก', en: 'Active Session' },
   'game.targetReps': { th: 'เป้าหมาย:', en: 'Target Reps:' },
   'game.finish': { th: 'จบการฝึก', en: 'Finish Session' },
-  'game.start.title': { th: 'พร้อมเริ่มการฝึกหรือยัง?', en: 'Ready to start training?' },
-  'game.start.instructions': { th: 'ทำตาม 3 ขั้นตอนนี้ แล้วค่อยกดปุ่มพร้อมเริ่ม', en: 'Follow these three steps, then tap when you are ready.' },
-  'game.start.step1': { th: 'วางคางบนอุปกรณ์ให้สบาย', en: 'Rest your chin comfortably on the device' },
-  'game.start.step2': { th: 'กดให้ลูกโป่งเข้าโซนเป้าหมาย', en: 'Press until the balloon reaches the target zone' },
-  'game.start.step3': { th: 'ค้างไว้ แล้วผ่อนแรงเมื่อระบบบอก', en: 'Hold steady, then relax when prompted' },
-  'game.start.button': { th: 'พร้อมเริ่ม', en: 'I’m ready to start' },
+  'game.practice.badge': { th: 'รอบลอง · ไม่นับครั้ง', en: 'Practice · not counted' },
+  'game.ready.title': { th: 'ลองเสร็จแล้ว เก่งมาก!', en: 'Practice done — well done!' },
+  'game.ready.body': { th: 'พักคางให้สบาย พร้อมเมื่อไหร่ค่อยกดเริ่มเล่นจริง', en: 'Rest your chin. Start the real session whenever you are ready.' },
+  'game.ready.start': { th: 'พร้อมเริ่ม', en: 'I’m ready to start' },
+  'game.ready.again': { th: 'ลองอีกครั้ง', en: 'Practice again' },
+  'game.practice.skip': { th: 'ข้าม เริ่มเลย', en: 'Skip and start' },
   'game.countdown.three': { th: 'จัดท่าให้พร้อม', en: 'Get into position' },
   'game.countdown.two': { th: 'ปล่อยแรงก่อน', en: 'Relax your force' },
   'game.countdown.one': { th: 'เตรียมกดตามคำสั่ง', en: 'Get ready to press' },
@@ -132,7 +139,8 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // ─── Errors ───
   'error.title': { th: 'เกิดข้อผิดพลาด', en: 'Error' },
-  'error.bleNotSupported': { th: 'เบราว์เซอร์นี้ไม่รองรับ Bluetooth\nกรุณาใช้ Chrome บน Android', en: 'Web Bluetooth API is not supported in this browser.' },
+  'error.bleNotSupported': { th: 'เบราว์เซอร์นี้ไม่รองรับการเชื่อมต่อ Bluetooth กรุณาเปิดหน้านี้ใน Google Chrome', en: 'This browser does not support Bluetooth connections. Please open this page in Google Chrome.' },
+  'error.bluetoothOff': { th: 'ไม่พบบลูทูธ กรุณาเปิดบลูทูธของอุปกรณ์ แล้วลองใหม่อีกครั้ง', en: 'Bluetooth is unavailable. Turn on Bluetooth and try again.' },
   'error.connectionFailed': { th: 'เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง', en: 'Connection failed. Please try again.' },
   'error.userCancelled': { th: 'ยกเลิกการเชื่อมต่อ', en: 'Connection cancelled by user.' },
   'error.saveFailed': { th: 'บันทึกข้อมูลไม่สำเร็จ กรุณาลองใหม่', en: 'Failed to save session data to cloud.' },
@@ -238,6 +246,12 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   'onboarding.step3': { th: 'ก้มคางกดลงให้แรงที่สุด แล้วปล่อย', en: 'Press your chin down as hard as you can, then release' },
 
   // ─── Calibrate (Updated) ───
+  'calibrate.pressPrompt': { th: 'กดคางลง สุดแรง!', en: 'Press your chin down — as hard as you can!' },
+  'calibrate.level0': { th: 'เบาไป กดอีก!', en: 'Too light — press harder!' },
+  'calibrate.level1': { th: 'อีกนิด!', en: 'Almost there!' },
+  'calibrate.level2': { th: 'ดีมาก แรงอีก!', en: 'Good — harder!' },
+  'calibrate.level3': { th: 'เยี่ยม!', en: 'Great!' },
+  'calibrate.level4': { th: 'สุดยอด!', en: 'Amazing!' },
   'calibrate.intro.updated': {
     th: 'วางเครื่องมือไว้บนอก แล้ววางคางลงบนแผ่นรองด้านบน<br><br>เมื่อพร้อม ให้<strong>ก้มคางกดลงให้แรงที่สุด แล้วปล่อย</strong>',
     en: 'Place the device on your chest and rest your chin on the top pad.<br><br>When ready, <strong>press your chin down as hard as you can, then release</strong>.'

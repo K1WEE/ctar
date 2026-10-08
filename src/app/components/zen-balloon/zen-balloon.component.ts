@@ -37,28 +37,15 @@ export const SILENT_CELEBRATION_MS = 1200;
       <!-- Decorative sky fills the viewport below the navbar, behind the HUD. -->
       <app-sky-scene></app-sky-scene>
 
-      <div *ngIf="activeOverlay === 'ready'" class="game-overlay start-screen">
-        <div role="dialog" aria-modal="false" data-dialog="start" aria-labelledby="game-start-title" aria-describedby="game-start-description" class="start-layout">
-          <header class="start-header">
-            <h2 id="game-start-title" tabindex="-1" class="focus:outline-none">{{ i18n.t('game.start.title') }}</h2>
-            <p id="game-start-description">{{ i18n.t('game.start.instructions') }}</p>
-          </header>
-          <div class="start-content">
-            <div class="start-demo" role="img" [attr.aria-label]="i18n.t('game.start.step1')">
-              <app-chin-tuck-demo size="md" [showLabel]="false" aria-hidden="true" />
-            </div>
-            <div class="start-guide">
-            <p class="start-target"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{ i18n.t('game.targetReps') }} <strong>{{ targetReps }}</strong> {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}</p>
-            <ol class="start-steps" [attr.aria-label]="i18n.currentLang() === 'th' ? 'ขั้นตอนการฝึก' : 'Training steps'">
-              <li><span aria-hidden="true">1</span><p>{{ i18n.t('game.start.step1') }}</p></li>
-              <li><span aria-hidden="true">2</span><p>{{ i18n.t('game.start.step2') }}</p></li>
-              <li><span aria-hidden="true">3</span><p>{{ i18n.t('game.start.step3') }}</p></li>
-            </ol>
-            </div>
-          </div>
-          <footer class="start-actions">
-            <button type="button" (click)="beginSession()">{{ i18n.t('game.start.button') }}</button>
-          </footer>
+      <!-- After the practice rep: a calm pause so the patient starts the real session when ready -->
+      <div *ngIf="activeOverlay === 'ready'" class="game-overlay ready-screen">
+        <div role="dialog" aria-modal="false" data-dialog="start" aria-labelledby="game-ready-title" aria-describedby="game-ready-description" class="ready-card">
+          <span class="ready-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+          <h2 id="game-ready-title" tabindex="-1" class="focus:outline-none">{{ i18n.t('game.ready.title') }}</h2>
+          <p id="game-ready-description">{{ i18n.t('game.ready.body') }}</p>
+          <p class="ready-target"><i class="fa-solid fa-bullseye" aria-hidden="true"></i> {{ i18n.t('game.targetReps') }} <strong>{{ targetReps }}</strong> {{ i18n.currentLang() === 'th' ? 'ครั้ง' : 'reps' }}</p>
+          <button type="button" class="ready-start" (click)="beginSession()">{{ i18n.t('game.ready.start') }}</button>
+          <button type="button" class="ready-again" (click)="enterPractice()">{{ i18n.t('game.ready.again') }}</button>
         </div>
       </div>
 
@@ -122,12 +109,14 @@ export const SILENT_CELEBRATION_MS = 1200;
               <span class="block">{{ i18n.currentLang() === 'th' ? 'การฝึกหยุดชั่วคราว' : 'Training is paused.' }}</span>
             </p>
             <div class="flex flex-col gap-2">
-              <button type="button" data-exit-save (click)="confirmFinish()" class="min-h-12 w-full rounded-xl bg-emerald-700 px-3 py-2 text-base font-bold text-white hover:bg-emerald-800">
-                {{ i18n.currentLang() === 'th' ? 'บันทึกและจบการฝึก' : 'Save and finish training' }}
-              </button>
-              <button type="button" data-exit-discard (click)="confirmExit()" class="min-h-12 w-full rounded-xl border border-red-700 bg-red-50 px-3 py-2 text-base font-bold text-red-800 hover:bg-red-100 dark:border-red-400 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900">
-                {{ i18n.currentLang() === 'th' ? 'ออกโดยไม่บันทึก' : 'Leave without saving' }}
-              </button>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" data-exit-save (click)="confirmFinish()" class="min-h-12 w-full rounded-xl bg-emerald-700 px-3 py-2 text-base font-bold leading-tight text-white hover:bg-emerald-800">
+                  {{ i18n.currentLang() === 'th' ? 'บันทึกและจบการฝึก' : 'Save and finish training' }}
+                </button>
+                <button type="button" data-exit-discard (click)="confirmExit()" class="min-h-12 w-full rounded-xl border border-red-700 bg-red-50 px-3 py-2 text-base font-bold leading-tight text-red-800 hover:bg-red-100 dark:border-red-400 dark:bg-red-950 dark:text-red-200 dark:hover:bg-red-900">
+                  {{ i18n.currentLang() === 'th' ? 'ออกโดยไม่บันทึก' : 'Leave without saving' }}
+                </button>
+              </div>
               <button type="button" data-exit-continue (click)="cancelExit()" class="min-h-12 w-full rounded-xl border border-slate-400 bg-white px-3 py-2 text-base font-bold text-slate-800 hover:bg-slate-100 dark:border-slate-500 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
                 {{ i18n.currentLang() === 'th' ? 'ฝึกต่อ' : 'Keep training' }}
               </button>
@@ -146,6 +135,7 @@ export const SILENT_CELEBRATION_MS = 1200;
       </dl>
 
       <div class="game-main-area" [class.session-complete]="sessionComplete">
+        <p *ngIf="practiceRound()" class="practice-badge">{{ i18n.t('game.practice.badge') }}</p>
         <!-- Force sits beside the track so the patient reads it while watching the balloon. -->
         <dl class="force-side force-readout" *ngIf="gameFlowState() === 'playing'">
           <dt>{{ i18n.currentLang() === 'th' ? 'แรงกด' : 'Force' }}</dt>
@@ -173,6 +163,14 @@ export const SILENT_CELEBRATION_MS = 1200;
                [style.height.%]="restZoneVisualPercent">
              <i class="fa-solid fa-chevron-down text-emerald-600 dark:text-emerald-400 text-xs mb-0.5"></i>
              <span class="text-xs xs:text-sm font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-tight whitespace-nowrap pointer-events-none select-none">{{ i18n.t('game.zone.rest') }}</span>
+          </div>
+
+          <!-- Practice tip: a ghost balloon acts out the move — rise into the
+               target, stay there, then drift back down to rest -->
+          <div *ngIf="practiceRound() && gameFlowState() === 'playing' && !isReleasing && !inTargetZone" class="ghost-balloon"
+               [class.dim]="currentForce() >= 4" [style.--ghost-to]="targetZoneVisualBottom + '%'" aria-hidden="true">
+            <div class="ghost-body w-14 h-18 xs:w-16 xs:h-20"></div>
+            <i class="fa-solid fa-arrow-up ghost-arrow"></i>
           </div>
 
           <!-- The Floating Balloon (Raised offset slightly to prevent bottom clipping) -->
@@ -225,9 +223,12 @@ export const SILENT_CELEBRATION_MS = 1200;
           </div>
         </div>
       </div>
-      <div class="feedback-container" role="status" aria-live="polite"
-           [ngClass]="isReleasing ? 'text-sky-800 dark:text-sky-200' : (inTargetZone ? 'text-amber-800 dark:text-amber-200' : 'text-slate-800 dark:text-slate-100')">
-        {{ feedbackMessage }}
+      <div class="cue-area">
+        <div class="feedback-container" role="status" aria-live="polite"
+             [ngClass]="isReleasing ? 'text-sky-800 dark:text-sky-200' : (inTargetZone ? 'text-amber-800 dark:text-amber-200' : 'text-slate-800 dark:text-slate-100')">
+          {{ feedbackMessage }}
+        </div>
+        <button *ngIf="practiceRound() && gameFlowState() === 'playing'" type="button" class="practice-skip" (click)="beginSession()">{{ i18n.t('game.practice.skip') }}</button>
       </div>
       
       </div>
@@ -239,7 +240,8 @@ export const SILENT_CELEBRATION_MS = 1200;
     .game-dialog { max-height:calc(100dvh - var(--app-navbar-height, 0px) - 2rem); display:flex; flex-direction:column; overflow:hidden; }
     .dialog-body { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
     .game-play-content { position:relative; z-index:1; padding-bottom:calc(var(--meadow-h) * .5); display:grid; grid-template-areas:'stats' 'scene' 'progress' 'cue'; gap:16px; width:100%; max-width:640px; margin-inline:auto; }
-    .feedback-container { grid-area:cue; min-height:4.35em; text-align:center; font-size:clamp(1.375rem,2.5vw,2rem); line-height:1.45; font-weight:700; text-wrap:balance; }
+    .cue-area { grid-area:cue; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .feedback-container { width:100%; min-height:4.35em; text-align:center; font-size:clamp(1.375rem,2.5vw,2rem); line-height:1.45; font-weight:700; text-wrap:balance; }
     .game-main-area { grid-area:scene; display:flex; align-items:center; justify-content:center; position:relative; isolation:isolate; padding:16px; overflow:hidden; }
     /* Keep the original dimensions and force-to-position mapping. A common
        transform preserves intersection at every force, including edge contact. */
@@ -256,7 +258,7 @@ export const SILENT_CELEBRATION_MS = 1200;
       .game-main-area { min-height:calc(100dvh - var(--app-navbar-height, 0px) - 4rem); }
     }
     @media(max-height:600px) and (orientation:landscape) {
-      .game-overlay:not(.start-screen) { justify-content:flex-start !important; overflow-y:auto; padding:8px !important; }
+      .game-overlay { justify-content:flex-start !important; overflow-y:auto; padding:8px !important; }
       .game-dialog { margin-block:auto; }
     }
   `]
@@ -264,7 +266,9 @@ export const SILENT_CELEBRATION_MS = 1200;
 export class ZenBalloonComponent implements OnInit, OnDestroy {
   public i18n = inject(I18nService);
   public bleService = inject(BleService);
-  public gameFlowState = signal<'ready' | 'countdown' | 'playing' | 'disconnected'>('ready');
+  public gameFlowState = signal<'ready' | 'countdown' | 'playing' | 'disconnected'>('playing');
+  // The first round is a full rep (reach, hold, relax) that teaches the game and isn't counted
+  public practiceRound = signal(false);
   get activeOverlay(): 'ready' | 'countdown' | 'disconnected' | 'stale' | 'exit' | null {
     if (this.showExitConfirm()) return 'exit';
     const flow = this.gameFlowState();
@@ -281,7 +285,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   private unregisterNavbar?: () => void;
   private destroyed = false;
   private hasStarted = false;
-  @Output() sessionExit = new EventEmitter<'save' | 'discard'>();
+  private resumePracticeOnReconnect = false;
+  private introStarted = false;
+  @Output() sessionExit = new EventEmitter<'save' | 'discard' | 'leave'>();
   @Output() exitDialogChange = new EventEmitter<boolean>();
   private dialogReturnFocus: HTMLElement | null = null;
   private dialogFocusTimer: ReturnType<typeof setTimeout> | null = null;
@@ -382,14 +388,6 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     return Math.max(this.targetMax / 0.78, 10);
   }
 
-  // Force needed to deliberately kick off the countdown from the ready screen.
-  // Scaled to the patient's own calibration so a frail user (low max) isn't
-  // made to spend most of their strength just to *start*; floored at 3N so
-  // sensor noise / resting weight can't auto-start the session.
-  private get startThreshold(): number {
-    return Math.max(3, this.maxForceLimit * 0.25);
-  }
-
   // Percentage display for elderly users (instead of Newton)
   public forcePercent(): number {
     if (this.maxForceLimit <= 0) return 0;
@@ -399,10 +397,6 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   public peakPercent(): number {
     if (this.maxForceLimit <= 0) return 0;
     return Math.min(999, Math.round((this.peakForce() / this.maxForceLimit) * 100));
-  }
-
-  getTriggerProgressPercent(): number {
-    return Math.min(100, Math.round((this.currentForce() / this.startThreshold) * 100));
   }
 
   // The balloon is drawn at (pos * 0.85 + 6)% from the bottom, so every zone
@@ -473,9 +467,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       const connection = this.bleService.connectionState();
       const flow = this.gameFlowState();
       if (connection !== 'Connected' && (flow === 'playing' || flow === 'countdown')) {
+        this.resumePracticeOnReconnect = this.practiceRound();
         this.ngZone.run(() => this.handleDisconnect());
       } else if (connection === 'Connected' && flow === 'disconnected' && !this.showExitConfirm()) {
-        this.ngZone.run(() => this.startCountdown());
+        this.ngZone.run(() => this.resumePracticeOnReconnect ? this.enterPractice() : this.startCountdown());
       }
     }, { allowSignalWrites: true });
   }
@@ -487,12 +482,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     // Use the rendered body so contact agrees with what the patient sees,
     // including font scaling, viewport changes and the movement transition.
     // The decorative string and knot are outside this body's bounds.
-    const balloon = this.balloonBody?.nativeElement.getBoundingClientRect();
-    const target = this.targetZone?.nativeElement.getBoundingClientRect();
-    const touching = !this.isReleasing && !!balloon && !!target
-      && balloon.height > 0 && target.height > 0
-      && balloon.bottom >= target.top && balloon.top <= target.bottom
-      && balloon.right >= target.left && balloon.left <= target.right;
+    const touching = !this.isReleasing && this.isBalloonTouchingTarget();
 
     if (touching === this.inTargetZone) return;
     this.ngZone.run(() => {
@@ -507,6 +497,15 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       }
       this.updateFeedback();
     });
+  }
+
+  private isBalloonTouchingTarget(): boolean {
+    const balloon = this.balloonBody?.nativeElement.getBoundingClientRect();
+    const target = this.targetZone?.nativeElement.getBoundingClientRect();
+    return !!balloon && !!target
+      && balloon.height > 0 && target.height > 0
+      && balloon.bottom >= target.top && balloon.top <= target.bottom
+      && balloon.right >= target.left && balloon.left <= target.right;
   }
 
   private handleDisconnect() {
@@ -541,16 +540,50 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
     // Initialize visuals for rep 0
     this.isReleasing = false;
     this.feedbackState = null;
-    this.feedbackMessage = this.i18n.t('game.start.instructions');
     this.updateDifficulty();
+    // The calibrate page's taps usually unlock audio already; on a fresh load
+    // the intro waits for the first touch instead of failing silently.
+    const activation = (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation;
+    if (!activation || activation.hasBeenActive) this.voice.start();
+    this.enterPractice();
+  }
+
+  @HostListener('document:pointerdown')
+  onFirstPointer() {
+    if (!this.introStarted && this.practiceRound()) this.voice.start();
+  }
+
+  /** Play one uncounted rep on the live scene, then count down into the real session. */
+  enterPractice() {
+    this.resumePracticeOnReconnect = false;
+    this.practiceRound.set(true);
+    this.startRound();
+  }
+
+  private finishPractice() {
+    this.stopGameLoop();
+    this.practiceRound.set(false);
+    this.isReleasing = false;
+    this.inTargetZone = false;
+    this.currentHoldMs = 0;
+    this.currentRestMs = 0;
+    this.holdProgress = 100;
+    this.biofeedback.stopVibrationLoop();
+    this.biofeedback.playSuccess();
+    // No praise star here — that celebration is kept for counted reps
     this.gameFlowState.set('ready');
     this.focusDialog('start');
   }
 
+  /** Start the real session (from the ready screen, or skipping the practice). */
   beginSession() {
+    this.stopGameLoop();
+    this.practiceRound.set(false);
+    this.isReleasing = false;
+    this.inTargetZone = false;
+    this.biofeedback.stopVibrationLoop();
     this.hasStarted = true;
-    // This click is the user gesture that safely unlocks audio on mobile browsers.
-    this.voice.start();
+    if (!this.introStarted) this.voice.start();
     this.startCountdown();
   }
 
@@ -633,6 +666,7 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
       if (finalPraise) this.celebrationDone.emit();
     });
     if (finalPraise) this.finalPraiseSpeaking = played;
+    if (cue === 'intro' && played) this.introStarted = true;
     // The intro plays under the countdown overlay; there is no cue line to pin.
     if (played && cue !== 'intro') {
       this.spokenTextKey = line.textKey;
@@ -730,6 +764,10 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
               this.updateFeedback();
 
               if (this.currentRestMs >= REST_MS) {
+                if (this.practiceRound()) {
+                  this.finishPractice();
+                  return;
+                }
                 // Keep the final completed bar visible throughout the summary delay.
                 if (this.currentRepVal + 1 >= this.targetReps) {
                   this.sessionComplete = true;
@@ -921,8 +959,9 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
 
   goBack() {
     if (this.showExitConfirm()) return;
-    if (!this.hasStarted && this.gameFlowState() === 'ready') {
-      this.sessionExit.emit('discard');
+    if (!this.hasStarted) {
+      // Nothing played yet — leave straight to the patient portal
+      this.sessionExit.emit('leave');
       return;
     }
     this.pauseProgressionForDialog();
@@ -1046,13 +1085,19 @@ export class ZenBalloonComponent implements OnInit, OnDestroy {
   }
 
   startGame() {
+    this.practiceRound.set(false);
     this.hasStarted = true;
+    this.startRound();
+  }
+
+  private startRound() {
     this.progressionPaused = false;
     this.pausedFlow = null;
     this.gameFlowState.set('playing');
     this.isReleasing = false;
     this.holdProgress = 0;
     this.currentHoldMs = 0;
+    this.currentRestMs = 0;
     this.feedbackState = null;
     this.sensorDataStale.set(!this.bleService.isSampleFresh());
     this.voice.beginRep(this.currentRepVal === 0);

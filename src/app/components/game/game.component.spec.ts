@@ -53,13 +53,21 @@ describe('GameComponent training session', () => {
     fixture.destroy();
   });
 
-  it('discards the current results and returns to preparation without saving', () => {
+  it('discards the current results and returns to the patient portal without saving', () => {
     const fixture = TestBed.createComponent(GameComponent);
     repCount.set(2);
     fixture.componentInstance.onSessionExit('discard');
     expect(repCount()).toBe(0);
     expect(snapshot).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledOnceWith(['/calibrate']);
+    expect(navigate).toHaveBeenCalledOnceWith(['/patient-portal']);
+    fixture.destroy();
+  });
+
+  it('leaves to the patient portal from the pre-game screen without saving', () => {
+    const fixture = TestBed.createComponent(GameComponent);
+    fixture.componentInstance.onSessionExit('leave');
+    expect(snapshot).not.toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledOnceWith(['/patient-portal']);
     fixture.destroy();
   });
 
