@@ -106,6 +106,29 @@ CREATE TRIGGER trg_block_role_change
     BEFORE UPDATE ON public.patients
     FOR EACH ROW EXECUTE FUNCTION public.block_role_change();
 
+-- Create the patients row on sign-up, including when email confirmation is
+-- pending and the client has no session yet. Role is always 'user':
+-- auth.uid() is NULL here and user metadata is client-controlled.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+    INSERT INTO public.patients (id, first_name, last_name, role)
+    VALUES (
+        NEW.id,
+        COALESCE(NEW.raw_user_meta_data->>'first_name', ''),
+        COALESCE(NEW.raw_user_meta_data->>'last_name', ''),
+        'user'
+    )
+    ON CONFLICT (id) DO NOTHING;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 -- Dedicated Admin RPC for changing user roles securely
 CREATE OR REPLACE FUNCTION public.admin_set_user_role(target_user_id UUID, new_role TEXT)
 RETURNS void AS $$
@@ -344,6 +367,7 @@ CREATE OR REPLACE FUNCTION public.guard_patient_task_progress()
 RETURNS trigger AS $$
 DECLARE
     v_task_week DATE;
+    v_target INTEGER;
 BEGIN
     IF auth.uid() IS NULL OR public.is_staff() THEN
         RETURN NEW;
@@ -368,9 +392,16 @@ BEGIN
     NEW.task_id := OLD.task_id;
     NEW.week_start := OLD.week_start;
 
-    IF NEW.completed IS DISTINCT FROM OLD.completed THEN
-        RAISE EXCEPTION 'Patients cannot change task completion state';
-    END IF;
+    -- Patients never set progress or completion directly: both are derived
+    -- from their recorded sessions, so a client can only trigger a recompute.
+    -- Completion is sticky so a finished mission is never un-finished.
+    SELECT GREATEST(COALESCE(wt.target, 1), 0)
+    INTO v_target
+    FROM public.weekly_tasks wt
+    WHERE wt.id = OLD.task_id;
+
+    NEW.progress := public.patient_task_actual_progress(OLD.patient_id, OLD.task_id);
+    NEW.completed := OLD.completed OR (v_target > 0 AND NEW.progress >= v_target);
 
     IF NEW.claimed_at IS DISTINCT FROM OLD.claimed_at
        AND current_setting('ctar.allow_reward_claim', true) IS DISTINCT FROM 'on' THEN

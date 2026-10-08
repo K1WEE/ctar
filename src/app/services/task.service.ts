@@ -11,6 +11,19 @@ export type TaskProvisionResult =
       message: string;
     };
 
+/** ภารกิจที่ progress ขยับใน session ล่าสุด — ใช้แสดงผลที่หน้า summary */
+export interface TaskUpdateResult {
+  taskId: string;
+  title: string;
+  icon: string;
+  target: number;
+  previousProgress: number;
+  progress: number;
+  completedNow: boolean;
+  /** ดาวที่ server ยืนยันจาก claim_task_reward (0 ถ้าเคยรับแล้วหรือ claim ไม่สำเร็จ) */
+  starsAwarded: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TaskService {
   constructor(private supabase: SupabaseService) {}
@@ -97,7 +110,7 @@ export class TaskService {
       durationMinutes: number;
       reps: number;
     },
-  ) {
+  ): Promise<TaskUpdateResult[]> {
     const weekStart = this.getWeekStart();
 
     const { data: patientTasks, error } = await this.supabase.client
@@ -107,7 +120,7 @@ export class TaskService {
       id,
       progress,
       completed,
-      weekly_tasks!inner ( id, title, target, reward )
+      weekly_tasks!inner ( id, title, icon, target, reward )
     `,
       )
       .eq('patient_id', patientId)
@@ -115,7 +128,7 @@ export class TaskService {
 
     if (error || !patientTasks) {
       console.error(error);
-      return;
+      return [];
     }
 
     // streak
@@ -129,7 +142,6 @@ export class TaskService {
     const streak = this.calculateStreak(recentSessions || []);
 
     const updates = [];
-    const starRewards = [];
 
     for (const task of patientTasks as any[]) {
       if (task.completed) continue;
@@ -159,41 +171,64 @@ export class TaskService {
         newProgress = weeklyTask.target;
       }
 
-      const completed = newProgress >= weeklyTask.target;
-      const newlyCompleted = completed && !task.completed;
-
       updates.push({
         id: task.id,
         taskId: weeklyTask.id,
+        title: weeklyTask.title,
+        icon: weeklyTask.icon,
+        target: weeklyTask.target,
+        previousProgress: task.progress,
         progress: newProgress,
-        completed,
-        newlyCompleted
       });
     }
 
-    // Batch update
-    await Promise.all(
-      updates.map((u) =>
-        this.supabase.client
+    // The DB trigger recomputes progress from sessions and derives `completed`,
+    // so only send progress and read back what was actually saved.
+    const saved = await Promise.all(
+      updates.map(async (u) => {
+        const { data, error: updateError } = await this.supabase.client
           .from('patient_tasks')
-          .update({ progress: u.progress, completed: u.completed })
-          .eq('id', u.id),
-      ),
+          .update({ progress: u.progress })
+          .eq('id', u.id)
+          .select('progress, completed')
+          .single();
+        if (updateError || !data) {
+          console.warn('patient_tasks update error:', updateError);
+          return null;
+        }
+        return { ...u, progress: data.progress as number, completed: data.completed as boolean };
+      }),
+    );
+    const moved = saved.filter(
+      (u): u is NonNullable<typeof u> => !!u && u.progress > u.previousProgress,
     );
 
     // Secure atomic stars claim via claim_task_reward RPC
-    for (const u of updates) {
-      if (u.newlyCompleted) {
-        try {
-          await this.supabase.client.rpc('claim_task_reward', {
-            p_patient_id: patientId,
-            p_task_id: u.taskId,
-          });
-        } catch (err) {
-          console.warn('claim_task_reward error:', err);
-        }
+    // Supabase reports RPC failures in `error` instead of throwing.
+    const results: TaskUpdateResult[] = [];
+    for (const u of moved) {
+      // Rows loaded as completed were skipped above, so `completed` here is new.
+      let starsAwarded = 0;
+      if (u.completed) {
+        const { data, error: claimError } = await this.supabase.client.rpc('claim_task_reward', {
+          p_patient_id: patientId,
+          p_task_id: u.taskId,
+        });
+        if (claimError) console.warn('claim_task_reward error:', claimError);
+        starsAwarded = claimError ? 0 : Number(data) || 0;
       }
+      results.push({
+        taskId: u.taskId,
+        title: u.title,
+        icon: u.icon,
+        target: u.target,
+        previousProgress: u.previousProgress,
+        progress: u.progress,
+        completedNow: u.completed,
+        starsAwarded,
+      });
     }
+    return results;
   }
 
   // =========================================

@@ -45,3 +45,5 @@ src/environments/
 .agents/
 .gemini/
 .claude/
+
+/supabase

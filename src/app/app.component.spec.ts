@@ -28,7 +28,7 @@ describe('AppComponent shared navbar', () => {
     for (const path of ['patient-portal', 'game', 'calibrate', 'summary', 'clinic/records', 'clinic/patient/1', 'forgot-password', 'reset-password', 'login', 'register']) {
       await router.navigateByUrl('/' + path);
       fixture.detectChanges();
-      const count = ['login', 'register'].includes(path) ? 0 : 1;
+      const count = ['login', 'register', 'forgot-password', 'reset-password'].includes(path) ? 0 : 1;
       expect(fixture.nativeElement.querySelectorAll('app-navbar').length).withContext(path).toBe(count);
       expect(fixture.nativeElement.querySelectorAll('app-font-scale-control').length).withContext(path).toBe(0);
       const logoCount = count && !['game', 'calibrate'].includes(path) ? 1 : 0;

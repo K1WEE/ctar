@@ -281,3 +281,18 @@ html { scroll-padding-top: calc(var(--app-navbar-height) + 1rem); }
   --pp-muted: #ecdab0;
   --pp-track: #2c291b;
 }
+
+/* ─── Auth pages (login / register / forgot / reset) ─── */
+@layer components {
+  .auth-submit {
+    @apply flex min-h-[58px] w-full items-center justify-center rounded-xl bg-blue-800 text-xl font-bold text-white shadow-sm transition-colors duration-200 hover:bg-blue-900 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .auth-submit:focus-visible { @apply outline outline-2 outline-offset-2 outline-blue-800 dark:outline-blue-300; }
+  .auth-link {
+    @apply font-bold text-blue-800 underline-offset-4 transition-colors hover:text-blue-900 hover:underline dark:text-blue-300 dark:hover:text-white;
+  }
+  .auth-link:focus-visible { @apply rounded outline outline-2 outline-offset-2 outline-blue-800 dark:outline-blue-300; }
+  .auth-alert {
+    @apply flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-4 text-base text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300;
+  }
+}

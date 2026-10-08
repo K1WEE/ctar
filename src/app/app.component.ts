@@ -5,6 +5,8 @@ import { filter } from 'rxjs';
 import { SupabaseService } from './services/supabase.service';
 import { AppNavbarComponent } from './components/app-navbar/app-navbar.component';
 
+const AUTH_PAGES = ['/login', '/register', '/forgot-password', '/reset-password'];
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -30,7 +32,7 @@ export class AppComponent {
 
       const user = this.supabase.currentUser();
       const currentUrl = this.router.url.split('?')[0].split('#')[0];
-      const isPublicPage = ['/login', '/register', '/forgot-password', '/reset-password'].includes(currentUrl);
+      const isPublicPage = AUTH_PAGES.includes(currentUrl);
 
       if (user) {
         // If logged in and on auth pages, redirect to dashboard
@@ -49,6 +51,7 @@ export class AppComponent {
   private updateNavbar(url: string): void {
     const path = url.split('?')[0].split('#')[0];
     this.currentPath.set(path);
-    this.showNavbar.set(!['/login', '/register'].includes(path));
+    // Auth pages carry their own language/font controls in AuthShellComponent.
+    this.showNavbar.set(!AUTH_PAGES.includes(path));
   }
 }

@@ -7,6 +7,7 @@ import { I18nService } from '../../services/i18n.service';
 import { NavbarService } from '../../services/navbar.service';
 import { ThemeService } from '../../services/theme.service';
 import { SupabaseService } from '../../services/supabase.service';
+import { BleService } from '../../services/ble.service';
 
 @Component({
   selector: 'app-navbar',
@@ -67,6 +68,11 @@ import { SupabaseService } from '../../services/supabase.service';
           <span>{{ text('โหมดมืด', 'Dark mode') }}</span>
           <span class="text-sm">{{ theme.isDarkMode() ? text('เปิด', 'On') : text('ปิด', 'Off') }}</span>
         </button>
+        <button *ngIf="ble.connectionState() === 'Connected'" type="button" data-disconnect-device (click)="disconnectDevice()"
+          class="nav-action disconnect-action mt-2 w-full justify-start gap-3 border-t border-slate-200 px-2 dark:border-slate-700">
+          <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+          {{ text('ตัดการเชื่อมต่ออุปกรณ์', 'Disconnect device') }}
+        </button>
         <button type="button" (click)="requestHomeLogout()" class="nav-action mt-2 w-full justify-start gap-3 border-t border-slate-200 px-2 dark:border-slate-700">
           <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i>
           {{ i18n.t('header.logout') }}
@@ -85,6 +91,8 @@ import { SupabaseService } from '../../services/supabase.service';
     button:focus-visible, a:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
     :host-context(.dark) .brand-link { background: white; border-radius: 8px; padding: 4px 8px; }
     .settings-panel { position: absolute; right: max(16px, calc((100% - 80rem) / 2 + 2rem)); top: calc(100% + 8px); width: 320px; max-width: calc(100vw - 32px); max-height: calc(100dvh - var(--app-navbar-height, 80px) - 24px); overflow-y: auto; padding: 20px; border-radius: 12px; }
+    .disconnect-action { color: #be123c; }
+    :host-context(.dark) .disconnect-action { color: #fb7185; }
     .settings-group { padding-top: 16px; padding-bottom: 12px; }
     .language-choice { min-height: 48px; flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px; }
     .language-choice[aria-pressed="true"] { background: #1e40af; color: white; border-color: #1e40af; font-weight: 600; }
@@ -97,6 +105,7 @@ export class AppNavbarComponent implements OnInit, AfterViewInit, OnChanges, OnD
   readonly i18n = inject(I18nService);
   readonly theme = inject(ThemeService);
   readonly supabase = inject(SupabaseService, { optional: true });
+  readonly ble = inject(BleService);
   readonly homeMenuOpen = signal(false);
   readonly patientName = signal<string>('');
   readonly userAvatarUrl = signal<string | null>(null);
@@ -113,7 +122,6 @@ export class AppNavbarComponent implements OnInit, AfterViewInit, OnChanges, OnD
     switch (this.path) {
       case '/game': return '/calibrate';
       case '/calibrate': case '/summary': return '/patient-portal';
-      case '/forgot-password': case '/reset-password': return '/login';
       default: return null;
     }
   }
@@ -140,6 +148,11 @@ export class AppNavbarComponent implements OnInit, AfterViewInit, OnChanges, OnD
     } else if (this.backPath) {
       void this.router.navigateByUrl(this.backPath);
     }
+  }
+
+  disconnectDevice(): void {
+    this.homeMenuOpen.set(false);
+    void this.ble.disconnect();
   }
 
   requestHomeLogout(): void {

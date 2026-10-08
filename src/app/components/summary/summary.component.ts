@@ -5,7 +5,7 @@ import { CtarLogicService } from '../../services/ctar-logic.service';
 import { DataSyncService } from '../../services/data-sync.service';
 import { SupabaseService } from '../../services/supabase.service';
 import { I18nService } from '../../services/i18n.service';
-import { TaskService } from '../../services/task.service';
+import { TaskService, TaskUpdateResult } from '../../services/task.service';
 import { SkySceneComponent } from '../sky-scene/sky-scene.component';
 
 @Component({
@@ -51,6 +51,37 @@ import { SkySceneComponent } from '../sky-scene/sky-scene.component';
             </div>
           </dl>
 
+          <section *ngIf="missionUpdates.length" class="summary-missions" aria-labelledby="summary-missions-title">
+            <h3 id="summary-missions-title">{{ i18n.t('summary.missions') }}</h3>
+
+            <ul *ngIf="completedMissions.length" class="mission-badges">
+              <li *ngFor="let m of completedMissions; let i = index" class="mission-badge" [style.animation-delay.ms]="400 + i * 150">
+                <span class="mission-badge-icon" aria-hidden="true">
+                  <i class="fa-solid" [ngClass]="m.icon"></i>
+                  <span class="mission-badge-check"><i class="fa-solid fa-check"></i></span>
+                </span>
+                <strong class="mission-badge-title">{{ m.title }}</strong>
+                <span class="sr-only">{{ i18n.t('summary.missionComplete') }}</span>
+                <span *ngIf="m.starsAwarded > 0" class="mission-badge-stars" [attr.aria-label]="i18n.t('summary.starsEarned').replace('{0}', m.starsAwarded.toString())">
+                  <i class="fa-solid fa-star" aria-hidden="true"></i>+{{ m.starsAwarded }}
+                </span>
+              </li>
+            </ul>
+
+            <ul *ngIf="progressedMissions.length" class="mission-progress">
+              <li *ngFor="let m of progressedMissions">
+                <span class="mission-progress-icon" aria-hidden="true"><i class="fa-solid" [ngClass]="m.icon"></i></span>
+                <span class="mission-progress-main">
+                  <span class="mission-progress-head">
+                    <strong>{{ m.title }}</strong>
+                    <span class="mission-progress-count">{{ m.progress }}/{{ m.target }} <span class="delta-up">+{{ m.progress - m.previousProgress }}</span></span>
+                  </span>
+                  <span class="mission-progress-track" aria-hidden="true"><span [style.width.%]="(m.progress / m.target) * 100"></span></span>
+                </span>
+              </li>
+            </ul>
+          </section>
+
           <div *ngIf="isOfflineSaved" role="status" class="summary-note note-warn">
             <i class="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i> {{ i18n.t('summary.savedOffline') }}
           </div>
@@ -78,6 +109,16 @@ export class SummaryComponent implements OnInit {
     reps: 0,
     maxForce: 0
   };
+
+  public missionUpdates: TaskUpdateResult[] = [];
+
+  get completedMissions() {
+    return this.missionUpdates.filter((m) => m.completedNow);
+  }
+
+  get progressedMissions() {
+    return this.missionUpdates.filter((m) => !m.completedNow);
+  }
 
   public improvement = {
     reps: 0,
@@ -141,7 +182,7 @@ export class SummaryComponent implements OnInit {
           this.isOfflineSaved = true;
         }
         if (!uploadResult.alreadyProcessed) {
-          await this.taskService.updateTasksAfterSession(user.id, {
+          this.missionUpdates = await this.taskService.updateTasksAfterSession(user.id, {
             maxForce:        this.currentStats.maxForce,
             durationMinutes: this.currentStats.duration / 60,
             reps:            this.currentStats.reps,
