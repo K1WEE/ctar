@@ -33,7 +33,7 @@ interface ClinicNavItem {
         [class.is-open]="drawerOpen()" [attr.aria-label]="i18n.t('clinic.nav.label')">
         <div class="flex items-center justify-between gap-2 px-5 pb-4 pt-5">
           <a routerLink="/clinic" class="brand-link flex min-h-12 items-center" [attr.aria-label]="i18n.t('clinic.brand')">
-            <img src="assets/aerochin-logo.png" alt="AeroChin CTAR PRO" class="h-auto w-40">
+            <img src="assets/KluenDee.png" alt="KluenDee" class="h-auto w-40">
           </a>
           <button type="button" class="icon-btn mobile-only" (click)="closeDrawer()" [attr.aria-label]="i18n.t('clinic.nav.close')">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>

@@ -28,7 +28,7 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
 
         <div class="mb-8 text-center">
           <span class="logo-frame mx-auto mb-5 inline-flex">
-            <img src="assets/aerochin-logo.png" alt="AeroChin CTAR PRO" class="h-auto w-48 sm:w-56">
+            <img src="assets/KluenDee.png" alt="KluenDee" class="h-auto w-48 sm:w-56">
           </span>
           <h1 class="mb-2 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl dark:text-white">{{ title }}</h1>
           <p *ngIf="subtitle" class="text-lg text-slate-600 dark:text-slate-300">{{ subtitle }}</p>

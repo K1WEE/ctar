@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { I18nService } from '../../services/i18n.service';
 import { FontScaleControlComponent } from '../font-scale-control/font-scale-control.component';
 
-/** Public landing page: introduces AeroChin CTAR and leads to sign-in. */
+/** Public landing page: introduces KluenDee CTAR and leads to sign-in. */
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -13,7 +13,7 @@ import { FontScaleControlComponent } from '../font-scale-control/font-scale-cont
     <div class="min-h-screen text-slate-800 dark:text-slate-200">
       <header class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
         <span class="logo-frame inline-flex">
-          <img src="assets/aerochin-logo.png" alt="AeroChin CTAR PRO" class="h-auto w-36 sm:w-44">
+          <img src="assets/KluenDee.png" alt="KluenDee" class="h-auto w-36 sm:w-44">
         </span>
         <div class="relative z-30 flex flex-wrap items-center gap-2">
           <app-font-scale-control [inline]="true"></app-font-scale-control>

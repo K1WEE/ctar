@@ -15,7 +15,7 @@ const SUPPORT_PHONE = '090-567-0114';
     <footer class="border-t border-slate-200 bg-white text-base text-slate-600 dark:border-slate-800 dark:bg-brand-dark dark:text-slate-300">
       <div class="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-6 text-center sm:px-6 lg:flex-row lg:justify-between lg:text-left">
         <div>
-          <p class="font-bold text-slate-900 dark:text-white">AeroChin CTAR</p>
+          <p class="font-bold text-slate-900 dark:text-white">KluenDee CTAR</p>
           <p>{{ i18n.t('footer.tagline') }}</p>
         </div>
 

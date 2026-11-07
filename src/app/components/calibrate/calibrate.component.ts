@@ -129,7 +129,8 @@ import { ForceLevel, forceLevel, forceRingColor } from './force-guidance';
             <span>{{ i18n.currentLang() === 'th' ? 'กำลังไปหน้าเล่นเกมใน' : 'Starting the game in' }} {{ autoNavCountdown() }} {{ i18n.currentLang() === 'th' ? 'วินาที' : 's' }}</span>
             <div class="countdown-bar" aria-hidden="true"><span></span></div>
           </div>
-          <button type="button" class="outline" (click)="remeasure()"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> {{ i18n.currentLang() === 'th' ? 'วัดแรงใหม่' : 'Measure Again' }}</button>
+          <button type="button" class="primary" (click)="goToGame()">{{ i18n.t('calibrate.goToGame') }}</button>
+          <button type="button" class="secondary" (click)="remeasure()"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> {{ i18n.currentLang() === 'th' ? 'วัดแรงใหม่' : 'Measure Again' }}</button>
         </ng-container>
       </footer>
     </section>
@@ -535,6 +536,11 @@ export class CalibrateComponent implements OnInit, OnDestroy {
       this.autoNavTimer = null;
     }
     this.autoNavCountdown.set(null);
+  }
+
+  goToGame() {
+    this.cancelAutoNav();
+    this.router.navigate(['/game']);
   }
 
   remeasure() {

@@ -24,7 +24,7 @@ import { BleService } from '../../services/ble.service';
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 5-7 7 7 7M5 12h14"/></svg>
           </button>
           <a *ngIf="path !== '/game' && path !== '/calibrate'" routerLink="/patient-portal" class="brand-link flex min-h-12 min-w-0 items-center" [attr.aria-label]="text('ไปหน้าหลัก', 'Go to home')">
-            <img src="assets/aerochin-logo.png" alt="AeroChin CTAR PRO" class="brand-image h-auto w-40 max-w-full sm:w-48">
+            <img src="assets/KluenDee.png" alt="KluenDee" class="brand-image h-auto w-40 max-w-full sm:w-48">
           </a>
         </div>
 
